@@ -53,8 +53,8 @@ def get_initialization_options():
     settings = [
         {
             "trace": "error",
-            "args": properties[f"{formatter['module']}-formatter.args"]["default"],
-            "path": properties[f"{formatter['module']}-formatter.path"]["default"],
+            "args": properties[f"{formatter['module']}.args"]["default"],
+            "path": properties[f"{formatter['module']}.path"]["default"],
             "workspace": as_uri(str(PROJECT_ROOT)),
             "interpreter": [],
         }

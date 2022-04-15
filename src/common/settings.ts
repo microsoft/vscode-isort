@@ -22,7 +22,7 @@ export async function getFormatterExtensionSettings(
     const workspaces = getWorkspaceFolders();
 
     for (const workspace of workspaces) {
-        const config = getConfiguration(`${moduleName}-formatter`, workspace.uri);
+        const config = getConfiguration(moduleName, workspace.uri);
         const interpreter = includeInterpreter ? (await getInterpreterDetails(workspace.uri)).path : [];
         const workspaceSetting = {
             workspace: workspace.uri.toString(),
@@ -40,7 +40,7 @@ export async function getFormatterExtensionSettings(
 }
 
 export function checkIfConfigurationChanged(e: ConfigurationChangeEvent, moduleName: string): boolean {
-    const settings = [`${moduleName}-formatter.trace`, `${moduleName}-formatter.args`, `${moduleName}-formatter.path`];
+    const settings = [`${moduleName}.trace`, `${moduleName}.args`, `${moduleName}.path`];
     const changed = settings.map((s) => e.affectsConfiguration(s));
     return changed.includes(true);
 }
