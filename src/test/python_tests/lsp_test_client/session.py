@@ -150,7 +150,9 @@ class LspSession(MethodDispatcher):
 
     def code_action_resolve(self, code_action_resolve_params):
         """Sends text document code actions resolve request to LSP server."""
-        fut = self._send_request("codeAction/resolve", params=code_action_resolve_params)
+        fut = self._send_request(
+            "codeAction/resolve", params=code_action_resolve_params
+        )
         return fut.result()
 
     def set_notification_callback(self, notification_name, callback):
