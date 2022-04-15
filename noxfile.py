@@ -97,7 +97,7 @@ def validate_readme(session):
     readme_file = pathlib.Path(__file__).parent / "README.md"
 
     lines = requirements_file.read_text(encoding="utf-8").splitlines(keepends=False)
-    formatter_ver = list(line for line in lines if line.startswith("black"))[0]
+    formatter_ver = list(line for line in lines if line.startswith("isort"))[0]
     name, version = formatter_ver.split(" ")[0].split("==")
 
     session.log(f"Looking for {name}={version} in README.md")

@@ -14,10 +14,9 @@ from typing import List, Sequence, Union
 # Ensure that we can import LSP libraries, and other bundled formatter libraries
 sys.path.append(str(pathlib.Path(__file__).parent.parent / "libs"))
 
+import utils
 from pygls import lsp, protocol, server, uris, workspace
 from pygls.lsp import types
-
-import utils
 
 FORMATTER = {
     "name": "isort",
