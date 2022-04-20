@@ -19,6 +19,14 @@
             "request": "attach",
             "processId": "${command:pickProcess}",
             "justMyCode": false
+        },
+        {
+            "name": "(don't select) Test Debug",
+            "type": "python",
+            "request": "launch",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "purpose": ["debug-test"]
         }
     ]
 }

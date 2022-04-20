@@ -26,9 +26,9 @@ def as_uri(path: str) -> str:
 
 
 @contextlib.contextmanager
-def python_file(contents: str, root: pathlib.Path):
+def python_file(contents: str, root: pathlib.Path, ext: str = ".py"):
     basename = (
-        "".join(random.choice("abcdefghijklmnopqrstuvwxyz") for _ in range(9)) + ".py"
+        "".join(random.choice("abcdefghijklmnopqrstuvwxyz") for _ in range(9)) + ext
     )
     fullpath = root / basename
     fullpath.write_text(contents)

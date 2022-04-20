@@ -169,98 +169,40 @@ def test_organize_import_cell():
     contents = UNFORMATTED_TEST_FILE_PATH.read_text()
     actual_diagnostics = []
 
-    # generate a fake cell uri
-    uri = (
-        utils.as_uri(UNFORMATTED_TEST_FILE_PATH.parent / "sample.ipynb").replace(
-            "file:", "vscode-notebook-cell:"
-        )
-        + "#C00001"
-    )
+    with utils.python_file("", UNFORMATTED_TEST_FILE_PATH.parent, ".ipynb") as pf:
+        # generate a fake cell uri
+        uri = utils.as_uri(pf).replace("file:", "vscode-notebook-cell:") + "#C00001"
+        with session.LspSession() as ls_session:
+            ls_session.initialize()
 
-    with session.LspSession() as ls_session:
-        ls_session.initialize()
+            done = Event()
 
-        done = Event()
+            def _handler(params):
+                nonlocal actual_diagnostics
+                actual_diagnostics = params
+                done.set()
 
-        def _handler(params):
-            nonlocal actual_diagnostics
-            actual_diagnostics = params
-            done.set()
+            ls_session.set_notification_callback(session.PUBLISH_DIAGNOSTICS, _handler)
 
-        ls_session.set_notification_callback(session.PUBLISH_DIAGNOSTICS, _handler)
-
-        ls_session.notify_did_open(
-            {
-                "textDocument": {
-                    "uri": uri,
-                    "languageId": "python",
-                    "version": 1,
-                    "text": contents,
-                }
-            }
-        )
-
-        # wait for some time to receive all notifications
-        done.wait(TIMEOUT)
-
-        assert_that(
-            actual_diagnostics,
-            is_(
+            ls_session.notify_did_open(
                 {
-                    "uri": uri,
-                    "diagnostics": [
-                        {
-                            "range": {
-                                "start": {"line": 0, "character": 0},
-                                "end": {"line": 0, "character": 0},
-                            },
-                            "message": "Imports are incorrectly sorted and/or formatted.",
-                            "severity": 1,
-                            "code": "E",
-                            "source": "isort",
-                        }
-                    ],
+                    "textDocument": {
+                        "uri": uri,
+                        "languageId": "python",
+                        "version": 1,
+                        "text": contents,
+                    }
                 }
-            ),
-        )
+            )
 
-        actual_code_actions = ls_session.text_document_code_action(
-            {
-                "textDocument": {"uri": uri},
-                "range": {
-                    "start": {"line": 0, "character": 0},
-                    "end": {"line": 0, "character": 0},
-                },
-                "context": {
-                    "diagnostics": [
-                        {
-                            "range": {
-                                "start": {"line": 0, "character": 0},
-                                "end": {"line": 0, "character": 0},
-                            },
-                            "message": "Imports are incorrectly sorted and/or formatted.",
-                            "severity": 1,
-                            "code": "E",
-                            "source": "isort",
-                        }
-                    ]
-                },
-            }
-        )
+            # wait for some time to receive all notifications
+            done.wait(TIMEOUT)
 
-        assert_that(
-            actual_code_actions,
-            is_(
-                [
+            assert_that(
+                actual_diagnostics,
+                is_(
                     {
-                        "title": "isort: Organize Imports",
-                        "kind": "source.organizeImports",
-                        "edit": None,
-                        "data": uri,
-                    },
-                    {
-                        "title": "isort: Fix import sorting and/or formatting",
-                        "kind": "quickfix",
+                        "uri": uri,
                         "diagnostics": [
                             {
                                 "range": {
@@ -273,42 +215,95 @@ def test_organize_import_cell():
                                 "source": "isort",
                             }
                         ],
-                        "edit": None,
-                        "data": uri,
-                    },
-                ]
-            ),
-        )
+                    }
+                ),
+            )
 
-        actual_resolved_code_action = ls_session.code_action_resolve(
-            actual_code_actions[0]
-        )
-        assert_that(
-            actual_resolved_code_action,
-            is_(
+            actual_code_actions = ls_session.text_document_code_action(
                 {
-                    "title": "isort: Organize Imports",
-                    "kind": "source.organizeImports",
-                    "edit": {
-                        "documentChanges": [
+                    "textDocument": {"uri": uri},
+                    "range": {
+                        "start": {"line": 0, "character": 0},
+                        "end": {"line": 0, "character": 0},
+                    },
+                    "context": {
+                        "diagnostics": [
                             {
-                                "textDocument": {
-                                    "uri": uri,
-                                    "version": 1,
+                                "range": {
+                                    "start": {"line": 0, "character": 0},
+                                    "end": {"line": 0, "character": 0},
                                 },
-                                "edits": [
-                                    {
-                                        "range": {
-                                            "start": {"line": 0, "character": 0},
-                                            "end": {"line": 4, "character": 0},
-                                        },
-                                        "newText": FORMATTED_TEST_FILE_PATH.read_text(),
-                                    }
-                                ],
+                                "message": "Imports are incorrectly sorted and/or formatted.",
+                                "severity": 1,
+                                "code": "E",
+                                "source": "isort",
                             }
                         ]
                     },
-                    "data": uri,
                 }
-            ),
-        )
+            )
+
+            assert_that(
+                actual_code_actions,
+                is_(
+                    [
+                        {
+                            "title": "isort: Organize Imports",
+                            "kind": "source.organizeImports",
+                            "edit": None,
+                            "data": uri,
+                        },
+                        {
+                            "title": "isort: Fix import sorting and/or formatting",
+                            "kind": "quickfix",
+                            "diagnostics": [
+                                {
+                                    "range": {
+                                        "start": {"line": 0, "character": 0},
+                                        "end": {"line": 0, "character": 0},
+                                    },
+                                    "message": "Imports are incorrectly sorted and/or formatted.",
+                                    "severity": 1,
+                                    "code": "E",
+                                    "source": "isort",
+                                }
+                            ],
+                            "edit": None,
+                            "data": uri,
+                        },
+                    ]
+                ),
+            )
+
+            actual_resolved_code_action = ls_session.code_action_resolve(
+                actual_code_actions[0]
+            )
+            assert_that(
+                actual_resolved_code_action,
+                is_(
+                    {
+                        "title": "isort: Organize Imports",
+                        "kind": "source.organizeImports",
+                        "edit": {
+                            "documentChanges": [
+                                {
+                                    "textDocument": {
+                                        "uri": uri,
+                                        "version": 1,
+                                    },
+                                    "edits": [
+                                        {
+                                            "range": {
+                                                "start": {"line": 0, "character": 0},
+                                                "end": {"line": 4, "character": 0},
+                                            },
+                                            "newText": FORMATTED_TEST_FILE_PATH.read_text(),
+                                        }
+                                    ],
+                                }
+                            ]
+                        },
+                        "data": uri,
+                    }
+                ),
+            )

@@ -124,7 +124,7 @@ def _run(
 
     argv += _filter_args(FORMATTER["args"] + settings["args"])
     argv += extra_args
-    argv += ["-"]
+    argv += ["--filename", document.path, "-"] if document.path else ["-"]
 
     LSP_SERVER.show_message_log(" ".join(argv))
     LSP_SERVER.show_message_log(f"CWD Formatter: {cwd}")
