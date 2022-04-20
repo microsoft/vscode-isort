@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Build VSIX
         uses: ./.github/actions/build-vsix
@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2.3.4
+        uses: actions/checkout@v3.3.4
 
       - name: Lint
         uses: ./.github/actions/lint
@@ -49,13 +49,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           path: ${{ env.special-working-directory-relative }}
 
       # Install bundled libs using 3.7 even though you test it on other versions.
       - name: Use Python 3.7
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         with:
           python-version: '3.7'
 
@@ -71,7 +71,7 @@ jobs:
       # Now that the bundle is installed to target using python 3.7
       # switch back the python we want to test with
       - name: Use Python ${{ matrix.python }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python }}
 
