@@ -206,7 +206,7 @@ def _format(document: workspace.Document) -> Union[List[types.TextEdit], None]:
 
     if result.stderr:
         LSP_SERVER.show_message_log(result.stderr, msg_type=types.MessageType.Error)
-        if result.stderr.find("Error:") or result.stderr.find("error:"):
+        if result.stderr.find("Error:") >= 0 or result.stderr.find("error:") >= 0:
             LSP_SERVER.show_message(
                 f"Formatting error, please see Output > isort for more info:\r\n{result.stderr}",
                 msg_type=types.MessageType.Error,
