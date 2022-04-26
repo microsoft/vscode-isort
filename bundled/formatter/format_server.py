@@ -9,7 +9,7 @@ import os
 import pathlib
 import sys
 import traceback
-from typing import List, Sequence, Union
+from typing import List, Optional, Sequence, Union
 
 # Ensure that we can import LSP libraries, and other bundled formatter libraries
 sys.path.append(str(pathlib.Path(__file__).parent.parent / "libs"))
@@ -227,6 +227,21 @@ def _format(document: workspace.Document) -> Union[List[types.TextEdit], None]:
     ]
 
 
+def _create_workspace_edits(document: workspace.Document, results: Optional[List[lsp.TextEdit]]):
+    return lsp.WorkspaceEdit(
+        document_changes=[
+            lsp.TextDocumentEdit(
+                text_document=lsp.VersionedTextDocumentIdentifier(
+                    uri=document.uri,
+                    version=0
+                    if document.version is None
+                    else document.version,
+                ),
+                edits=results,
+            )
+        ],
+    )
+
 @LSP_SERVER.feature(lsp.INITIALIZE)
 def initialize(params: types.InitializeParams):
     """LSP handler for initialize request."""
@@ -264,12 +279,6 @@ def initialize(params: types.InitializeParams):
     ),
 )
 def organize(server: server.LanguageServer, params: lsp.CodeActionParams):
-    # if lsp.CodeActionKind.SourceOrganizeImports not in params.context.only:
-    #    return None
-
-    diagnostics = [
-        d for d in params.context.diagnostics if d.source == "isort" and d.code == "E"
-    ]
     text_document = server.workspace.get_document(params.text_document.uri)
 
     if utils.is_stdlib_file(text_document.path):
@@ -277,6 +286,31 @@ def organize(server: server.LanguageServer, params: lsp.CodeActionParams):
         # Publishing empty diagnostics clears the entry
         return None
 
+    if (
+        params.context.only
+        and len(params.context.only) == 1
+        and lsp.CodeActionKind.SourceOrganizeImports in params.context.only
+    ):
+        # This is triggered with users run the Organize Imports command from
+        # VS Code. The `context.only` field will have one item that is the
+        # `SourceOrganizeImports` code action.
+        results = _format(text_document)
+        if results:
+            # Clear out diagnostics, since we are making changes to address
+            # import sorting issues.
+            server.publish_diagnostics(text_document.uri, [])
+            return [
+                lsp.CodeAction(
+                    title="isort: Organize Imports",
+                    kind=lsp.CodeActionKind.SourceOrganizeImports,
+                    data=params.text_document.uri,
+                    edit=_create_workspace_edits(text_document, results)
+                )
+            ]
+
+    diagnostics = [
+        d for d in params.context.diagnostics if d.source == "isort" and d.code == "E"
+    ]
     return [
         lsp.CodeAction(
             title="isort: Organize Imports",
@@ -298,11 +332,17 @@ def organize(server: server.LanguageServer, params: lsp.CodeActionParams):
 def resolve(server: server.LanguageServer, params: lsp.CodeAction):
     text_document = server.workspace.get_document(params.data)
 
-    result = _format(text_document)
+    results = _format(text_document)
 
-    if not result:
+    if results:
+        # Clear out diagnostics, since we are making changes to address
+        # import sorting issues.
+        server.publish_diagnostics(text_document.uri, [])
+    else:
         # There are no changes so return the original code as is.
-        result = [
+        # This could be due to error while running import sorter
+        # so, don't clearout the diagnostics.
+        results = [
             types.TextEdit(
                 range=types.Range(
                     start=types.Position(line=0, character=0),
@@ -312,19 +352,7 @@ def resolve(server: server.LanguageServer, params: lsp.CodeAction):
             )
         ]
 
-    params.edit = lsp.WorkspaceEdit(
-        document_changes=[
-            lsp.TextDocumentEdit(
-                text_document=lsp.VersionedTextDocumentIdentifier(
-                    uri=text_document.uri,
-                    version=0
-                    if text_document.version is None
-                    else text_document.version,
-                ),
-                edits=result,
-            )
-        ],
-    )
+    params.edit = _create_workspace_edits(text_document, results)
     return params
 
 
