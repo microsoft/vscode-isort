@@ -227,20 +227,21 @@ def _format(document: workspace.Document) -> Union[List[types.TextEdit], None]:
     ]
 
 
-def _create_workspace_edits(document: workspace.Document, results: Optional[List[lsp.TextEdit]]):
+def _create_workspace_edits(
+    document: workspace.Document, results: Optional[List[lsp.TextEdit]]
+):
     return lsp.WorkspaceEdit(
         document_changes=[
             lsp.TextDocumentEdit(
                 text_document=lsp.VersionedTextDocumentIdentifier(
                     uri=document.uri,
-                    version=0
-                    if document.version is None
-                    else document.version,
+                    version=0 if document.version is None else document.version,
                 ),
                 edits=results,
             )
         ],
     )
+
 
 @LSP_SERVER.feature(lsp.INITIALIZE)
 def initialize(params: types.InitializeParams):
@@ -304,7 +305,7 @@ def organize(server: server.LanguageServer, params: lsp.CodeActionParams):
                     title="isort: Organize Imports",
                     kind=lsp.CodeActionKind.SourceOrganizeImports,
                     data=params.text_document.uri,
-                    edit=_create_workspace_edits(text_document, results)
+                    edit=_create_workspace_edits(text_document, results),
                 )
             ]
 
