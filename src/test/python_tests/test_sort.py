@@ -59,7 +59,7 @@ def test_organize_import():
                             {
                                 "range": {
                                     "start": {"line": 0, "character": 0},
-                                    "end": {"line": 0, "character": 0},
+                                    "end": {"line": 1, "character": 0},
                                 },
                                 "message": "Imports are incorrectly sorted and/or formatted.",
                                 "severity": 1,
@@ -83,7 +83,7 @@ def test_organize_import():
                             {
                                 "range": {
                                     "start": {"line": 0, "character": 0},
-                                    "end": {"line": 0, "character": 0},
+                                    "end": {"line": 1, "character": 0},
                                 },
                                 "message": "Imports are incorrectly sorted and/or formatted.",
                                 "severity": 1,
@@ -112,7 +112,7 @@ def test_organize_import():
                                 {
                                     "range": {
                                         "start": {"line": 0, "character": 0},
-                                        "end": {"line": 0, "character": 0},
+                                        "end": {"line": 1, "character": 0},
                                     },
                                     "message": "Imports are incorrectly sorted and/or formatted.",
                                     "severity": 1,
@@ -207,7 +207,7 @@ def test_organize_import_cell():
                             {
                                 "range": {
                                     "start": {"line": 0, "character": 0},
-                                    "end": {"line": 0, "character": 0},
+                                    "end": {"line": 1, "character": 0},
                                 },
                                 "message": "Imports are incorrectly sorted and/or formatted.",
                                 "severity": 1,
@@ -231,7 +231,7 @@ def test_organize_import_cell():
                             {
                                 "range": {
                                     "start": {"line": 0, "character": 0},
-                                    "end": {"line": 0, "character": 0},
+                                    "end": {"line": 1, "character": 0},
                                 },
                                 "message": "Imports are incorrectly sorted and/or formatted.",
                                 "severity": 1,
@@ -260,7 +260,7 @@ def test_organize_import_cell():
                                 {
                                     "range": {
                                         "start": {"line": 0, "character": 0},
-                                        "end": {"line": 0, "character": 0},
+                                        "end": {"line": 1, "character": 0},
                                     },
                                     "message": "Imports are incorrectly sorted and/or formatted.",
                                     "severity": 1,
