@@ -186,7 +186,7 @@ def _publish_diagnostics(
                         character=0,
                     ),
                     end=types.Position(
-                        line=import_line,
+                        line=import_line + 1,
                         character=0,
                     ),
                 ),
