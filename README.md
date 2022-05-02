@@ -10,7 +10,10 @@ Note:
 
 ## Usage
 
-Once installed in Visual Studio Code, the extension will register `isort` as import organizer. You can use keyboard short cut `shift` + `alt` + `O` to trigger organize imports editor action. You can also trigger this from the quick fix available when imports are not organized.
+Once installed in pyVisual Studio Code, the extension will register `isort` as import organizer. You can use keyboard short cut `shift` + `alt` + `O` to trigger organize imports editor action. You can also trigger this from the quick fix available when imports are not organized.
+
+![Fixing import sorting with a code action.](images/vscode-isort.gif)
+
 
 ### Import sorting on save
 
