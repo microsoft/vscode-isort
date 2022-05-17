@@ -41,7 +41,7 @@ def tests(session):
 @nox.session()
 def lint(session):
     """Runs linter and formater checks on python files."""
-    session.install("-r" "./requirements.txt")
+    session.install("-r", "./requirements.txt")
     session.install("-r", "src/test/python_tests/requirements.txt")
 
     session.install("flake8")

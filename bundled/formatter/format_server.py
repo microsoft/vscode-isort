@@ -14,6 +14,7 @@ from typing import List, Optional, Sequence, Union
 # Ensure that we can import LSP libraries, and other bundled formatter libraries
 sys.path.append(str(pathlib.Path(__file__).parent.parent / "libs"))
 
+import isort
 import utils
 from pygls import lsp, protocol, server, uris, workspace
 from pygls.lsp import types
@@ -141,6 +142,9 @@ def _run(
                 module=module, argv=argv, use_stdin=True, cwd=cwd, source=source
             )
         return result
+    except isort.exceptions.FileSkipped:
+        error_text = traceback.format_exc()
+        LSP_SERVER.show_message_log(error_text, msg_type=types.MessageType.Warning)
     except Exception:
         error_text = traceback.format_exc()
         LSP_SERVER.show_message_log(error_text, msg_type=types.MessageType.Error)
