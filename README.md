@@ -26,8 +26,8 @@ You can enable import sorting on save for python by having the following values 
     "editor.codeActionsOnSave": {
         "source.organizeImports": true
     },
-  }
-  "isort.args":["--profile", "black"]
+  },
+  "isort.args":["--profile", "black"],
 ```
 
 ### Disabling `isort` extension
