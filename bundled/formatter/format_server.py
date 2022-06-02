@@ -4,6 +4,7 @@
 Implementation of formatting support over LSP.
 """
 import ast
+import copy
 import json
 import os
 import pathlib
@@ -102,15 +103,15 @@ def _run(
         # Don't format standard library python files.
         return None
 
-    settings = _get_settings_by_document(document)
+    settings = copy.deepcopy(_get_settings_by_document(document))
 
     module = FORMATTER["module"]
     cwd = settings["workspaceFS"]
 
     if len(settings["path"]) > 0:
         # 'path' setting takes priority over everything.
-        use_path = True
         argv = settings["path"]
+        use_path = True
     elif len(settings["interpreter"]) > 0 and not utils.is_current_interpreter(
         settings["interpreter"][0]
     ):
