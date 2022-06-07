@@ -218,6 +218,8 @@ def _format(document: workspace.Document) -> Union[List[types.TextEdit], None]:
                 msg_type=types.MessageType.Error,
             )
             return None
+    if not result.stdout:
+        return None
 
     new_source = _match_line_endings(document, result.stdout)
 
