@@ -125,9 +125,9 @@ def _run(
         use_path = False
 
     # `isort` requires the first argument to be "-" when using stdin.
-    argv += ["-", "--filename", document.path] if document.path else ["-"]
-    argv += _filter_args(FORMATTER["args"] + settings["args"])
+    argv += ["-"] + _filter_args(FORMATTER["args"] + settings["args"])
     argv += extra_args
+    argv += ["--filename", document.path] if document.path else []
 
     LSP_SERVER.show_message_log(" ".join(argv))
     LSP_SERVER.show_message_log(f"CWD Formatter: {cwd}")
