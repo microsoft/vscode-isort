@@ -2,7 +2,8 @@
     "name": "isort",
     "displayName": "isort",
     "description": "Import sorting support for python files using `isort`.",
-    "version": "2022.1.0-dev",
+    "version": "2022.2.0",
+    "preview": true,
     "formatter": {
         "name": "isort",
         "module": "isort"
