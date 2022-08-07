@@ -107,7 +107,7 @@ def _linting_helper(document: workspace.Document) -> list[lsp.Diagnostic]:
 
 def _get_severity(code_type: str, severity: Dict[str, str]) -> lsp.DiagnosticSeverity:
     """Converts severity provided by linter to LSP specific value."""
-    value = severity.get(code_type, "Warning")
+    value = severity.get(code_type, "Error")
     try:
         return lsp.DiagnosticSeverity[value]
     except KeyError:
@@ -150,8 +150,8 @@ def _parse_output(
                     ),
                 ),
                 message="Imports are incorrectly sorted and/or formatted.",
-                severity=_get_severity("w", severity),
-                code="W",
+                severity=_get_severity("E", severity),
+                code="E",
                 source="isort",
             )
         )

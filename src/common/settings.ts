@@ -1,46 +1,77 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-import { ConfigurationChangeEvent } from 'vscode';
+import { ConfigurationChangeEvent, WorkspaceFolder } from 'vscode';
 import { getInterpreterDetails } from './python';
-import { LoggingLevelSettingType } from './types';
+import { LoggingLevelSettingType } from './log/types';
 import { getConfiguration, getWorkspaceFolders } from './vscodeapi';
 
 export interface ISettings {
     workspace: string;
-    trace: LoggingLevelSettingType;
+    logLevel: LoggingLevelSettingType;
     args: string[];
+    severity: Record<string, string>;
     path: string[];
     interpreter: string[];
+    importStrategy: string;
+    showNotifications: string;
 }
 
-export async function getFormatterExtensionSettings(
-    moduleName: string,
-    includeInterpreter?: boolean,
-): Promise<ISettings[]> {
+export async function getExtensionSettings(namespace: string, includeInterpreter?: boolean): Promise<ISettings[]> {
     const settings: ISettings[] = [];
     const workspaces = getWorkspaceFolders();
 
     for (const workspace of workspaces) {
-        const config = getConfiguration(moduleName, workspace.uri);
-        const interpreter = includeInterpreter ? (await getInterpreterDetails(workspace.uri)).path : [];
-        const workspaceSetting = {
-            workspace: workspace.uri.toString(),
-            trace: config.get<LoggingLevelSettingType>(`trace`) ?? 'error',
-            args: config.get<string[]>(`args`) ?? [],
-            severity: config.get<Record<string, string>>(`severity`) ?? {},
-            path: config.get<string[]>(`path`) ?? [],
-            interpreter: interpreter ?? [],
-        };
-
+        const workspaceSetting = await getWorkspaceSettings(namespace, workspace, includeInterpreter);
         settings.push(workspaceSetting);
     }
 
     return settings;
 }
 
-export function checkIfConfigurationChanged(e: ConfigurationChangeEvent, moduleName: string): boolean {
-    const settings = [`${moduleName}.trace`, `${moduleName}.args`, `${moduleName}.path`];
+export function getInterpreterFromSetting(namespace: string) {
+    const config = getConfiguration(namespace);
+    return config.get<string[]>('interpreter');
+}
+
+export async function getWorkspaceSettings(
+    namespace: string,
+    workspace: WorkspaceFolder,
+    includeInterpreter?: boolean,
+): Promise<ISettings> {
+    const config = getConfiguration(namespace, workspace.uri);
+
+    let interpreter: string[] | undefined = [];
+    if (includeInterpreter) {
+        interpreter = getInterpreterFromSetting(namespace);
+        if (interpreter === undefined || interpreter.length === 0) {
+            interpreter = (await getInterpreterDetails(workspace.uri)).path;
+        }
+    }
+
+    const workspaceSetting = {
+        workspace: workspace.uri.toString(),
+        logLevel: config.get<LoggingLevelSettingType>(`logLevel`) ?? 'error',
+        args: config.get<string[]>(`args`) ?? [],
+        severity: config.get<Record<string, string>>(`severity`) ?? {},
+        path: config.get<string[]>(`path`) ?? [],
+        interpreter: interpreter ?? [],
+        importStrategy: config.get<string>(`importStrategy`) ?? 'fromEnvironment',
+        showNotifications: config.get<string>(`showNotifications`) ?? 'off',
+    };
+    return workspaceSetting;
+}
+
+export function checkIfConfigurationChanged(e: ConfigurationChangeEvent, namespace: string): boolean {
+    const settings = [
+        `${namespace}.trace`,
+        `${namespace}.args`,
+        `${namespace}.severity`,
+        `${namespace}.path`,
+        `${namespace}.interpreter`,
+        `${namespace}.importStrategy`,
+        `${namespace}.showNotifications`,
+    ];
     const changed = settings.map((s) => e.affectsConfiguration(s));
     return changed.includes(true);
 }
