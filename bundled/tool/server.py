@@ -357,7 +357,9 @@ def initialize(params: lsp.InitializeParams) -> None:
             LSP_SERVER.lsp.trace = lsp.Trace.Messages
         else:
             LSP_SERVER.lsp.trace = lsp.Trace.Off
-    _log_version_info()
+
+    # Log version and config
+    _log_info()
 
 
 @LSP_SERVER.feature(lsp.EXIT)
@@ -366,22 +368,27 @@ def on_exit():
     jsonrpc.shutdown_json_rpc()
 
 
-def _log_version_info() -> None:
-    for value in WORKSPACE_SETTINGS.values():
-        try:
-            from packaging.version import parse as parse_version
+def _log_info() -> None:
+    for settings in WORKSPACE_SETTINGS.values():
+        _log_version_info(settings)
+        _log_verbose_config(settings)
 
-            settings = copy.deepcopy(value)
-            result = _run_tool(["--version"], settings)
-            code_workspace = settings["workspaceFS"]
+
+def _log_version_info(settings: Dict[str, str]) -> None:
+    try:
+        from packaging.version import parse as parse_version
+
+        settings = copy.deepcopy(settings)
+        result = _run_tool(["--version-number"], settings)
+        code_workspace = settings["workspaceFS"]
+
+        if result and result.stdout:
             log_to_output(
                 f"Version info for linter running for {code_workspace}:\r\n{result.stdout}"
             )
-
-            # This is text we get from running `isort --version`
-            # VERSION 5.10.1 <--- This is the version we want.
-            first_line = result.stdout.splitlines(keepends=False)[0]
-            actual_version = first_line.split(" ")[1]
+            # This is text we get from running `isort --version-number`
+            # 5.10.1
+            actual_version = result.stdout.strip()
 
             version = parse_version(actual_version)
             min_version = parse_version(MIN_VERSION)
@@ -397,9 +404,24 @@ def _log_version_info() -> None:
                     f"SUPPORTED {TOOL_MODULE}>={min_version}\r\n"
                     f"FOUND {TOOL_MODULE}=={actual_version}\r\n"
                 )
+    except:  # pylint: disable=bare-except
+        log_to_output(
+            f"Error while detecting pylint version:\r\n{traceback.format_exc()}"
+        )
+
+
+def _log_verbose_config(settings: Dict[str, str]) -> None:
+    if LSP_SERVER.lsp.trace == lsp.Trace.Verbose:
+        try:
+            settings = copy.deepcopy(settings)
+            result = _run_tool(["--show-config"], settings)
+            code_workspace = settings["workspaceFS"]
+            log_to_output(
+                f"Config details for isort running for {code_workspace}:\r\n{result.stdout}"
+            )
         except:  # pylint: disable=bare-except
             log_to_output(
-                f"Error while detecting pylint version:\r\n{traceback.format_exc()}"
+                f"Error while getting `isort --show-config` config:\r\n{traceback.format_exc()}"
             )
 
 
@@ -601,7 +623,6 @@ def _run_tool(extra_args: Sequence[str], settings: Dict[str, Any]) -> utils.RunR
         if result.stderr:
             log_to_output(result.stderr)
 
-    log_to_output(f"\r\n{result.stdout}\r\n")
     return result
 
 
