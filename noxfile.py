@@ -102,7 +102,7 @@ def lint(session):
     session.install("-r", "src/test/python_tests/requirements.txt")
 
     session.install("flake8")
-    session.run("flake8", "./bundled/formatter")
+    session.run("flake8", "./bundled/tool")
     session.run(
         "flake8",
         "--extend-exclude",
@@ -113,13 +113,13 @@ def lint(session):
 
     # check formatting using black
     session.install("black")
-    session.run("black", "--check", "./bundled/formatter")
+    session.run("black", "--check", "./bundled/tool")
     session.run("black", "--check", "./src/test/python_tests")
     session.run("black", "--check", "noxfile.py")
 
     # check import sorting using isort
     session.install("isort")
-    session.run("isort", "--check", "./bundled/formatter")
+    session.run("isort", "--check", "./bundled/tool")
     session.run("isort", "--check", "./src/test/python_tests")
     session.run("isort", "--check", "noxfile.py")
 
