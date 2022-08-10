@@ -58,7 +58,13 @@ def _update_npm_packages(session: nox.Session) -> None:
             "Please check VS Code engine version and @types/vscode version in package.json."
         )
 
-    package_json_path.write_text(json.dumps(package_json, indent=4), encoding="utf-8")
+    new_package_json = json.dumps(package_json, indent=4)
+    # JSON dumps uses \n for line ending on all platforms by default
+    if not new_package_json.endswith("\n"):
+        new_package_json += "\n"
+    package_json_path.write_text(new_package_json, encoding="utf-8")
+
+    session.run("npm", "audit", "fix", external=True)
     session.run("npm", "install", external=True)
 
 
