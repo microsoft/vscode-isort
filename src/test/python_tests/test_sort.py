@@ -9,12 +9,12 @@ from hamcrest import assert_that, is_
 
 from .lsp_test_client import constants, session, utils
 
-FORMATTER = utils.get_formatter_defaults()
+FORMATTER = utils.get_server_info_defaults()
 TIMEOUT = 10  # 10 seconds
 
 
 def test_organize_import():
-    """Test formating a python file."""
+    """Test formatting a python file."""
     FORMATTED_TEST_FILE_PATH = constants.TEST_DATA / "sample1" / "sample.py"
     UNFORMATTED_TEST_FILE_PATH = constants.TEST_DATA / "sample1" / "sample.unformatted"
 
@@ -162,7 +162,7 @@ def test_organize_import():
 
 
 def test_organize_import_cell():
-    """Test formating a python file."""
+    """Test formatting a python file."""
     FORMATTED_TEST_FILE_PATH = constants.TEST_DATA / "sample2" / "sample.formatted"
     UNFORMATTED_TEST_FILE_PATH = constants.TEST_DATA / "sample2" / "sample.unformatted"
 

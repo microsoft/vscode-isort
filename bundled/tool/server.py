@@ -95,7 +95,7 @@ def _linting_helper(document: workspace.Document) -> list[lsp.Diagnostic]:
             # deep copy here to prevent accidentally updating global settings.
             settings = copy.deepcopy(_get_settings_by_document(document))
             return _parse_output(
-                document, result.stdout, severity=settings.get("severity", [])
+                document, result.stderr, severity=settings.get("severity", [])
             )
     except Exception:  # pylint: disable=broad-except
         LSP_SERVER.show_message_log(
@@ -178,10 +178,8 @@ def _parse_output(
         resolve_provider=True,
     ),
 )
-def code_action_organize_imports(
-    server: server.LanguageServer, params: lsp.CodeActionParams
-):
-    text_document = server.workspace.get_document(params.text_document.uri)
+def code_action_organize_imports(params: lsp.CodeActionParams):
+    text_document = LSP_SERVER.workspace.get_document(params.text_document.uri)
 
     if utils.is_stdlib_file(text_document.path):
         # Don't format standard library python files.
@@ -200,7 +198,7 @@ def code_action_organize_imports(
         if results:
             # Clear out diagnostics, since we are making changes to address
             # import sorting issues.
-            server.publish_diagnostics(text_document.uri, [])
+            LSP_SERVER.publish_diagnostics(text_document.uri, [])
             return [
                 lsp.CodeAction(
                     title="isort: Organize Imports",
@@ -231,14 +229,14 @@ def code_action_organize_imports(
 
 
 @LSP_SERVER.feature(lsp.CODE_ACTION_RESOLVE)
-def code_action_resolve(server: server.LanguageServer, params: lsp.CodeAction):
-    text_document = server.workspace.get_document(params.data)
+def code_action_resolve(params: lsp.CodeAction):
+    text_document = LSP_SERVER.workspace.get_document(params.data)
 
     results = _formatting_helper(text_document)
     if results:
         # Clear out diagnostics, since we are making changes to address
         # import sorting issues.
-        server.publish_diagnostics(text_document.uri, [])
+        LSP_SERVER.publish_diagnostics(text_document.uri, [])
     else:
         # There are no changes so return the original code as is.
         # This could be due to error while running import sorter

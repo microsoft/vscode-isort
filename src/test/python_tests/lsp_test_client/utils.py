@@ -27,20 +27,23 @@ def as_uri(path: str) -> str:
 
 @contextlib.contextmanager
 def python_file(contents: str, root: pathlib.Path, ext: str = ".py"):
-    basename = (
-        "".join(random.choice("abcdefghijklmnopqrstuvwxyz") for _ in range(9)) + ext
-    )
-    fullpath = root / basename
-    fullpath.write_text(contents)
-    yield fullpath
-    os.unlink(str(fullpath))
+    """Creates a temporary python file."""
+    try:
+        basename = (
+            "".join(random.choice("abcdefghijklmnopqrstuvwxyz") for _ in range(9)) + ext
+        )
+        fullpath = root / basename
+        fullpath.write_text(contents)
+        yield fullpath
+    finally:
+        os.unlink(str(fullpath))
 
 
-def get_formatter_defaults():
-    """Returns formatter details from package.json"""
+def get_server_info_defaults():
+    """Returns server info from package.json"""
     package_json_path = PROJECT_ROOT / "package.json"
     package_json = json.loads(package_json_path.read_text())
-    return package_json["formatter"]
+    return package_json["serverInfo"]
 
 
 def get_initialization_options():
@@ -48,16 +51,17 @@ def get_initialization_options():
     package_json_path = PROJECT_ROOT / "package.json"
     package_json = json.loads(package_json_path.read_text())
 
-    formatter = package_json["formatter"]
-    properties = package_json["contributes"]["configuration"]["properties"]
-    settings = [
-        {
-            "trace": "error",
-            "args": properties[f"{formatter['module']}.args"]["default"],
-            "path": properties[f"{formatter['module']}.path"]["default"],
-            "workspace": as_uri(str(PROJECT_ROOT)),
-            "interpreter": [],
-        }
-    ]
+    server_info = package_json["serverInfo"]
+    server_id = server_info["module"]
 
-    return {"settings": settings}
+    properties = package_json["contributes"]["configuration"]["properties"]
+    setting = {}
+    for prop in properties:
+        name = prop[len(server_id) + 1 :]
+        value = properties[prop]["default"]
+        setting[name] = value
+
+    setting["workspace"] = as_uri(str(PROJECT_ROOT))
+    setting["interpreter"] = []
+
+    return {"settings": [setting]}
