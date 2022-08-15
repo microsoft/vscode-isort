@@ -14,7 +14,6 @@ Once installed in pyVisual Studio Code, the extension will register `isort` as i
 
 ![Fixing import sorting with a code action.](images/vscode-isort.gif)
 
-
 ### Import sorting on save
 
 You can enable import sorting on save for python by having the following values in your settings. This adds both import sorting and formatting (using `black`) on save :
@@ -36,11 +35,15 @@ If you want to disable isort extension, you can [disable this extension](https:/
 
 ## Settings
 
-| Settings    | Default | Description                                                                                                                                                                                                                                                              |
-| ----------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| isort.args  | `[]`    | Custom arguments passed to `isort`. E.g `"isort.args" = ["--config", "<file>"]`                                                                                                                                                                                          |
-| isort.trace | `error` | Sets the tracing level for the extension.                                                                                                                                                                                                                                |
-| isort.path  | `[]`    | Setting to provide custom `isort` executable. This will slow down formatting, since we will have to run `isort` executable every time or file save or open. Example 1: `["~/global_env/isort"]` Example 2: `["conda", "run", "-n", "lint_env", "python", "-m", "isort"]` |
+| Settings               | Default                            | Description                                                                                                                                                                                                                                                              |
+| ---------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| isort.args             | `[]`                               | Custom arguments passed to `isort`. E.g `"isort.args" = ["--config", "<file>"]`                                                                                                                                                                                          |
+| isort.severity         | `{ "W": "Warning", "E": "Error" }` | Controls mapping of severity from `isort` to VS Code severity when displaying in the problems window.                                                                                                                                                                    |
+| isort.logLevel         | `error`                            | Sets the tracing level for the extension.                                                                                                                                                                                                                                |
+| isort.path             | `[]`                               | Setting to provide custom `isort` executable. This will slow down formatting, since we will have to run `isort` executable every time or file save or open. Example 1: `["~/global_env/isort"]` Example 2: `["conda", "run", "-n", "lint_env", "python", "-m", "isort"]` |
+| isort.interpreter      | `[]`                               | Path to a python interpreter to use to run the linter server.                                                                                                                                                                                                            |
+| isort.importStrategy   | `useBundled`                       | Setting to choose where to load `isort` from. `useBundled` picks isort bundled with the extension. `fromEnvironment` uses `isort` available in the environment.                                                                                                          |
+| isort.showNotification | `off`                              | Setting to control when a notification is shown.                                                                                                                                                                                                                         |
 
 ## Commands
 

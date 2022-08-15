@@ -58,7 +58,13 @@ def _update_npm_packages(session: nox.Session) -> None:
             "Please check VS Code engine version and @types/vscode version in package.json."
         )
 
-    package_json_path.write_text(json.dumps(package_json, indent=4), encoding="utf-8")
+    new_package_json = json.dumps(package_json, indent=4)
+    # JSON dumps uses \n for line ending on all platforms by default
+    if not new_package_json.endswith("\n"):
+        new_package_json += "\n"
+    package_json_path.write_text(new_package_json, encoding="utf-8")
+
+    session.run("npm", "audit", "fix", external=True)
     session.run("npm", "install", external=True)
 
 
@@ -96,7 +102,7 @@ def lint(session):
     session.install("-r", "src/test/python_tests/requirements.txt")
 
     session.install("flake8")
-    session.run("flake8", "./bundled/formatter")
+    session.run("flake8", "./bundled/tool")
     session.run(
         "flake8",
         "--extend-exclude",
@@ -107,13 +113,13 @@ def lint(session):
 
     # check formatting using black
     session.install("black")
-    session.run("black", "--check", "./bundled/formatter")
+    session.run("black", "--check", "./bundled/tool")
     session.run("black", "--check", "./src/test/python_tests")
     session.run("black", "--check", "noxfile.py")
 
     # check import sorting using isort
     session.install("isort")
-    session.run("isort", "--check", "./bundled/formatter")
+    session.run("isort", "--check", "./bundled/tool")
     session.run("isort", "--check", "./src/test/python_tests")
     session.run("isort", "--check", "noxfile.py")
 
