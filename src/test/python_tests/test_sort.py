@@ -5,8 +5,8 @@ Test for formatting over LSP.
 """
 from threading import Event
 
-from hamcrest import assert_that, is_
 import pytest
+from hamcrest import assert_that, is_
 
 from .lsp_test_client import constants, session, utils
 
@@ -14,7 +14,7 @@ FORMATTER = utils.get_server_info_defaults()
 TIMEOUT = 10  # 10 seconds
 
 
-@pytest.mark.parametrize("line_ending",["\n", "\r\n"])
+@pytest.mark.parametrize("line_ending", ["\n", "\r\n"])
 def test_organize_import(line_ending):
     """Test formatting a python file."""
     FORMATTED_TEST_FILE_PATH = constants.TEST_DATA / "sample1" / "sample.py"
@@ -25,8 +25,8 @@ def test_organize_import(line_ending):
 
     # "contents" will have universalized line ending i.e '\n'.
     # update it as needed for the test
-    contents = contents.replace('\n', line_ending)
-    expected = expected.replace('\n', line_ending)
+    contents = contents.replace("\n", line_ending)
+    expected = expected.replace("\n", line_ending)
 
     actual_diagnostics = []
 
@@ -170,7 +170,7 @@ def test_organize_import(line_ending):
             )
 
 
-@pytest.mark.parametrize("line_ending",["\n", "\r\n"])
+@pytest.mark.parametrize("line_ending", ["\n", "\r\n"])
 def test_organize_import_cell(line_ending):
     """Test formatting a python file."""
     FORMATTED_TEST_FILE_PATH = constants.TEST_DATA / "sample2" / "sample.formatted"
@@ -181,8 +181,8 @@ def test_organize_import_cell(line_ending):
 
     # "contents" will have universalized line ending i.e '\n'.
     # update it as needed for the test
-    contents = contents.replace('\n', line_ending)
-    expected = expected.replace('\n', line_ending)
+    contents = contents.replace("\n", line_ending)
+    expected = expected.replace("\n", line_ending)
 
     actual_diagnostics = []
     with utils.python_file("", UNFORMATTED_TEST_FILE_PATH.parent, ".ipynb") as pf:
