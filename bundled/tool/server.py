@@ -505,6 +505,8 @@ def _run_tool_on_document(
         argv += TOOL_ARGS + settings["args"] + extra_args
         argv += [document.path]
 
+    source = document.source.replace("\r\n", "\n")
+
     if use_path:
         # This mode is used when running executables.
         log_to_output(" ".join(argv))
@@ -513,7 +515,7 @@ def _run_tool_on_document(
             argv=argv,
             use_stdin=use_stdin,
             cwd=cwd,
-            source=document.source.replace("\r\n", "\n"),
+            source=source,
         )
         if result.stderr:
             log_to_output(result.stderr)
@@ -530,7 +532,7 @@ def _run_tool_on_document(
             argv=argv,
             use_stdin=use_stdin,
             cwd=cwd,
-            source=document.source,
+            source=source,
         )
         result = _to_run_result_with_logging(result)
     else:
@@ -544,7 +546,7 @@ def _run_tool_on_document(
                 argv=argv,
                 use_stdin=use_stdin,
                 cwd=cwd,
-                source=document.source,
+                source=source,
             )
         except isort.exceptions.FileSkipped:
             log_warning(traceback.format_exc(chain=True))
