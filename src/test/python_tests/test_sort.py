@@ -6,6 +6,7 @@ Test for formatting over LSP.
 from threading import Event
 
 from hamcrest import assert_that, is_
+import pytest
 
 from .lsp_test_client import constants, session, utils
 
@@ -13,12 +14,20 @@ FORMATTER = utils.get_server_info_defaults()
 TIMEOUT = 10  # 10 seconds
 
 
-def test_organize_import():
+@pytest.mark.parametrize("line_ending",["\n", "\r\n"])
+def test_organize_import(line_ending):
     """Test formatting a python file."""
     FORMATTED_TEST_FILE_PATH = constants.TEST_DATA / "sample1" / "sample.py"
     UNFORMATTED_TEST_FILE_PATH = constants.TEST_DATA / "sample1" / "sample.unformatted"
 
     contents = UNFORMATTED_TEST_FILE_PATH.read_text()
+    expected = FORMATTED_TEST_FILE_PATH.read_text()
+
+    # "contents" will have universalized line ending i.e '\n'.
+    # update it as needed for the test
+    contents = contents.replace('\n', line_ending)
+    expected = expected.replace('\n', line_ending)
+
     actual_diagnostics = []
 
     with utils.python_file(contents, UNFORMATTED_TEST_FILE_PATH.parent) as pf:
@@ -149,7 +158,7 @@ def test_organize_import():
                                                 "start": {"line": 0, "character": 0},
                                                 "end": {"line": 3, "character": 0},
                                             },
-                                            "newText": FORMATTED_TEST_FILE_PATH.read_text(),
+                                            "newText": expected,
                                         }
                                     ],
                                 }
@@ -161,14 +170,21 @@ def test_organize_import():
             )
 
 
-def test_organize_import_cell():
+@pytest.mark.parametrize("line_ending",["\n", "\r\n"])
+def test_organize_import_cell(line_ending):
     """Test formatting a python file."""
     FORMATTED_TEST_FILE_PATH = constants.TEST_DATA / "sample2" / "sample.formatted"
     UNFORMATTED_TEST_FILE_PATH = constants.TEST_DATA / "sample2" / "sample.unformatted"
 
     contents = UNFORMATTED_TEST_FILE_PATH.read_text()
-    actual_diagnostics = []
+    expected = FORMATTED_TEST_FILE_PATH.read_text()
 
+    # "contents" will have universalized line ending i.e '\n'.
+    # update it as needed for the test
+    contents = contents.replace('\n', line_ending)
+    expected = expected.replace('\n', line_ending)
+
+    actual_diagnostics = []
     with utils.python_file("", UNFORMATTED_TEST_FILE_PATH.parent, ".ipynb") as pf:
         # generate a fake cell uri
         uri = utils.as_uri(pf).replace("file:", "vscode-notebook-cell:") + "#C00001"
@@ -297,7 +313,7 @@ def test_organize_import_cell():
                                                 "start": {"line": 0, "character": 0},
                                                 "end": {"line": 4, "character": 0},
                                             },
-                                            "newText": FORMATTED_TEST_FILE_PATH.read_text(),
+                                            "newText": expected,
                                         }
                                     ],
                                 }
