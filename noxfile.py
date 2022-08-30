@@ -147,14 +147,21 @@ def update_build_number(session):
     package_json_path.write_text(json.dumps(package_json, indent=4), encoding="utf-8")
 
 
+def _get_module_name() -> str:
+    package_json_path = pathlib.Path(__file__).parent / "package.json"
+    package_json = json.loads(package_json_path.read_text(encoding="utf-8"))
+    return package_json["serverInfo"]["module"]
+
+
 @nox.session()
-def validate_readme(session):
+def validate_readme(session: nox.Session) -> None:
     """Ensures the formatter version in 'requirements.txt' matches 'readme.md'."""
     requirements_file = pathlib.Path(__file__).parent / "requirements.txt"
     readme_file = pathlib.Path(__file__).parent / "README.md"
 
     lines = requirements_file.read_text(encoding="utf-8").splitlines(keepends=False)
-    formatter_ver = list(line for line in lines if line.startswith("isort"))[0]
+    module = _get_module_name()
+    formatter_ver = list(line for line in lines if line.startswith(module))[0]
     name, version = formatter_ver.split(" ")[0].split("==")
 
     session.log(f"Looking for {name}={version} in README.md")
@@ -164,9 +171,24 @@ def validate_readme(session):
     session.log(f"FOUND {name}={version} in README.md")
 
 
+def _update_readme() -> None:
+    requirements_file = pathlib.Path(__file__).parent / "requirements.txt"
+    lines = requirements_file.read_text(encoding="utf-8").splitlines(keepends=False)
+    module = _get_module_name()
+    formatter_ver = list(line for line in lines if line.startswith(module))[0]
+    _, version = formatter_ver.split(" ")[0].split("==")
+
+    readme_file = pathlib.Path(__file__).parent / "README.md"
+    content = readme_file.read_text(encoding="utf-8")
+    regex = r"\`([a-zA-Z0-9]+)=([0-9]+\.[0-9]+\.[0-9]+)\`"
+    result = re.sub(regex, f"`{module}={version}`", content, 0, re.MULTILINE)
+    content = readme_file.write_text(result, encoding="utf-8")
+
+
 @nox.session()
 def update_packages(session: nox.Session) -> None:
     """Update pip and npm packages."""
     session.install("wheel", "pip-tools")
     _update_pip_packages(session)
     _update_npm_packages(session)
+    _update_readme()
