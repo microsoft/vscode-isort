@@ -116,7 +116,10 @@
                     },
                     "description": "%settings.severity.description%",
                     "scope": "resource",
-                    "type": "object"
+                    "type": "object",
+                    "tags": [
+                        "experimental"
+                    ]
                 },
                 "isort.path": {
                     "default": [],
