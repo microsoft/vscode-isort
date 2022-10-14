@@ -33,6 +33,17 @@ function resolveWorkspace(workspace: WorkspaceFolder, value: string): string {
     return value.replace('${workspaceFolder}', workspace.uri.fsPath);
 }
 
+function getLegacyArgs(workspace: WorkspaceFolder): string[] {
+    const config = getConfiguration('python', workspace.uri);
+    return config.get<string[]>('sortImports.args') ?? [];
+}
+
+function getLegacyPath(workspace: WorkspaceFolder): string[] {
+    const config = getConfiguration('python', workspace.uri);
+    const path = config.get<string>('sortImports.path');
+    return path ? [path] : [];
+}
+
 export function getInterpreterFromSetting(namespace: string) {
     const config = getConfiguration(namespace);
     return config.get<string[]>('interpreter');
@@ -53,12 +64,14 @@ export async function getWorkspaceSettings(
         }
     }
 
+    const args = (config.get<string[]>(`args`) ?? getLegacyArgs(workspace)).map((s) => resolveWorkspace(workspace, s));
+    const path = (config.get<string[]>(`path`) ?? getLegacyPath(workspace)).map((s) => resolveWorkspace(workspace, s));
     const workspaceSetting = {
         workspace: workspace.uri.toString(),
         logLevel: config.get<LoggingLevelSettingType>(`logLevel`) ?? 'error',
-        args: (config.get<string[]>(`args`) ?? []).map((s) => resolveWorkspace(workspace, s)),
+        args,
         severity: config.get<Record<string, string>>(`severity`) ?? {},
-        path: (config.get<string[]>(`path`) ?? []).map((s) => resolveWorkspace(workspace, s)),
+        path,
         interpreter: (interpreter ?? []).map((s) => resolveWorkspace(workspace, s)),
         importStrategy: config.get<string>(`importStrategy`) ?? 'fromEnvironment',
         showNotifications: config.get<string>(`showNotifications`) ?? 'off',
