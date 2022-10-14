@@ -85,14 +85,11 @@ jobs:
         run: python -m nox --session tests
         shell: bash
 
-      - name: Compile TS tests
-        run: npm run pretest
-        shell: bash
-
-      - name: Run TS tests
-        run: npm run tests
-        shell: bash
-
       - name: Validate README.md
         run: python -m nox --session validate_readme
         shell: bash
+
+      - name: TS Tests
+        uses: ./.github/actions/tests
+        with:
+          node_version: ${{ env.NODE_VERSION }}

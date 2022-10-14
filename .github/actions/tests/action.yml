@@ -1,0 +1,28 @@
+name: 'TS Tests'
+description: 'Run TypeScript tests'
+
+inputs:
+  node_version:
+    description: 'Version of Node to install'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install Node
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ inputs.node_version }}
+        cache: 'npm'
+
+    - name: Install Node dependencies
+      run: npm ci
+      shell: bash
+
+    - name: Compile TS tests
+      run: npm run pretest
+      shell: bash
+
+    - name: Run TS tests
+      run: npm run tests
+      shell: bash
