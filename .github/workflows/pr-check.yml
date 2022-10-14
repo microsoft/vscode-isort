@@ -98,11 +98,17 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
         shell: bash
+        with:
+          working-directory: ${{ env.special-working-directory }}
 
       - name: Compile TS tests
         run: npm run pretest
         shell: bash
+        with:
+          working-directory: ${{ env.special-working-directory }}
 
       - name: Run TS tests
         run: npm run tests
         shell: bash
+        with:
+          working-directory: ${{ env.special-working-directory }}
