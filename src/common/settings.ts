@@ -33,15 +33,32 @@ function resolveWorkspace(workspace: WorkspaceFolder, value: string): string {
     return value.replace('${workspaceFolder}', workspace.uri.fsPath);
 }
 
-function getLegacyArgs(workspace: WorkspaceFolder): string[] {
-    const config = getConfiguration('python', workspace.uri);
-    return config.get<string[]>('sortImports.args') ?? [];
+function getArgs(namespace: string, workspace: WorkspaceFolder): string[] {
+    const config = getConfiguration(namespace, workspace.uri);
+    const args = config.get<string[]>('args', []);
+
+    if (args.length > 0) {
+        return args;
+    }
+
+    const legacyConfig = getConfiguration('python', workspace.uri);
+    return legacyConfig.get<string[]>('sortImports.args', []);
 }
 
-function getLegacyPath(workspace: WorkspaceFolder): string[] {
-    const config = getConfiguration('python', workspace.uri);
-    const path = config.get<string>('sortImports.path');
-    return path ? [path] : [];
+function getPath(namespace: string, workspace: WorkspaceFolder): string[] {
+    const config = getConfiguration(namespace, workspace.uri);
+    const path = config.get<string[]>('path', []);
+
+    if (path.length > 0) {
+        return path;
+    }
+
+    const legacyConfig = getConfiguration('python', workspace.uri);
+    const legacyPath = legacyConfig.get<string>('sortImports.path', '');
+    if (legacyPath.length > 0 && legacyPath !== 'isort') {
+        return [legacyPath];
+    }
+    return [];
 }
 
 export function getInterpreterFromSetting(namespace: string) {
@@ -64,8 +81,8 @@ export async function getWorkspaceSettings(
         }
     }
 
-    const args = (config.get<string[]>(`args`) ?? getLegacyArgs(workspace)).map((s) => resolveWorkspace(workspace, s));
-    const path = (config.get<string[]>(`path`) ?? getLegacyPath(workspace)).map((s) => resolveWorkspace(workspace, s));
+    const args = getArgs(namespace, workspace).map((s) => resolveWorkspace(workspace, s));
+    const path = getPath(namespace, workspace).map((s) => resolveWorkspace(workspace, s));
     const workspaceSetting = {
         workspace: workspace.uri.toString(),
         logLevel: config.get<LoggingLevelSettingType>(`logLevel`) ?? 'error',
