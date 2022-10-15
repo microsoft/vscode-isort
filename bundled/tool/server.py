@@ -106,7 +106,7 @@ def _linting_helper(document: workspace.Document) -> list[lsp.Diagnostic]:
 
 
 def _get_severity(code_type: str, severity: Dict[str, str]) -> lsp.DiagnosticSeverity:
-    """Converts severity provided by linter to LSP specific value."""
+    """Converts severity provided by isort to LSP specific value."""
     value = severity.get(code_type, "Error")
     try:
         return lsp.DiagnosticSeverity[value]
@@ -116,15 +116,22 @@ def _get_severity(code_type: str, severity: Dict[str, str]) -> lsp.DiagnosticSev
     return lsp.DiagnosticSeverity.Error
 
 
+def _is_sorting_error(line: str) -> bool:
+    return (
+        line.startswith("ERROR")
+        and line.lower().find("imports are incorrectly sorted") > 0
+    )
+
+
 def _parse_output(
     document: workspace.Document,
     output: str,
     severity: Dict[str, str],
 ) -> Sequence[lsp.Diagnostic]:
-    """Parses linter messages and return LSP diagnostic object for each message."""
+    """Parses isort messages and return LSP diagnostic object for each message."""
     diagnostics = []
     has_error = any(
-        [line.startswith("ERROR") for line in output.splitlines(keepends=False)]
+        [_is_sorting_error(line) for line in output.splitlines(keepends=False)]
     )
 
     if has_error:
@@ -382,7 +389,7 @@ def _log_version_info(settings: Dict[str, str]) -> None:
 
         if result and result.stdout:
             log_to_output(
-                f"Version info for linter running for {code_workspace}:\r\n{result.stdout}"
+                f"Version info for isort running for {code_workspace}:\r\n{result.stdout}"
             )
             # This is text we get from running `isort --version-number`
             # 5.10.1
@@ -393,7 +400,7 @@ def _log_version_info(settings: Dict[str, str]) -> None:
 
             if version < min_version:
                 log_error(
-                    f"Version of linter running for {code_workspace} is NOT supported:\r\n"
+                    f"Version of isort running for {code_workspace} is NOT supported:\r\n"
                     f"SUPPORTED {TOOL_MODULE}>={min_version}\r\n"
                     f"FOUND {TOOL_MODULE}=={actual_version}\r\n"
                 )
@@ -404,7 +411,7 @@ def _log_version_info(settings: Dict[str, str]) -> None:
                 )
     except:  # pylint: disable=bare-except
         log_to_output(
-            f"Error while detecting pylint version:\r\n{traceback.format_exc()}"
+            f"Error while detecting isort version:\r\n{traceback.format_exc()}"
         )
 
 
