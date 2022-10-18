@@ -7,6 +7,7 @@ import { LoggingLevelSettingType } from './log/types';
 import { getConfiguration, getWorkspaceFolders } from './vscodeapi';
 
 export interface ISettings {
+    check: boolean;
     workspace: string;
     logLevel: LoggingLevelSettingType;
     args: string[];
@@ -84,20 +85,22 @@ export async function getWorkspaceSettings(
     const args = getArgs(namespace, workspace).map((s) => resolveWorkspace(workspace, s));
     const path = getPath(namespace, workspace).map((s) => resolveWorkspace(workspace, s));
     const workspaceSetting = {
+        check: config.get<boolean>('check', true),
         workspace: workspace.uri.toString(),
-        logLevel: config.get<LoggingLevelSettingType>(`logLevel`) ?? 'error',
+        logLevel: config.get<LoggingLevelSettingType>('logLevel', 'error'),
         args,
-        severity: config.get<Record<string, string>>(`severity`) ?? {},
+        severity: config.get<Record<string, string>>('severity', {}),
         path,
         interpreter: (interpreter ?? []).map((s) => resolveWorkspace(workspace, s)),
-        importStrategy: config.get<string>(`importStrategy`) ?? 'fromEnvironment',
-        showNotifications: config.get<string>(`showNotifications`) ?? 'off',
+        importStrategy: config.get<string>('importStrategy', 'fromEnvironment'),
+        showNotifications: config.get<string>('showNotifications', 'off'),
     };
     return workspaceSetting;
 }
 
 export function checkIfConfigurationChanged(e: ConfigurationChangeEvent, namespace: string): boolean {
     const settings = [
+        `${namespace}.check`,
         `${namespace}.trace`,
         `${namespace}.args`,
         `${namespace}.severity`,

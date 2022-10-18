@@ -27,10 +27,10 @@ class CallbackObject:
 
 
 def test_path():
-    """Test linting using pylint bin path set."""
+    """Test linting using isort bin path set."""
 
     init_params = copy.deepcopy(defaults.VSCODE_DEFAULT_INITIALIZE)
-    init_params["initializationOptions"]["settings"][0]["path"] = ["pylint"]
+    init_params["initializationOptions"]["settings"][0]["path"] = ["isort"]
 
     argv_callback_object = CallbackObject()
     contents = TEST_FILE.read_text()
