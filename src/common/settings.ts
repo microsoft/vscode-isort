@@ -85,7 +85,7 @@ export async function getWorkspaceSettings(
     const args = getArgs(namespace, workspace).map((s) => resolveWorkspace(workspace, s));
     const path = getPath(namespace, workspace).map((s) => resolveWorkspace(workspace, s));
     const workspaceSetting = {
-        check: config.get<boolean>('check', true),
+        check: config.get<boolean>('check', false),
         workspace: workspace.uri.toString(),
         logLevel: config.get<LoggingLevelSettingType>('logLevel', 'error'),
         args,

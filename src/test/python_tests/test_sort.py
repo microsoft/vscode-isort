@@ -19,6 +19,9 @@ TIMEOUT = 10  # 10 seconds
 @pytest.mark.parametrize("line_ending", ["\n", "\r\n"])
 def test_organize_import(line_ending):
     """Test formatting a python file."""
+    init_params = copy.deepcopy(defaults.VSCODE_DEFAULT_INITIALIZE)
+    init_params["initializationOptions"]["settings"][0]["check"] = True
+
     FORMATTED_TEST_FILE_PATH = constants.TEST_DATA / "sample1" / "sample.py"
     UNFORMATTED_TEST_FILE_PATH = constants.TEST_DATA / "sample1" / "sample.unformatted"
 
@@ -36,7 +39,7 @@ def test_organize_import(line_ending):
         uri = utils.as_uri(str(pf))
 
         with session.LspSession() as ls_session:
-            ls_session.initialize()
+            ls_session.initialize(init_params)
 
             done = Event()
 
@@ -175,6 +178,9 @@ def test_organize_import(line_ending):
 @pytest.mark.parametrize("line_ending", ["\n", "\r\n"])
 def test_organize_import_cell(line_ending):
     """Test formatting a python file."""
+    init_params = copy.deepcopy(defaults.VSCODE_DEFAULT_INITIALIZE)
+    init_params["initializationOptions"]["settings"][0]["check"] = True
+
     FORMATTED_TEST_FILE_PATH = constants.TEST_DATA / "sample2" / "sample.formatted"
     UNFORMATTED_TEST_FILE_PATH = constants.TEST_DATA / "sample2" / "sample.unformatted"
 
@@ -191,7 +197,7 @@ def test_organize_import_cell(line_ending):
         # generate a fake cell uri
         uri = utils.as_uri(pf).replace("file:", "vscode-notebook-cell:") + "#C00001"
         with session.LspSession() as ls_session:
-            ls_session.initialize()
+            ls_session.initialize(init_params)
 
             done = Event()
 

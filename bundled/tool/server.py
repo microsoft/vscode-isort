@@ -92,7 +92,7 @@ def _linting_helper(document: workspace.Document) -> list[lsp.Diagnostic]:
     # deep copy here to prevent accidentally updating global settings.
     settings = copy.deepcopy(_get_settings_by_document(document))
 
-    if not settings.get("check", True):
+    if not settings.get("check", False):
         # If sorting check is disabled, return empty diagnostics.
         return []
 

@@ -101,7 +101,7 @@
                     "type": "array"
                 },
                 "isort.check": {
-                    "default": true,
+                    "default": false,
                     "description": "%settings.check.description%",
                     "scope": "resource",
                     "type": "boolean",
