@@ -100,6 +100,15 @@
                     "scope": "resource",
                     "type": "array"
                 },
+                "isort.check": {
+                    "default": true,
+                    "description": "%settings.check.description%",
+                    "scope": "resource",
+                    "type": "boolean",
+                    "tags": [
+                        "experimental"
+                    ]
+                },
                 "isort.severity": {
                     "default": {
                         "W": "Warning",

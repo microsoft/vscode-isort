@@ -3,12 +3,14 @@
 """
 Test for formatting over LSP.
 """
+import copy
+import os
 from threading import Event
 
 import pytest
 from hamcrest import assert_that, is_
 
-from .lsp_test_client import constants, session, utils
+from .lsp_test_client import constants, defaults, session, utils
 
 FORMATTER = utils.get_server_info_defaults()
 TIMEOUT = 10  # 10 seconds
@@ -323,3 +325,43 @@ def test_organize_import_cell(line_ending):
                     }
                 ),
             )
+
+
+def test_check_disabled():
+    """Test sort checking disabled."""
+    init_params = copy.deepcopy(defaults.VSCODE_DEFAULT_INITIALIZE)
+    init_params["initializationOptions"]["settings"][0]["check"] = False
+
+    UNFORMATTED_TEST_FILE_PATH = constants.TEST_DATA / "sample1" / "sample.unformatted"
+    uri = utils.as_uri(os.fspath(UNFORMATTED_TEST_FILE_PATH))
+
+    contents = UNFORMATTED_TEST_FILE_PATH.read_text()
+    actual_diagnostics = []
+
+    with session.LspSession() as ls_session:
+        ls_session.initialize(init_params)
+
+        done = Event()
+
+        def _handler(params):
+            nonlocal actual_diagnostics
+            actual_diagnostics = params
+            done.set()
+
+        ls_session.set_notification_callback(session.PUBLISH_DIAGNOSTICS, _handler)
+
+        ls_session.notify_did_open(
+            {
+                "textDocument": {
+                    "uri": uri,
+                    "languageId": "python",
+                    "version": 1,
+                    "text": contents,
+                }
+            }
+        )
+
+        # wait for some time to receive all notifications
+        done.wait(TIMEOUT)
+
+        assert_that(actual_diagnostics, is_({"uri": uri, "diagnostics": []}))
