@@ -1,5 +1,3 @@
-# Change Log
+# Changelog
 
-## 2022.2.0
-
--   Initial release of vscode-isort extension, with `isort` version `5.10.1`.
+**Please see https://github.com/microsoft/vscode-isort/releases for the latest release notes.**
