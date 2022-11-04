@@ -73,7 +73,7 @@ suite('Settings Tests', () => {
             sinon.restore();
         });
 
-        test('Defaults test', async () => {
+        test('Default Settings test', async () => {
             getInterpreterDetailsStub.resolves({ path: undefined });
             const settings: ISettings = await getWorkspaceSettings('isort', workspace1);
             assert.deepStrictEqual(settings.args, []);
