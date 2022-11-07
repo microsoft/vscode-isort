@@ -18,6 +18,9 @@ export interface ISettings {
     showNotifications: string;
 }
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
+const DEFAULT_SEVERITY: Record<string, string> = { W: 'Warning', E: 'Warning' };
+
 export async function getExtensionSettings(namespace: string, includeInterpreter?: boolean): Promise<ISettings[]> {
     const settings: ISettings[] = [];
     const workspaces = getWorkspaceFolders();
@@ -89,7 +92,7 @@ export async function getWorkspaceSettings(
         workspace: workspace.uri.toString(),
         logLevel: config.get<LoggingLevelSettingType>('logLevel', 'error'),
         args,
-        severity: config.get<Record<string, string>>('severity', {}),
+        severity: config.get<Record<string, string>>('severity', DEFAULT_SEVERITY),
         path,
         interpreter: (interpreter ?? []).map((s) => resolveWorkspace(workspace, s)),
         importStrategy: config.get<string>('importStrategy', 'useBundled'),

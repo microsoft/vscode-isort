@@ -112,7 +112,7 @@
                 "isort.severity": {
                     "default": {
                         "W": "Warning",
-                        "E": "Error"
+                        "E": "Warning"
                     },
                     "additionalProperties": {
                         "type": "string",
