@@ -112,13 +112,13 @@ def _linting_helper(document: workspace.Document) -> list[lsp.Diagnostic]:
 
 def _get_severity(code_type: str, severity: Dict[str, str]) -> lsp.DiagnosticSeverity:
     """Converts severity provided by isort to LSP specific value."""
-    value = severity.get(code_type, "Error")
+    value = severity.get(code_type, "Warning")
     try:
         return lsp.DiagnosticSeverity[value]
     except KeyError:
         pass
 
-    return lsp.DiagnosticSeverity.Error
+    return lsp.DiagnosticSeverity.Warning
 
 
 def _is_sorting_error(line: str) -> bool:
@@ -438,20 +438,28 @@ def _log_verbose_config(settings: Dict[str, str]) -> None:
 # *****************************************************
 # Internal functional and settings management APIs.
 # *****************************************************
+def _get_default_settings(workspace_path: str) -> Dict[str, str]:
+    return {
+        "check": False,
+        "workspaceFS": workspace_path,
+        "workspace": uris.from_fs_path(workspace_path),
+        "logLevel": "error",
+        "args": [],
+        "severity": {
+            "E": "Warning",
+            "W": "Warning",
+        },
+        "path": [],
+        "interpreter": [sys.executable],
+        "importStrategy": "useBundled",
+        "showNotifications": "off",
+    }
+
+
 def _update_workspace_settings(settings):
     if not settings:
         key = os.getcwd()
-        WORKSPACE_SETTINGS[key] = {
-            "check": False,
-            "workspaceFS": key,
-            "workspace": uris.from_fs_path(key),
-            "logLevel": "error",
-            "path": [],
-            "interpreter": [sys.executable],
-            "args": [],
-            "importStrategy": "useBundled",
-            "showNotifications": "off",
-        }
+        WORKSPACE_SETTINGS[key] = _get_default_settings(key)
         return
 
     for setting in settings:
@@ -480,17 +488,7 @@ def _get_settings_by_document(document: workspace.Document | None):
     key = _get_document_key(document)
     if key is None:
         key = os.fspath(pathlib.Path(document.path).parent)
-        return {
-            "check": False,
-            "workspaceFS": key,
-            "workspace": uris.from_fs_path(key),
-            "logLevel": "error",
-            "path": [],
-            "interpreter": [sys.executable],
-            "args": [],
-            "importStrategy": "useBundled",
-            "showNotifications": "off",
-        }
+        return _get_default_settings(key)
 
     return WORKSPACE_SETTINGS[str(key)]
 

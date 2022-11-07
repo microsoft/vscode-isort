@@ -11,6 +11,9 @@ import { ConfigurationTarget, Uri, WorkspaceConfiguration, WorkspaceFolder } fro
 import { EXTENSION_ROOT_DIR } from '../../../../common/constants';
 import { getWorkspaceSettings, ISettings } from '../../../../common/settings';
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
+const DEFAULT_SEVERITY: Record<string, string> = { W: 'Warning', E: 'Warning' };
+
 suite('Settings Tests', () => {
     suite('getWorkspaceSettings tests', () => {
         let getConfigurationStub: sinon.SinonStub;
@@ -59,8 +62,8 @@ suite('Settings Tests', () => {
                 .returns(() => 'error')
                 .verifiable(TypeMoq.Times.atLeastOnce());
             configMock
-                .setup((c) => c.get('severity', {}))
-                .returns(() => ({}))
+                .setup((c) => c.get('severity', DEFAULT_SEVERITY))
+                .returns(() => DEFAULT_SEVERITY)
                 .verifiable(TypeMoq.Times.atLeastOnce());
             configMock
                 .setup((c) => c.get('importStrategy', 'useBundled'))
@@ -86,7 +89,7 @@ suite('Settings Tests', () => {
             assert.deepStrictEqual(settings.interpreter, []);
             assert.deepStrictEqual(settings.logLevel, 'error');
             assert.deepStrictEqual(settings.path, []);
-            assert.deepStrictEqual(settings.severity, {});
+            assert.deepStrictEqual(settings.severity, DEFAULT_SEVERITY);
             assert.deepStrictEqual(settings.showNotifications, 'off');
             assert.deepStrictEqual(settings.workspace, workspace1.uri.toString());
 
