@@ -50,9 +50,9 @@ pydantic==1.10.2 \
     --hash=sha256:e0bedafe4bc165ad0a56ac0bd7695df25c50f76961da29c050712596cf092d6d \
     --hash=sha256:e9069e1b01525a96e6ff49e25876d90d5a563bc31c658289a8772ae186552236
     # via pygls
-pygls==0.12.4 \
-    --hash=sha256:1b96378452217a02f19d89d9e647a4256d8d445ab3c641a589b4f73bf11898b6 \
-    --hash=sha256:63b859411307ed6f99fb9dd0e71be507a17ae9b3de5c5d07c497f5bddadcc46a
+pygls==0.13.0 \
+    --hash=sha256:a018a007a3ca9079e060e5ebb88bfbbcc9157bac4f9ae45c5e24e569cbc93bd1 \
+    --hash=sha256:d76e44768d75805da26dfbaec187c6251450af4b7b1cc0b7eb3587e6e27e32a4
     # via -r ./requirements.in
 pyparsing==3.0.9 \
     --hash=sha256:2b020ecf7d21b687f219b71ecad3631f644a47f01403fa1d1036b0c6416d70fb \
