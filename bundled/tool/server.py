@@ -217,27 +217,42 @@ def code_action_organize_imports(params: lsp.CodeActionParams):
                     kind=lsp.CodeActionKind.SourceOrganizeImports,
                     data=params.text_document.uri,
                     edit=_create_workspace_edits(text_document, results),
+                    diagnostics=[],
                 )
             ]
 
-    diagnostics = [
-        d for d in params.context.diagnostics if d.source == "isort" and d.code == "E"
-    ]
-    return [
-        lsp.CodeAction(
-            title="isort: Organize Imports",
-            kind=lsp.CodeActionKind.SourceOrganizeImports,
-            data=params.text_document.uri,
-            edit=None,
-        ),
-        lsp.CodeAction(
-            title="isort: Fix import sorting and/or formatting",
-            kind=lsp.CodeActionKind.QuickFix,
-            data=params.text_document.uri,
-            edit=None,
-            diagnostics=diagnostics if diagnostics else None,
-        ),
-    ]
+    actions = []
+    if (
+        not params.context.only
+        or lsp.CodeActionKind.SourceOrganizeImports in params.context.only
+    ):
+        actions.append(
+            lsp.CodeAction(
+                title="isort: Organize Imports",
+                kind=lsp.CodeActionKind.SourceOrganizeImports,
+                data=params.text_document.uri,
+                edit=None,
+                diagnostics=[],
+            ),
+        )
+
+    if not params.context.only or lsp.CodeActionKind.QuickFix in params.context.only:
+        diagnostics = [
+            d
+            for d in params.context.diagnostics
+            if d.source == "isort" and d.code == "E"
+        ]
+        actions.append(
+            lsp.CodeAction(
+                title="isort: Fix import sorting and/or formatting",
+                kind=lsp.CodeActionKind.QuickFix,
+                data=params.text_document.uri,
+                edit=None,
+                diagnostics=diagnostics,
+            ),
+        )
+
+    return actions if actions else None
 
 
 @LSP_SERVER.feature(lsp.CODE_ACTION_RESOLVE)
