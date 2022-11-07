@@ -112,7 +112,7 @@ def _linting_helper(document: workspace.Document) -> list[lsp.Diagnostic]:
 
 def _get_severity(code_type: str, severity: Dict[str, str]) -> lsp.DiagnosticSeverity:
     """Converts severity provided by isort to LSP specific value."""
-    value = severity.get(code_type, "Error")
+    value = severity.get(code_type, "Warning")
     try:
         return lsp.DiagnosticSeverity[value]
     except KeyError:
