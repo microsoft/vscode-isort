@@ -80,7 +80,7 @@ def test_code_actions(action_type):
                                     "end": {"line": 1, "character": 0},
                                 },
                                 "message": "Imports are incorrectly sorted and/or formatted.",
-                                "severity": 1,
+                                "severity": 2,
                                 "code": "E",
                                 "source": "isort",
                             }
@@ -109,7 +109,7 @@ def test_code_actions(action_type):
                                     "end": {"line": 1, "character": 0},
                                 },
                                 "message": "Imports are incorrectly sorted and/or formatted.",
-                                "severity": 1,
+                                "severity": 2,
                                 "code": "E",
                                 "source": "isort",
                             }
@@ -144,7 +144,7 @@ def test_code_actions(action_type):
                                             "end": {"line": 1, "character": 0},
                                         },
                                         "message": "Imports are incorrectly sorted and/or formatted.",
-                                        "severity": 1,
+                                        "severity": 2,
                                         "code": "E",
                                         "source": "isort",
                                     }
@@ -172,7 +172,7 @@ def test_code_actions(action_type):
                                             "end": {"line": 1, "character": 0},
                                         },
                                         "message": "Imports are incorrectly sorted and/or formatted.",
-                                        "severity": 1,
+                                        "severity": 2,
                                         "code": "E",
                                         "source": "isort",
                                     }
