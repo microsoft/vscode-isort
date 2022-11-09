@@ -80,7 +80,7 @@ def test_code_actions(action_type):
                                     "end": {"line": 1, "character": 0},
                                 },
                                 "message": "Imports are incorrectly sorted and/or formatted.",
-                                "severity": 2,
+                                "severity": 4,
                                 "code": "E",
                                 "source": "isort",
                             }
@@ -109,7 +109,7 @@ def test_code_actions(action_type):
                                     "end": {"line": 1, "character": 0},
                                 },
                                 "message": "Imports are incorrectly sorted and/or formatted.",
-                                "severity": 2,
+                                "severity": 4,
                                 "code": "E",
                                 "source": "isort",
                             }
@@ -144,7 +144,7 @@ def test_code_actions(action_type):
                                             "end": {"line": 1, "character": 0},
                                         },
                                         "message": "Imports are incorrectly sorted and/or formatted.",
-                                        "severity": 2,
+                                        "severity": 4,
                                         "code": "E",
                                         "source": "isort",
                                     }
@@ -172,7 +172,7 @@ def test_code_actions(action_type):
                                             "end": {"line": 1, "character": 0},
                                         },
                                         "message": "Imports are incorrectly sorted and/or formatted.",
-                                        "severity": 2,
+                                        "severity": 4,
                                         "code": "E",
                                         "source": "isort",
                                     }
@@ -283,7 +283,7 @@ def test_organize_import(line_ending):
                                     "end": {"line": 1, "character": 0},
                                 },
                                 "message": "Imports are incorrectly sorted and/or formatted.",
-                                "severity": 2,
+                                "severity": 4,
                                 "code": "E",
                                 "source": "isort",
                             }
@@ -307,7 +307,7 @@ def test_organize_import(line_ending):
                                     "end": {"line": 1, "character": 0},
                                 },
                                 "message": "Imports are incorrectly sorted and/or formatted.",
-                                "severity": 2,
+                                "severity": 4,
                                 "code": "E",
                                 "source": "isort",
                             }
@@ -337,7 +337,7 @@ def test_organize_import(line_ending):
                                         "end": {"line": 1, "character": 0},
                                     },
                                     "message": "Imports are incorrectly sorted and/or formatted.",
-                                    "severity": 2,
+                                    "severity": 4,
                                     "code": "E",
                                     "source": "isort",
                                 }
@@ -443,7 +443,7 @@ def test_organize_import_cell(line_ending):
                                     "end": {"line": 1, "character": 0},
                                 },
                                 "message": "Imports are incorrectly sorted and/or formatted.",
-                                "severity": 2,
+                                "severity": 4,
                                 "code": "E",
                                 "source": "isort",
                             }
@@ -467,7 +467,7 @@ def test_organize_import_cell(line_ending):
                                     "end": {"line": 1, "character": 0},
                                 },
                                 "message": "Imports are incorrectly sorted and/or formatted.",
-                                "severity": 2,
+                                "severity": 4,
                                 "code": "E",
                                 "source": "isort",
                             }
@@ -497,7 +497,7 @@ def test_organize_import_cell(line_ending):
                                         "end": {"line": 1, "character": 0},
                                     },
                                     "message": "Imports are incorrectly sorted and/or formatted.",
-                                    "severity": 2,
+                                    "severity": 4,
                                     "code": "E",
                                     "source": "isort",
                                 }

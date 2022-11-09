@@ -12,7 +12,7 @@ import { EXTENSION_ROOT_DIR } from '../../../../common/constants';
 import { getWorkspaceSettings, ISettings } from '../../../../common/settings';
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
-const DEFAULT_SEVERITY: Record<string, string> = { W: 'Warning', E: 'Warning' };
+const DEFAULT_SEVERITY: Record<string, string> = { W: 'Warning', E: 'Hint' };
 
 suite('Settings Tests', () => {
     suite('getWorkspaceSettings tests', () => {
