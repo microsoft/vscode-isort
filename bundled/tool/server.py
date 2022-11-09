@@ -461,7 +461,7 @@ def _get_default_settings(workspace_path: str) -> Dict[str, str]:
         "logLevel": "error",
         "args": [],
         "severity": {
-            "E": "Warning",
+            "E": "Hint",
             "W": "Warning",
         },
         "path": [],

@@ -19,7 +19,7 @@ export interface ISettings {
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
-const DEFAULT_SEVERITY: Record<string, string> = { W: 'Warning', E: 'Warning' };
+const DEFAULT_SEVERITY: Record<string, string> = { W: 'Warning', E: 'Hint' };
 
 export async function getExtensionSettings(namespace: string, includeInterpreter?: boolean): Promise<ISettings[]> {
     const settings: ISettings[] = [];
