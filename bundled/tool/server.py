@@ -44,7 +44,9 @@ WORKSPACE_SETTINGS = {}
 RUNNER = pathlib.Path(__file__).parent / "runner.py"
 
 MAX_WORKERS = 5
-LSP_SERVER = server.LanguageServer(max_workers=MAX_WORKERS)
+LSP_SERVER = server.LanguageServer(
+    name="isort-server", version="v0.1.0", max_workers=MAX_WORKERS
+)
 
 
 # **********************************************************
@@ -242,15 +244,16 @@ def code_action_organize_imports(params: lsp.CodeActionParams):
             for d in params.context.diagnostics
             if d.source == "isort" and d.code == "E"
         ]
-        actions.append(
-            lsp.CodeAction(
-                title="isort: Fix import sorting and/or formatting",
-                kind=lsp.CodeActionKind.QuickFix,
-                data=params.text_document.uri,
-                edit=None,
-                diagnostics=diagnostics,
-            ),
-        )
+        if diagnostics:
+            actions.append(
+                lsp.CodeAction(
+                    title="isort: Fix import sorting and/or formatting",
+                    kind=lsp.CodeActionKind.QuickFix,
+                    data=params.text_document.uri,
+                    edit=None,
+                    diagnostics=diagnostics,
+                ),
+            )
 
     return actions if actions else None
 
