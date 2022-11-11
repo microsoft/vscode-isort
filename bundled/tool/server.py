@@ -295,6 +295,11 @@ def is_python(code: str) -> bool:
     return True
 
 
+def is_interactive(file_path: str) -> bool:
+    """Checks if the file path represents interactive window."""
+    return file_path.endswith(".interactive")
+
+
 def _formatting_helper(document: workspace.Document) -> list[lsp.TextEdit] | None:
     result = _run_tool_on_document(document, use_stdin=True)
     if result.stdout:
@@ -527,6 +532,10 @@ def _run_tool_on_document(
     """
     if utils.is_stdlib_file(document.path):
         log_warning(f"Skipping standard library file: {document.path}")
+        return None
+
+    if is_interactive(document.path):
+        log_warning(f"Skipping interactive window: {document.path}")
         return None
 
     if not is_python(document.source):
