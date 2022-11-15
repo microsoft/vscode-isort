@@ -2,7 +2,7 @@
     "name": "isort",
     "displayName": "isort",
     "description": "%extension.description%",
-    "version": "2022.7.0-dev",
+    "version": "2022.8.0",
     "preview": true,
     "serverInfo": {
         "name": "isort",
