@@ -131,7 +131,6 @@ def test_code_actions(action_type):
                                 "title": "isort: Organize Imports",
                                 "kind": "source.organizeImports",
                                 "diagnostics": [],
-                                "edit": None,
                                 "data": uri,
                             },
                             {
@@ -149,7 +148,6 @@ def test_code_actions(action_type):
                                         "source": "isort",
                                     }
                                 ],
-                                "edit": None,
                                 "data": uri,
                             },
                         ]
@@ -177,7 +175,6 @@ def test_code_actions(action_type):
                                         "source": "isort",
                                     }
                                 ],
-                                "edit": None,
                                 "data": uri,
                             },
                         ]
@@ -324,7 +321,6 @@ def test_organize_import(line_ending):
                             "title": "isort: Organize Imports",
                             "kind": "source.organizeImports",
                             "diagnostics": [],
-                            "edit": None,
                             "data": uri,
                         },
                         {
@@ -342,7 +338,6 @@ def test_organize_import(line_ending):
                                     "source": "isort",
                                 }
                             ],
-                            "edit": None,
                             "data": uri,
                         },
                     ]
@@ -484,7 +479,6 @@ def test_organize_import_cell(line_ending):
                             "title": "isort: Organize Imports",
                             "kind": "source.organizeImports",
                             "diagnostics": [],
-                            "edit": None,
                             "data": uri,
                         },
                         {
@@ -502,7 +496,6 @@ def test_organize_import_cell(line_ending):
                                     "source": "isort",
                                 }
                             ],
-                            "edit": None,
                             "data": uri,
                         },
                     ]
