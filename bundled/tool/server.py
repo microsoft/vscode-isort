@@ -37,8 +37,9 @@ update_sys_path(
 # pylint: disable=wrong-import-position,import-error
 import isort
 import jsonrpc
+import lsprotocol.types as lsp
 import utils
-from pygls import lsp, protocol, server, uris, workspace
+from pygls import protocol, server, uris, workspace
 
 WORKSPACE_SETTINGS = {}
 RUNNER = pathlib.Path(__file__).parent / "runner.py"
@@ -183,7 +184,7 @@ def _parse_output(
 
 
 @LSP_SERVER.feature(
-    lsp.CODE_ACTION,
+    lsp.TEXT_DOCUMENT_CODE_ACTION,
     lsp.CodeActionOptions(
         code_action_kinds=[
             lsp.CodeActionKind.SourceOrganizeImports,
@@ -383,13 +384,13 @@ def initialize(params: lsp.InitializeParams) -> None:
 
     if isinstance(LSP_SERVER.lsp, protocol.LanguageServerProtocol):
         if any(setting["logLevel"] == "debug" for setting in settings):
-            LSP_SERVER.lsp.trace = lsp.Trace.Verbose
+            LSP_SERVER.lsp.trace = lsp.TraceValues.Verbose
         elif any(
             setting["logLevel"] in ["error", "warn", "info"] for setting in settings
         ):
-            LSP_SERVER.lsp.trace = lsp.Trace.Messages
+            LSP_SERVER.lsp.trace = lsp.TraceValues.Messages
         else:
-            LSP_SERVER.lsp.trace = lsp.Trace.Off
+            LSP_SERVER.lsp.trace = lsp.TraceValues.Off
 
     # Log version and config
     _log_info()
@@ -444,7 +445,7 @@ def _log_version_info(settings: Dict[str, str]) -> None:
 
 
 def _log_verbose_config(settings: Dict[str, str]) -> None:
-    if LSP_SERVER.lsp.trace == lsp.Trace.Verbose:
+    if LSP_SERVER.lsp.trace == lsp.TraceValues.Verbose:
         try:
             settings = copy.deepcopy(settings)
             result = _run_tool(["--show-config"], settings)

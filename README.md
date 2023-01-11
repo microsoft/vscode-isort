@@ -1,6 +1,6 @@
 # Import sorting extension for Visual Studio Code using `isort`
 
-A Visual Studio Code extension that provides import sorting using `isort`. The extension ships with `isort=5.10.1`.
+A Visual Studio Code extension that provides import sorting using `isort`. The extension ships with `isort=5.11.4`.
 
 Note:
 
