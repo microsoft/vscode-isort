@@ -22,9 +22,9 @@ isort==5.11.4 \
     --hash=sha256:6db30c5ded9815d813932c04c2f85a360bcdd35fed496f4d8f35495ef0a261b6 \
     --hash=sha256:c033fd0edb91000a7f09527fe5c75321878f98322a77ddcc81adbd83724afb7b
     # via -r ./requirements.in
-lsprotocol==2022.0.0a9 \
-    --hash=sha256:db81eafc80485a6052f6771aaf6fb9cef58cb6409d510c60132f12c6e91d9182 \
-    --hash=sha256:e4bc3d2ed71045f64cbe4d053bd6d45300a77b122b372a383914ce4ddb9c62d4
+lsprotocol==2022.0.0a10 \
+    --hash=sha256:2cd78770b7a4ec979f3ee3761265effd50ea0f5e858ce21bf2fba972e1783c50 \
+    --hash=sha256:ef516aec43c2b3c8debc06e84558ea9a64c36d635422d1614fd7fd2a45b1d291
     # via pygls
 packaging==23.0 \
     --hash=sha256:714ac14496c3e68c99c29b00845f7a2b85f3bb6f1078fd9f72fd20f0570002b2 \
