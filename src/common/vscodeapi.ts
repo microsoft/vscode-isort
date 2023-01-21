@@ -8,12 +8,14 @@ import {
     ConfigurationScope,
     Disposable,
     OutputChannel,
+    TextEditor,
     Uri,
     window,
     workspace,
     WorkspaceConfiguration,
     WorkspaceFolder,
 } from 'vscode';
+import { DocumentSelector } from 'vscode-languageclient';
 
 export function createOutputChannel(name: string): OutputChannel {
     return window.createOutputChannel(name);
@@ -40,4 +42,17 @@ export function getWorkspaceFolders(): readonly WorkspaceFolder[] {
 
 export function getWorkspaceFolder(uri: Uri): WorkspaceFolder | undefined {
     return workspace.getWorkspaceFolder(uri);
+}
+
+export function getActiveTextEditor(): TextEditor | undefined {
+    return window.activeTextEditor;
+}
+
+export function getDocumentSelectorForPython(): DocumentSelector {
+    return isVirtualWorkspace()
+        ? [{ language: 'python' }]
+        : [
+              { scheme: 'file', language: 'python' },
+              { scheme: 'untitled', language: 'python' },
+          ];
 }
