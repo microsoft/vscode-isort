@@ -14,7 +14,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import BinaryIO, Dict, Sequence, Union
 
 CONTENT_LENGTH = "Content-Length: "
-RUNNER_SCRIPT = str(pathlib.Path(__file__).parent / "runner.py")
+RUNNER_SCRIPT = str(pathlib.Path(__file__).parent / "lsp_runner.py")
 
 
 def to_str(text) -> str:
@@ -132,7 +132,6 @@ class ProcessManager:
         self._lock = threading.Lock()
         self._thread_pool = ThreadPoolExecutor(10)
 
-    @atexit.register
     def stop_all_processes(self):
         """Send exit command to all processes and shutdown transport."""
         for i in self._rpc.values():
@@ -175,6 +174,7 @@ class ProcessManager:
 
 
 _process_manager = ProcessManager()
+atexit.register(_process_manager.stop_all_processes)
 
 
 def _get_json_rpc(workspace: str) -> Union[JsonRpc, None]:

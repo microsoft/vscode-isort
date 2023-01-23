@@ -16,11 +16,13 @@ import {
     checkIfConfigurationChanged,
     getExtensionSettings,
     getInterpreterFromSetting,
+    getServerEnabled,
     ISettings,
 } from './common/settings';
 import { loadServerDefaults } from './common/setup';
 import { createOutputChannel, onDidChangeConfiguration, registerCommand } from './common/vscodeapi';
 import { getProjectRoot } from './common/utilities';
+import { registerSortImportFeatures } from './common/sortImports';
 
 let lsClient: LanguageClient | undefined;
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
@@ -43,7 +45,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     traceVerbose(`Configuration: ${JSON.stringify(serverInfo)}`);
 
     const runServer = async () => {
-        lsClient = await restartServer(serverId, serverName, outputChannel, lsClient);
+        if (getServerEnabled(serverId)) {
+            lsClient = await restartServer(serverId, serverName, outputChannel, lsClient);
+        } else {
+            const sortFeatures = registerSortImportFeatures(serverId);
+            context.subscriptions.push(sortFeatures);
+            await sortFeatures.startup();
+        }
     };
 
     context.subscriptions.push(

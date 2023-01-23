@@ -42,8 +42,7 @@
         "onLanguage:python",
         "workspaceContains:pyproject.toml",
         "workspaceContains:.isort",
-        "workspaceContains:*.py",
-        "onCommand:isort.restart"
+        "workspaceContains:*.py"
     ],
     "main": "./dist/extension.js",
     "l10n": "./l10n",
@@ -152,6 +151,12 @@
                         ]
                     ]
                 },
+                "isort.serverEnabled": {
+                    "default": true,
+                    "description": "%settings.serverEnabled.description%",
+                    "scope": "machine",
+                    "type": "boolean"
+                },
                 "isort.severity": {
                     "default": {
                         "W": "Warning",
@@ -193,7 +198,7 @@
         "commands": [
             {
                 "title": "%command.restartServer%",
-                "category": "isort Formatter",
+                "category": "Refactor",
                 "command": "isort.restart"
             }
         ]

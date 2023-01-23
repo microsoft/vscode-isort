@@ -8,6 +8,7 @@ import { getConfiguration, getWorkspaceFolders } from './vscodeapi';
 
 export interface ISettings {
     check: boolean;
+    cwd: string;
     workspace: string;
     logLevel: LoggingLevelSettingType;
     args: string[];
@@ -89,6 +90,7 @@ export async function getWorkspaceSettings(
     const path = getPath(namespace, workspace).map((s) => resolveWorkspace(workspace, s));
     const workspaceSetting = {
         check: config.get<boolean>('check', false),
+        cwd: workspace.uri.fsPath,
         workspace: workspace.uri.toString(),
         logLevel: config.get<LoggingLevelSettingType>('logLevel', 'error'),
         args,
@@ -104,14 +106,20 @@ export async function getWorkspaceSettings(
 export function checkIfConfigurationChanged(e: ConfigurationChangeEvent, namespace: string): boolean {
     const settings = [
         `${namespace}.check`,
-        `${namespace}.trace`,
+        `${namespace}.logLevel`,
         `${namespace}.args`,
         `${namespace}.severity`,
         `${namespace}.path`,
         `${namespace}.interpreter`,
         `${namespace}.importStrategy`,
         `${namespace}.showNotifications`,
+        `${namespace}.serverEnabled`,
     ];
     const changed = settings.map((s) => e.affectsConfiguration(s));
     return changed.includes(true);
+}
+
+export function getServerEnabled(namespace: string): boolean {
+    const config = getConfiguration(namespace);
+    return config.get<boolean>('serverEnabled', true);
 }
