@@ -84,7 +84,7 @@ async function getSettings(serverId: string, textDocument: TextDocument): Promis
 
 function getExecutablePathWithArgs(settings: ISettings, extraArgs: string[] = []): string[] {
     if (settings.path.length > 0) {
-        return [...settings.path, RUNNER_SCRIPT_PATH, ...extraArgs, ...settings.args];
+        return [...settings.path, ...extraArgs, ...settings.args];
     }
 
     return [...settings.interpreter, RUNNER_SCRIPT_PATH, ...extraArgs, ...settings.args];
@@ -117,6 +117,14 @@ function getSeverity(sev: string): DiagnosticSeverity {
     return DiagnosticSeverity.Error;
 }
 
+function getUpdatedEnvVariables(settings: ISettings): { [x: string]: string | undefined } {
+    const newEnv = { ...process.env };
+    if (settings.path.length === 0) {
+        newEnv.LS_IMPORT_STRATEGY = settings.importStrategy;
+    }
+    return newEnv;
+}
+
 export async function diagnosticRunner(serverId: string, textDocument: TextDocument): Promise<Diagnostic[]> {
     const diagnostics: Diagnostic[] = [];
     const settings = await getSettings(serverId, textDocument);
@@ -124,9 +132,7 @@ export async function diagnosticRunner(serverId: string, textDocument: TextDocum
     if (settings && settings.check) {
         const parts = getExecutablePathWithArgs(settings);
         const args = parts.slice(1).concat('--check', textDocument.uri.fsPath);
-        const newEnv = { ...process.env };
-        newEnv.LS_IMPORT_STRATEGY = settings.importStrategy;
-
+        const newEnv = getUpdatedEnvVariables(settings);
         try {
             const { stderr } = await runScript(parts[0], args, { ignoreError: true, newEnv, cwd: settings.cwd });
             const lines = stderr.split(/\r?\n|\r|\n/g);
@@ -160,8 +166,7 @@ export async function textEditRunner(
     if (settings) {
         const parts = getExecutablePathWithArgs(settings, ['-']);
         const args = parts.slice(1).concat('--filename', textDocument.uri.fsPath);
-        const newEnv = { ...process.env };
-        newEnv.LS_IMPORT_STRATEGY = settings.importStrategy;
+        const newEnv = getUpdatedEnvVariables(settings);
 
         try {
             const { stdout } = await runScript(
