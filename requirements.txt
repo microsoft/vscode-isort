@@ -18,10 +18,10 @@ exceptiongroup==1.1.0 \
     --hash=sha256:327cbda3da756e2de031a3107b81ab7b3770a602c4d16ca618298c526f4bec1e \
     --hash=sha256:bcb67d800a4497e1b404c2dd44fca47d3b7a5e5433dbab67f96c1a685cdfdf23
     # via cattrs
-isort==5.11.4 \
-    --hash=sha256:6db30c5ded9815d813932c04c2f85a360bcdd35fed496f4d8f35495ef0a261b6 \
-    --hash=sha256:c033fd0edb91000a7f09527fe5c75321878f98322a77ddcc81adbd83724afb7b
-    # via -r ./requirements.in
+isort==5.11.5 \
+    --hash=sha256:6be1f76a507cb2ecf16c7cf14a37e41609ca082330be4e3436a18ef74add55db \
+    --hash=sha256:ba1d72fb2595a01c7895a5128f9585a5cc4b6d395f1c8d514989b9a7eb2a8746
+    # via -r requirements.in
 lsprotocol==2022.0.0a10 \
     --hash=sha256:2cd78770b7a4ec979f3ee3761265effd50ea0f5e858ce21bf2fba972e1783c50 \
     --hash=sha256:ef516aec43c2b3c8debc06e84558ea9a64c36d635422d1614fd7fd2a45b1d291
@@ -29,11 +29,11 @@ lsprotocol==2022.0.0a10 \
 packaging==23.0 \
     --hash=sha256:714ac14496c3e68c99c29b00845f7a2b85f3bb6f1078fd9f72fd20f0570002b2 \
     --hash=sha256:b6ad297f8907de0fa2fe1ccbd26fdaf387f5f47c7275fedf8cce89f99446cf97
-    # via -r ./requirements.in
+    # via -r requirements.in
 pygls==1.0.0 \
     --hash=sha256:3414594ac29ff3ab990f004c675d1077e4e2659eae5cc3ae67cc6fa4d861e342 \
     --hash=sha256:c2a1c22e30028f7ca9d3f0a04da8eef29f0f1701bdbd97d8614d8e1e6711f336
-    # via -r ./requirements.in
+    # via -r requirements.in
 typeguard==2.13.3 \
     --hash=sha256:00edaa8da3a133674796cf5ea87d9f4b4c367d77476e185e80251cc13dfbb8c4 \
     --hash=sha256:5e3e3be01e887e7eafae5af63d1f36c849aaa94e3a0112097312aabfa16284f1
