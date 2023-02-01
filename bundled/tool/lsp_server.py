@@ -365,6 +365,7 @@ def _match_line_endings(document: workspace.Document, text: str) -> str:
 # Code Action features ends here
 # **********************************************************
 
+
 # **********************************************************
 # Required Language Server Initialization and Exit handlers.
 # **********************************************************
