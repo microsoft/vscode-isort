@@ -164,8 +164,16 @@ export async function textEditRunner(
     const content = textDocument.getText();
     const lines = content.split(/\r?\n|\r|\n/g);
     if (settings) {
-        const parts = getExecutablePathWithArgs(settings, ['-']);
-        const args = parts.slice(1).concat('--filename', textDocument.uri.fsPath);
+        let parts: string[] = [];
+        let args: string[] = [];
+
+        if (textDocument.isDirty || textDocument.isUntitled) {
+            let parts = getExecutablePathWithArgs(settings, ['-']);
+            let args = parts.slice(1).concat('--filename', textDocument.uri.fsPath);
+        } else {
+            let parts = getExecutablePathWithArgs(settings);
+            let args = parts.slice(1).concat('--stdout', textDocument.uri.fsPath);
+        }
         const newEnv = getUpdatedEnvVariables(settings);
 
         try {
