@@ -6,4 +6,4 @@
 
 pytest
 PyHamcrest
-python-jsonrpc-server
+python-lsp-jsonrpc
