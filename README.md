@@ -1,6 +1,6 @@
 # Import sorting extension for Visual Studio Code using `isort`
 
-A Visual Studio Code extension that provides import sorting using `isort`. The extension ships with `isort=5.11.4`.
+A Visual Studio Code extension that provides import sorting using `isort`. The extension ships with `isort=5.11.5`.
 
 Note:
 
@@ -45,7 +45,7 @@ If you want to disable isort extension, you can [disable this extension](https:/
 | isort.interpreter      | `[]`                              | Path to a python interpreter to use to run the linter server.                                                                                                                                                                                                            |
 | isort.importStrategy   | `useBundled`                      | Setting to choose where to load `isort` from. `useBundled` picks isort bundled with the extension. `fromEnvironment` uses `isort` available in the environment.                                                                                                          |
 | isort.showNotification | `off`                             | Setting to control when a notification is shown.                                                                                                                                                                                                                         |
-| isort.serverEnabled    | `true`                            | Setting to run `isort` in a server like mode.                                                                                                                                                                                                                            |
+| isort.serverEnabled    | `true`                            | **Experimental** setting to control running `isort` in a server like mode. By default we run `isort` behind LSP server, this setting allows users to turn off the server and run isort directly.                                                                                                                                                                                                                            |
 
 ## Commands
 
