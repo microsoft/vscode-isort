@@ -3,7 +3,6 @@
 
 import * as vscode from 'vscode';
 import { LanguageClient } from 'vscode-languageclient/node';
-import { restartServer } from './common/server';
 import { registerLogger, setLoggingLevel, traceLog, traceVerbose } from './common/log/logging';
 import { OutputChannelLogger } from './common/log/outputChannelLogger';
 import {
@@ -12,6 +11,7 @@ import {
     onDidChangePythonInterpreter,
     runPythonExtensionCommand,
 } from './common/python';
+import { restartServer } from './common/server';
 import {
     checkIfConfigurationChanged,
     getExtensionSettings,
@@ -20,9 +20,9 @@ import {
     ISettings,
 } from './common/settings';
 import { loadServerDefaults } from './common/setup';
-import { createOutputChannel, onDidChangeConfiguration, registerCommand } from './common/vscodeapi';
-import { getProjectRoot } from './common/utilities';
 import { registerSortImportFeatures } from './common/sortImports';
+import { getProjectRoot } from './common/utilities';
+import { createOutputChannel, onDidChangeConfiguration, registerCommand } from './common/vscodeapi';
 
 let lsClient: LanguageClient | undefined;
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
@@ -93,4 +93,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             await runServer();
         }
     });
+}
+
+export async function deactivate(): Promise<void> {
+    if (lsClient) {
+        await lsClient.stop();
+    }
 }

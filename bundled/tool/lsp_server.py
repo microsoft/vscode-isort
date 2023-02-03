@@ -398,7 +398,13 @@ def initialize(params: lsp.InitializeParams) -> None:
 
 
 @LSP_SERVER.feature(lsp.EXIT)
-def on_exit():
+def on_exit(_params: Optional[Any] = None):
+    """Handle clean up on exit."""
+    jsonrpc.shutdown_json_rpc()
+
+
+@LSP_SERVER.feature(lsp.SHUTDOWN)
+def on_shutdown(_params: Optional[Any] = None):
     """Handle clean up on exit."""
     jsonrpc.shutdown_json_rpc()
 
