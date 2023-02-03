@@ -2,8 +2,9 @@
 // Licensed under the MIT License.
 
 import { ConfigurationChangeEvent, WorkspaceFolder } from 'vscode';
-import { getInterpreterDetails } from './python';
+import { traceLog } from './log/logging';
 import { LoggingLevelSettingType } from './log/types';
+import { getInterpreterDetails } from './python';
 import { getConfiguration, getWorkspaceFolders } from './vscodeapi';
 
 export interface ISettings {
@@ -47,7 +48,11 @@ function getArgs(namespace: string, workspace: WorkspaceFolder): string[] {
     }
 
     const legacyConfig = getConfiguration('python', workspace.uri);
-    return legacyConfig.get<string[]>('sortImports.args', []);
+    const legacyArgs = legacyConfig.get<string[]>('sortImports.args', []);
+    if (legacyArgs.length > 0) {
+        traceLog(`Using legacy configuration form 'python.sortImports.args': ${legacyArgs.join(' ')}.`);
+    }
+    return legacyArgs;
 }
 
 function getPath(namespace: string, workspace: WorkspaceFolder): string[] {
@@ -61,6 +66,7 @@ function getPath(namespace: string, workspace: WorkspaceFolder): string[] {
     const legacyConfig = getConfiguration('python', workspace.uri);
     const legacyPath = legacyConfig.get<string>('sortImports.path', '');
     if (legacyPath.length > 0 && legacyPath !== 'isort') {
+        traceLog(`Using legacy configuration form 'python.sortImports.path': ${legacyPath}`);
         return [legacyPath];
     }
     return [];
