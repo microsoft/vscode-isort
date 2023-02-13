@@ -6,6 +6,7 @@ import {
     CancellationToken,
     Diagnostic,
     DiagnosticSeverity,
+    EndOfLine,
     Position,
     Range,
     TextDocument,
@@ -155,6 +156,12 @@ export async function diagnosticRunner(serverId: string, textDocument: TextDocum
     return diagnostics;
 }
 
+function fixLineEndings(eol: EndOfLine, formatted: string): string {
+    const lines = formatted.replace(/\r\r\n/g, '\r\n').split(/\r?\n/g);
+    const result = lines.join(eol === EndOfLine.CRLF ? '\r\n' : '\n');
+    return result;
+}
+
 export async function textEditRunner(
     serverId: string,
     textDocument: TextDocument,
@@ -168,11 +175,11 @@ export async function textEditRunner(
         let args: string[] = [];
 
         if (textDocument.isDirty || textDocument.isUntitled) {
-            let parts = getExecutablePathWithArgs(settings, ['-']);
-            let args = parts.slice(1).concat('--filename', textDocument.uri.fsPath);
+            parts = getExecutablePathWithArgs(settings, ['-']);
+            args = parts.slice(1).concat('--filename', textDocument.uri.fsPath);
         } else {
-            let parts = getExecutablePathWithArgs(settings);
-            let args = parts.slice(1).concat('--stdout', textDocument.uri.fsPath);
+            parts = getExecutablePathWithArgs(settings);
+            args = parts.slice(1).concat('--stdout', textDocument.uri.fsPath);
         }
         const newEnv = getUpdatedEnvVariables(settings);
 
@@ -183,7 +190,7 @@ export async function textEditRunner(
                 { ignoreError: true, newEnv, cwd: settings.cwd },
                 content,
             );
-            const newContent = stdout.length === 0 ? content : stdout;
+            const newContent = stdout.length === 0 ? content : fixLineEndings(textDocument.eol, stdout);
             const edits = new WorkspaceEdit();
             edits.replace(textDocument.uri, new Range(new Position(0, 0), new Position(lines.length, 0)), newContent);
             return edits;
