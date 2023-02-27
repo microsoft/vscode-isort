@@ -42,6 +42,7 @@ import lsprotocol.types as lsp
 from pygls import protocol, server, uris, workspace
 
 WORKSPACE_SETTINGS = {}
+GLOBAL_SETTINGS = {}
 RUNNER = pathlib.Path(__file__).parent / "lsp_runner.py"
 
 MAX_WORKERS = 5
@@ -377,10 +378,15 @@ def initialize(params: lsp.InitializeParams) -> None:
     paths = "\r\n   ".join(sys.path)
     log_to_output(f"sys.path used to run Server:\r\n   {paths}")
 
+    GLOBAL_SETTINGS.update(**params.initialization_options.get("globalSettings", {}))
+
     settings = params.initialization_options["settings"]
     _update_workspace_settings(settings)
     log_to_output(
         f"Settings used to run Server:\r\n{json.dumps(settings, indent=4, ensure_ascii=False)}\r\n"
+    )
+    log_to_output(
+        f"Global settings:\r\n{json.dumps(GLOBAL_SETTINGS, indent=4, ensure_ascii=False)}\r\n"
     )
 
     if isinstance(LSP_SERVER.lsp, protocol.LanguageServerProtocol):
@@ -469,28 +475,27 @@ def _log_verbose_config(settings: Dict[str, str]) -> None:
 # *****************************************************
 # Internal functional and settings management APIs.
 # *****************************************************
-def _get_default_settings(workspace_path: str) -> Dict[str, str]:
+def _get_global_defaults():
     return {
-        "check": False,
-        "workspaceFS": workspace_path,
-        "workspace": uris.from_fs_path(workspace_path),
-        "logLevel": "error",
-        "args": [],
-        "severity": {
-            "E": "Hint",
-            "W": "Warning",
-        },
-        "path": [],
-        "interpreter": [sys.executable],
-        "importStrategy": "useBundled",
-        "showNotifications": "off",
+        "check": GLOBAL_SETTINGS.get("check", False),
+        "logLevel": GLOBAL_SETTINGS.get("logLevel", "error"),
+        "path": GLOBAL_SETTINGS.get("path", []),
+        "severity": GLOBAL_SETTINGS.get("severity", {"E": "Hint", "W": "Warning"}),
+        "interpreter": GLOBAL_SETTINGS.get("interpreter", [sys.executable]),
+        "args": GLOBAL_SETTINGS.get("args", []),
+        "importStrategy": GLOBAL_SETTINGS.get("importStrategy", "useBundled"),
+        "showNotifications": GLOBAL_SETTINGS.get("showNotifications", "off"),
     }
 
 
 def _update_workspace_settings(settings):
     if not settings:
         key = os.getcwd()
-        WORKSPACE_SETTINGS[key] = _get_default_settings(key)
+        WORKSPACE_SETTINGS[key] = {
+            "workspaceFS": key,
+            "workspace": uris.from_fs_path(key),
+            **_get_global_defaults(),
+        }
         return
 
     for setting in settings:
@@ -519,7 +524,11 @@ def _get_settings_by_document(document: workspace.Document | None):
     key = _get_document_key(document)
     if key is None:
         key = os.fspath(pathlib.Path(document.path).parent)
-        return _get_default_settings(key)
+        return {
+            "workspaceFS": key,
+            "workspace": uris.from_fs_path(key),
+            **_get_global_defaults(),
+        }
 
     return WORKSPACE_SETTINGS[str(key)]
 
