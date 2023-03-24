@@ -220,7 +220,7 @@
         "@typescript-eslint/eslint-plugin": "^5.50.0",
         "@typescript-eslint/parser": "^5.50.0",
         "@vscode/test-electron": "^2.3.0",
-        "@vscode/vsce": "^2.17.0",
+        "@vscode/vsce": "^2.18.0",
         "chai": "^4.3.7",
         "chai-arrays": "^2.2.0",
         "chai-as-promised": "^7.1.1",
