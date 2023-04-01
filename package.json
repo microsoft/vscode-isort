@@ -211,7 +211,7 @@
         "@types/chai": "^4.3.4",
         "@types/chai-arrays": "^2.0.0",
         "@types/chai-as-promised": "^7.1.5",
-        "@types/fs-extra": "^9.0.13",
+        "@types/fs-extra": "^11.0.1",
         "@types/glob": "^8.1.0",
         "@types/mocha": "^10.0.1",
         "@types/node": "14.x",
