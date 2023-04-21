@@ -198,7 +198,7 @@
         "commands": [
             {
                 "title": "%command.restartServer%",
-                "category": "Refactor",
+                "category": "isort",
                 "command": "isort.restart"
             }
         ]
