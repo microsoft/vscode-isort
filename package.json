@@ -228,7 +228,7 @@
         "glob": "^9.3.2",
         "mocha": "^10.2.0",
         "prettier": "^2.8.7",
-        "sinon": "^15.0.3",
+        "sinon": "^15.0.4",
         "ts-loader": "^9.4.2",
         "typemoq": "^2.1.0",
         "typescript": "^5.0.3",
