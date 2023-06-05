@@ -1,15 +1,15 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+import { assert } from 'chai';
 import * as path from 'path';
 import * as sinon from 'sinon';
 import * as TypeMoq from 'typemoq';
-import * as vscodeapi from '../../../../common/vscodeapi';
-import * as python from '../../../../common/python';
-import { assert } from 'chai';
-import { ConfigurationTarget, Uri, WorkspaceConfiguration, WorkspaceFolder } from 'vscode';
+import { Uri, WorkspaceConfiguration, WorkspaceFolder } from 'vscode';
 import { EXTENSION_ROOT_DIR } from '../../../../common/constants';
-import { getWorkspaceSettings, ISettings } from '../../../../common/settings';
+import * as python from '../../../../common/python';
+import { ISettings, getWorkspaceSettings } from '../../../../common/settings';
+import * as vscodeapi from '../../../../common/vscodeapi';
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 const DEFAULT_SEVERITY: Record<string, string> = { W: 'Warning', E: 'Hint' };
@@ -87,7 +87,6 @@ suite('Settings Tests', () => {
             assert.deepStrictEqual(settings.args, []);
             assert.deepStrictEqual(settings.importStrategy, 'useBundled');
             assert.deepStrictEqual(settings.interpreter, []);
-            assert.deepStrictEqual(settings.logLevel, 'error');
             assert.deepStrictEqual(settings.path, []);
             assert.deepStrictEqual(settings.severity, DEFAULT_SEVERITY);
             assert.deepStrictEqual(settings.showNotifications, 'off');

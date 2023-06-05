@@ -1,7 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-import { Disposable, OutputChannel } from 'vscode';
+import * as fsapi from 'fs-extra';
+import { Disposable, env, l10n, LanguageStatusSeverity, LogOutputChannel } from 'vscode';
 import { State } from 'vscode-languageclient';
 import {
     LanguageClient,
@@ -10,28 +11,29 @@ import {
     ServerOptions,
 } from 'vscode-languageclient/node';
 import { DEBUG_SERVER_SCRIPT_PATH, SERVER_SCRIPT_PATH } from './constants';
-import { traceError, traceInfo, traceVerbose } from './log/logging';
+import { traceError, traceInfo, traceVerbose } from './logging';
 import { getDebuggerPath } from './python';
-import { getExtensionSettings, getGlobalSettings, getWorkspaceSettings, ISettings } from './settings';
-import { getProjectRoot, traceLevelToLSTrace } from './utilities';
-import { getDocumentSelectorForPython } from './vscodeapi';
+import { getExtensionSettings, getGlobalSettings, ISettings } from './settings';
+import { updateStatus } from './status';
+import { getLSClientTraceLevel } from './utilities';
+import { getDocumentSelector } from './vscodeapi';
 
 export type IInitOptions = { settings: ISettings[]; globalSettings: ISettings };
 
-export async function createServer(
-    interpreter: string[],
+async function createServer(
+    settings: ISettings,
     serverId: string,
     serverName: string,
-    outputChannel: OutputChannel,
+    outputChannel: LogOutputChannel,
     initializationOptions: IInitOptions,
-    workspaceSetting: ISettings,
 ): Promise<LanguageClient> {
-    const command = interpreter[0];
-    const cwd = getProjectRoot().uri.fsPath;
+    const command = settings.interpreter[0];
+    const cwd = settings.cwd;
 
     // Set debugger path needed for debugging python code.
     const newEnv = { ...process.env };
     const debuggerPath = await getDebuggerPath();
+    const isDebugScript = await fsapi.pathExists(DEBUG_SERVER_SCRIPT_PATH);
     if (newEnv.USE_DEBUGPY && debuggerPath) {
         newEnv.DEBUGPY_PATH = debuggerPath;
     } else {
@@ -39,15 +41,15 @@ export async function createServer(
     }
 
     // Set import strategy
-    newEnv.LS_IMPORT_STRATEGY = workspaceSetting.importStrategy;
+    newEnv.LS_IMPORT_STRATEGY = settings.importStrategy;
 
     // Set notification type
-    newEnv.LS_SHOW_NOTIFICATION = workspaceSetting.showNotifications;
+    newEnv.LS_SHOW_NOTIFICATION = settings.showNotifications;
 
     const args =
-        newEnv.USE_DEBUGPY === 'False'
-            ? interpreter.slice(1).concat([SERVER_SCRIPT_PATH])
-            : interpreter.slice(1).concat([DEBUG_SERVER_SCRIPT_PATH]);
+        newEnv.USE_DEBUGPY === 'False' || !isDebugScript
+            ? settings.interpreter.slice(1).concat([SERVER_SCRIPT_PATH])
+            : settings.interpreter.slice(1).concat([DEBUG_SERVER_SCRIPT_PATH]);
     traceInfo(`Server run command: ${[command, ...args].join(' ')}`);
 
     const serverOptions: ServerOptions = {
@@ -59,7 +61,7 @@ export async function createServer(
     // Options to control the language client
     const clientOptions: LanguageClientOptions = {
         // Register the server for python documents
-        documentSelector: getDocumentSelectorForPython(),
+        documentSelector: getDocumentSelector(),
         outputChannel: outputChannel,
         traceOutputChannel: outputChannel,
         revealOutputChannelOn: RevealOutputChannelOn.Never,
@@ -71,40 +73,29 @@ export async function createServer(
 
 let _disposables: Disposable[] = [];
 export async function restartServer(
+    workspaceSetting: ISettings,
     serverId: string,
     serverName: string,
-    outputChannel: OutputChannel,
+    outputChannel: LogOutputChannel,
     lsClient?: LanguageClient,
 ): Promise<LanguageClient | undefined> {
     if (lsClient) {
         traceInfo(`Server: Stop requested`);
-        await lsClient.stop();
+        try {
+            await lsClient.stop();
+        } catch (ex) {
+            traceError(`Server: Stop failed: ${ex}`);
+        }
         _disposables.forEach((d) => d.dispose());
         _disposables = [];
     }
-    const workspaceSetting = await getWorkspaceSettings(serverId, getProjectRoot(), true);
-    if (workspaceSetting.interpreter.length === 0) {
-        traceError(
-            'Python interpreter missing:\r\n' +
-                '[Option 1] Select python interpreter using the ms-python.python.\r\n' +
-                `[Option 2] Set an interpreter using "${serverId}.interpreter" setting.\r\n`,
-        );
-        return undefined;
-    }
+    updateStatus(undefined, LanguageStatusSeverity.Information, true);
 
-    const newLSClient = await createServer(
-        workspaceSetting.interpreter,
-        serverId,
-        serverName,
-        outputChannel,
-        {
-            settings: await getExtensionSettings(serverId, true),
-            globalSettings: await getGlobalSettings(serverId, false),
-        },
-        workspaceSetting,
-    );
+    const newLSClient = await createServer(workspaceSetting, serverId, serverName, outputChannel, {
+        settings: await getExtensionSettings(serverId, true),
+        globalSettings: await getGlobalSettings(serverId, false),
+    });
 
-    newLSClient.trace = traceLevelToLSTrace(workspaceSetting.logLevel);
     traceInfo(`Server: Start requested.`);
     _disposables.push(
         newLSClient.onDidChangeState((e) => {
@@ -117,10 +108,17 @@ export async function restartServer(
                     break;
                 case State.Running:
                     traceVerbose(`Server State: Running`);
+                    updateStatus(undefined, LanguageStatusSeverity.Information, false);
                     break;
             }
         }),
-        newLSClient.start(),
     );
+    try {
+        await newLSClient.start();
+    } catch (ex) {
+        updateStatus(l10n.t('Server failed to start.'), LanguageStatusSeverity.Error);
+        traceError(`Server: Start failed: ${ex}`);
+    }
+    await newLSClient.setTrace(getLSClientTraceLevel(outputChannel.logLevel, env.logLevel));
     return newLSClient;
 }

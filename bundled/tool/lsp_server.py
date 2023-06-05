@@ -39,7 +39,7 @@ import isort
 import lsp_jsonrpc as jsonrpc
 import lsp_utils as utils
 import lsprotocol.types as lsp
-from pygls import protocol, server, uris, workspace
+from pygls import server, uris, workspace
 
 WORKSPACE_SETTINGS = {}
 GLOBAL_SETTINGS = {}
@@ -389,16 +389,6 @@ def initialize(params: lsp.InitializeParams) -> None:
         f"Global settings:\r\n{json.dumps(GLOBAL_SETTINGS, indent=4, ensure_ascii=False)}\r\n"
     )
 
-    if isinstance(LSP_SERVER.lsp, protocol.LanguageServerProtocol):
-        if any(setting["logLevel"] == "debug" for setting in settings):
-            LSP_SERVER.lsp.trace = lsp.TraceValues.Verbose
-        elif any(
-            setting["logLevel"] in ["error", "warn", "info"] for setting in settings
-        ):
-            LSP_SERVER.lsp.trace = lsp.TraceValues.Messages
-        else:
-            LSP_SERVER.lsp.trace = lsp.TraceValues.Off
-
     # Log version and config
     _log_info()
 
@@ -490,8 +480,9 @@ def _get_global_defaults():
 
 def _update_workspace_settings(settings):
     if not settings:
-        key = os.getcwd()
+        key = utils.normalize_path(os.getcwd())
         WORKSPACE_SETTINGS[key] = {
+            "cwd": key,
             "workspaceFS": key,
             "workspace": uris.from_fs_path(key),
             **_get_global_defaults(),
@@ -499,21 +490,38 @@ def _update_workspace_settings(settings):
         return
 
     for setting in settings:
-        key = uris.to_fs_path(setting["workspace"])
+        key = utils.normalize_path(uris.to_fs_path(setting["workspace"]))
         WORKSPACE_SETTINGS[key] = {
             **setting,
             "workspaceFS": key,
         }
 
 
-def _get_document_key(document: workspace.Document):
-    document_workspace = pathlib.Path(document.path)
+def _get_settings_by_path(file_path: pathlib.Path):
     workspaces = {s["workspaceFS"] for s in WORKSPACE_SETTINGS.values()}
 
-    while document_workspace != document_workspace.parent:
-        if str(document_workspace) in workspaces:
-            return str(document_workspace)
-        document_workspace = document_workspace.parent
+    while file_path != file_path.parent:
+        str_file_path = utils.normalize_path(file_path)
+        if str_file_path in workspaces:
+            return WORKSPACE_SETTINGS[str_file_path]
+        file_path = file_path.parent
+
+    setting_values = list(WORKSPACE_SETTINGS.values())
+    return setting_values[0]
+
+
+def _get_document_key(document: workspace.Document):
+    if WORKSPACE_SETTINGS:
+        document_workspace = pathlib.Path(document.path)
+        workspaces = {s["workspaceFS"] for s in WORKSPACE_SETTINGS.values()}
+
+        # Find workspace settings for the given file.
+        while document_workspace != document_workspace.parent:
+            norm_path = utils.normalize_path(document_workspace)
+            if norm_path in workspaces:
+                return norm_path
+            document_workspace = document_workspace.parent
+
     return None
 
 
@@ -523,8 +531,10 @@ def _get_settings_by_document(document: workspace.Document | None):
 
     key = _get_document_key(document)
     if key is None:
-        key = os.fspath(pathlib.Path(document.path).parent)
+        # This is either a non-workspace file or there is no workspace.
+        key = utils.normalize_path(pathlib.Path(document.path).parent)
         return {
+            "cwd": key,
             "workspaceFS": key,
             "workspace": uris.from_fs_path(key),
             **_get_global_defaults(),
@@ -619,6 +629,9 @@ def _run_tool_on_document(
             use_stdin=use_stdin,
             cwd=cwd,
             source=source,
+            env={
+                "LS_IMPORT_STRATEGY": settings["importStrategy"],
+            },
         )
         result = _to_run_result_with_logging(result)
     else:
@@ -690,6 +703,9 @@ def _run_tool(extra_args: Sequence[str], settings: Dict[str, Any]) -> utils.RunR
             argv=argv,
             use_stdin=True,
             cwd=cwd,
+            env={
+                "LS_IMPORT_STRATEGY": settings["importStrategy"],
+            },
         )
         result = _to_run_result_with_logging(result)
     else:

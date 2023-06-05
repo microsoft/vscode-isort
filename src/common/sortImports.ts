@@ -19,7 +19,7 @@ import {
     workspace,
 } from 'vscode';
 import { diagnosticRunner, textEditRunner } from './runner';
-import { getDocumentSelectorForPython } from './vscodeapi';
+import { getDocumentSelector } from './vscodeapi';
 
 export const notebookCellScheme = 'vscode-notebook-cell';
 export const interactiveInputScheme = 'vscode-interactive-input';
@@ -128,13 +128,9 @@ export function registerSortImportFeatures(serverId: string): Disposable & { sta
 
     const diagnosticsProvider = new SortImportsDiagnosticProvider();
     disposables.push(
-        languages.registerCodeActionsProvider(
-            getDocumentSelectorForPython(),
-            new SortImportsCodeActionProvider(serverId),
-            {
-                providedCodeActionKinds: [CodeActionKind.SourceOrganizeImports, CodeActionKind.QuickFix],
-            },
-        ),
+        languages.registerCodeActionsProvider(getDocumentSelector(), new SortImportsCodeActionProvider(serverId), {
+            providedCodeActionKinds: [CodeActionKind.SourceOrganizeImports, CodeActionKind.QuickFix],
+        }),
         workspace.onDidCloseTextDocument((td: TextDocument) => {
             diagnosticsProvider.publishDiagnostics(td.uri, []);
         }),

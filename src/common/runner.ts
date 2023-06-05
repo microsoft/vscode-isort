@@ -14,8 +14,8 @@ import {
     WorkspaceEdit,
 } from 'vscode';
 import { RUNNER_SCRIPT_PATH } from './constants';
-import { traceError, traceLog } from './log/logging';
-import { getWorkspaceSettings, ISettings } from './settings';
+import { traceError, traceLog } from './logging';
+import { ISettings, getWorkspaceSettings } from './settings';
 import { getProjectRoot } from './utilities';
 import { getWorkspaceFolder } from './vscodeapi';
 
@@ -69,7 +69,7 @@ function runScript(
 }
 
 async function getSettings(serverId: string, textDocument: TextDocument): Promise<ISettings | undefined> {
-    const workspaceFolder = getWorkspaceFolder(textDocument.uri) || getProjectRoot();
+    const workspaceFolder = getWorkspaceFolder(textDocument.uri) || (await getProjectRoot());
     const workspaceSetting = await getWorkspaceSettings(serverId, workspaceFolder, true);
     if (workspaceSetting.interpreter.length === 0) {
         traceError(
