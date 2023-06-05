@@ -124,7 +124,7 @@ export async function getWorkspaceSettings(
         path: resolveVariables(path, workspace),
         severity: config.get<Record<string, string>>('severity', DEFAULT_SEVERITY),
         interpreter: resolveVariables(interpreter, workspace),
-        importStrategy: config.get<string>('importStrategy', 'fromEnvironment'),
+        importStrategy: config.get<string>('importStrategy', 'useBundled'),
         showNotifications: config.get<string>('showNotifications', 'off'),
     };
     return workspaceSetting;

@@ -58,10 +58,6 @@ suite('Settings Tests', () => {
                 .returns(() => false)
                 .verifiable(TypeMoq.Times.atLeastOnce());
             configMock
-                .setup((c) => c.get('logLevel', 'error'))
-                .returns(() => 'error')
-                .verifiable(TypeMoq.Times.atLeastOnce());
-            configMock
                 .setup((c) => c.get('severity', DEFAULT_SEVERITY))
                 .returns(() => DEFAULT_SEVERITY)
                 .verifiable(TypeMoq.Times.atLeastOnce());
