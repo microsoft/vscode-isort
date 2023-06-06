@@ -468,7 +468,6 @@ def _log_verbose_config(settings: Dict[str, str]) -> None:
 def _get_global_defaults():
     return {
         "check": GLOBAL_SETTINGS.get("check", False),
-        "logLevel": GLOBAL_SETTINGS.get("logLevel", "error"),
         "path": GLOBAL_SETTINGS.get("path", []),
         "severity": GLOBAL_SETTINGS.get("severity", {"E": "Hint", "W": "Warning"}),
         "interpreter": GLOBAL_SETTINGS.get("interpreter", [sys.executable]),
