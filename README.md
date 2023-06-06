@@ -1,6 +1,6 @@
 # Import sorting extension for Visual Studio Code using `isort`
 
-A Visual Studio Code extension that provides import sorting using `isort`. The extension ships with `isort=5.11.5`.
+A Visual Studio Code extension that provides import sorting using `isort`. The extension ships with `isort=5.11.5`. This extension uses Language Server Protocol ([LSP](https://microsoft.github.io/language-server-protocol/)) to run `isort` in a server like mode.
 
 Note:
 
@@ -40,7 +40,6 @@ If you want to disable isort extension, you can [disable this extension](https:/
 | isort.args             | `[]`                              | Custom arguments passed to `isort`. E.g `"isort.args" = ["--settings-file", "<file>"]`                                                                                                                                                                                   |
 | isort.check            | `false`                           | Runs `isort --check` on open files and reports sorting issues as `Hint`. Update `isort.severity` to show sorting issues with higher severity.                                                                                                                            |
 | isort.severity         | `{ "W": "Warning", "E": "Hint" }` | Controls mapping of severity from `isort` to VS Code severity when displaying in the problems window.                                                                                                                                                                    |
-| isort.logLevel         | `error`                           | Sets the tracing level for the extension.                                                                                                                                                                                                                                |
 | isort.path             | `[]`                              | Setting to provide custom `isort` executable. This will slow down formatting, since we will have to run `isort` executable every time or file save or open. Example 1: `["~/global_env/isort"]` Example 2: `["conda", "run", "-n", "lint_env", "python", "-m", "isort"]` |
 | isort.interpreter      | `[]`                              | Path to a python interpreter to use to run the linter server.                                                                                                                                                                                                            |
 | isort.importStrategy   | `useBundled`                      | Setting to choose where to load `isort` from. `useBundled` picks isort bundled with the extension. `fromEnvironment` uses `isort` available in the environment.                                                                                                          |
@@ -52,3 +51,7 @@ If you want to disable isort extension, you can [disable this extension](https:/
 | Command        | Description                      |
 | -------------- | -------------------------------- |
 | isort: Restart | Force re-start the isort server. |
+
+## Logging
+
+Use `Developer : Set Log Level...` command from the **Command Palette**, and select `isort` from the extensions list to set the Log Level for the extension. For detailed LSP traces, add `"isort.trace.server" : "verbose"` to your **User** `settings.json` file.
