@@ -18,6 +18,7 @@ import {
     Uri,
     workspace,
 } from 'vscode';
+import { traceWarn } from './logging';
 import { diagnosticRunner, textEditRunner } from './runner';
 import { getDocumentSelector } from './vscodeapi';
 
@@ -56,7 +57,12 @@ class SortImportsCodeActionProvider implements CodeActionProvider<CodeAction> {
         _token: CancellationToken,
     ): Promise<(CodeAction | Command)[]> {
         const codeActions: (CodeAction | Command)[] = [];
-        if (document.uri.fsPath.includes('site-packages') || isNotebookCell(document.uri)) {
+        if (document.uri.fsPath.includes('site-packages')) {
+            traceWarn('Skipping site-packages file: ', document.uri.fsPath);
+            return codeActions;
+        }
+        if (isNotebookCell(document.uri)) {
+            traceWarn('Skipping notebook cell (not supported in server-less mode: ', document.uri.fsPath);
             return codeActions;
         }
 
