@@ -15,8 +15,7 @@ import { traceError, traceInfo, traceVerbose } from './logging';
 import { getDebuggerPath } from './python';
 import { getExtensionSettings, getGlobalSettings, ISettings } from './settings';
 import { updateStatus } from './status';
-import { getLSClientTraceLevel } from './utilities';
-import { getDocumentSelector } from './vscodeapi';
+import { getDocumentSelector, getLSClientTraceLevel } from './utilities';
 
 export type IInitOptions = { settings: ISettings[]; globalSettings: ISettings };
 
