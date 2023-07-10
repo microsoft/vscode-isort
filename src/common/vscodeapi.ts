@@ -53,14 +53,3 @@ export function createLanguageStatusItem(id: string, selector: DocumentSelector)
 export function getActiveTextEditor(): TextEditor | undefined {
     return window.activeTextEditor;
 }
-
-export function getDocumentSelector(): DocumentSelector {
-    return isVirtualWorkspace()
-        ? [{ language: 'python' }]
-        : [
-              { scheme: 'file', language: 'python' },
-              { scheme: 'untitled', language: 'python' },
-              { scheme: 'vscode-notebook', language: 'python' },
-              { scheme: 'vscode-notebook-cell', language: 'python' },
-          ];
-}

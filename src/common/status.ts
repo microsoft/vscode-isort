@@ -3,7 +3,8 @@
 
 import { Disposable, LanguageStatusItem, LanguageStatusSeverity, l10n } from 'vscode';
 import { Command } from 'vscode-languageclient';
-import { createLanguageStatusItem, getDocumentSelector } from './vscodeapi';
+import { getDocumentSelector } from './utilities';
+import { createLanguageStatusItem } from './vscodeapi';
 
 let _status: LanguageStatusItem | undefined;
 export function registerLanguageStatusItem(id: string, name: string, command: string): Disposable {

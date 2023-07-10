@@ -20,7 +20,7 @@ import {
 } from 'vscode';
 import { traceWarn } from './logging';
 import { diagnosticRunner, textEditRunner } from './runner';
-import { getDocumentSelector } from './vscodeapi';
+import { getDocumentSelector } from './utilities';
 
 export const notebookCellScheme = 'vscode-notebook-cell';
 export const interactiveInputScheme = 'vscode-interactive-input';
