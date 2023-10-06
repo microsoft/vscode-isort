@@ -4,7 +4,7 @@ A Visual Studio Code extension that provides import sorting using `isort`. The e
 
 Note:
 
--   This extension is supported for all [actively supported versions](https://devguide.python.org/#status-of-python-branches) of the `python` language (i.e., python >= 3.7).
+-   This extension is supported for all [actively supported versions](https://devguide.python.org/#status-of-python-branches) of the `python` language (i.e., python >= 3.8).
 -   The bundled `isort` is only used if there is no installed version of `isort` found in the selected `python` environment.
 -   Minimum supported version of `isort` is `5.10.1`.
 
