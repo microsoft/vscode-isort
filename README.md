@@ -1,6 +1,6 @@
 # Import sorting extension for Visual Studio Code using `isort`
 
-A Visual Studio Code extension that provides import sorting using `isort`. The extension ships with `isort=5.11.5`. This extension uses Language Server Protocol ([LSP](https://microsoft.github.io/language-server-protocol/)) to run `isort` in a server like mode.
+A Visual Studio Code extension that provides import sorting using `isort`. The extension ships with `isort=5.12.0`. This extension uses Language Server Protocol ([LSP](https://microsoft.github.io/language-server-protocol/)) to run `isort` in a server like mode.
 
 Note:
 
