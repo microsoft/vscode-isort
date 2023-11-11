@@ -78,7 +78,7 @@
             "properties": {
                 "isort.args": {
                     "default": [],
-                    "description": "%settings.args.description%",
+                    "markdownDescription": "%settings.args.description%",
                     "items": {
                         "type": "string"
                     },
@@ -87,7 +87,7 @@
                 },
                 "isort.check": {
                     "default": false,
-                    "description": "%settings.check.description%",
+                    "markdownDescription": "%settings.check.description%",
                     "scope": "resource",
                     "type": "boolean",
                     "tags": [
@@ -96,7 +96,7 @@
                 },
                 "isort.importStrategy": {
                     "default": "useBundled",
-                    "description": "%settings.importStrategy.description%",
+                    "markdownDescription": "%settings.importStrategy.description%",
                     "enum": [
                         "useBundled",
                         "fromEnvironment"
@@ -110,7 +110,7 @@
                 },
                 "isort.interpreter": {
                     "default": [],
-                    "description": "%settings.interpreter.description%",
+                    "markdownDescription": "%settings.interpreter.description%",
                     "scope": "resource",
                     "items": {
                         "type": "string"
@@ -119,7 +119,7 @@
                 },
                 "isort.path": {
                     "default": [],
-                    "description": "%settings.path.description%",
+                    "markdownDescription": "%settings.path.description%",
                     "scope": "resource",
                     "items": {
                         "type": "string"
@@ -138,7 +138,7 @@
                 },
                 "isort.serverEnabled": {
                     "default": true,
-                    "description": "%settings.serverEnabled.description%",
+                    "markdownDescription": "%settings.serverEnabled.description%",
                     "scope": "machine",
                     "type": "boolean"
                 },
@@ -156,13 +156,13 @@
                             "Warning"
                         ]
                     },
-                    "description": "%settings.severity.description%",
+                    "markdownDescription": "%settings.severity.description%",
                     "scope": "resource",
                     "type": "object"
                 },
                 "isort.showNotifications": {
                     "default": "off",
-                    "description": "%settings.showNotifications.description%",
+                    "markdownDescription": "%settings.showNotifications.description%",
                     "enum": [
                         "off",
                         "onError",

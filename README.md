@@ -1,50 +1,58 @@
-# Import sorting extension for Visual Studio Code using `isort`
+# Import sorting extension for Visual Studio Code using isort
 
-A Visual Studio Code extension that provides import sorting using `isort`. The extension ships with `isort=5.12.0`. This extension uses Language Server Protocol ([LSP](https://microsoft.github.io/language-server-protocol/)) to run `isort` in a server like mode.
+A Visual Studio Code extension that provides import sorting for Python projects using isort. It uses the Language Server Protocol ([LSP](https://microsoft.github.io/language-server-protocol/)) to run `isort` in a server like mode.
 
-Note:
+This extension ships with `isort=5.12.0`.
 
--   This extension is supported for all [actively supported versions](https://devguide.python.org/#status-of-python-branches) of the `python` language (i.e., python >= 3.8).
--   The bundled `isort` is only used if there is no installed version of `isort` found in the selected `python` environment.
--   Minimum supported version of `isort` is `5.10.1`.
+> **Note**: The minimum version of isort this extension supports is `5.10.1`.
 
-## Usage
+This extension supports all [actively supported versions](https://devguide.python.org/#status-of-python-branches) of the `Python` language (i.e., Python >= 3.8).
 
-Once installed in Visual Studio Code, the extension will register `isort` as import organizer. You can use keyboard short cut `shift` + `alt` + `O` to trigger organize imports editor action. You can also trigger this from the quick fix available when imports are not organized.
+For more information on isort, see https://pycqa.github.io/isort/
+
+
+## Usage and Features
+
+The isort extension provides a series of import sorting features to help with readability of your Python code in Visual Studio Code. Check out the [Settings section](#settings) below for more details on how to customize the extension.
+
+- **Integrated Import Sorting**: Once this extension is installed in Visual Studio Code, isort is automatically registered as an import organizer. You can use `Shift + Alt + O` to trigger the organize imports editor action. You can also trigger this from the quick fix available when imports are not organized.
+
+- **Customizable isort Arguments**: You can customize the arguments passed to isort by modifying the `isort.args` setting.
+
+- **Import Sorting on Save**: You can enable import sorting on save for Python files by changing the `editor.codeActionsOnSave` setting. It also works alongside the [VS Code Black formatter extension](https://marketplace.visualstudio.com/items?itemName=ms-python.black-formatter) if you set the following settings: 
+    
+  ```json
+    "[python]": {
+      "editor.defaultFormatter": "ms-python.black-formatter",
+      "editor.formatOnSave": true,
+      "editor.codeActionsOnSave": {
+          "source.organizeImports": true
+      },
+    },
+    "isort.args":["--profile", "black"],
+  ```
+
 
 ![Fixing import sorting with a code action.](images/vscode-isort.gif)
 
-### Import sorting on save
 
-You can enable import sorting on save for python by having the following values in your settings. This adds both import sorting and formatting (using `black`) on save :
 
-```json
-  "[python]": {
-    "editor.defaultFormatter": "ms-python.black-formatter",
-    "editor.formatOnSave": true,
-    "editor.codeActionsOnSave": {
-        "source.organizeImports": true
-    },
-  },
-  "isort.args":["--profile", "black"],
-```
+### Disabling isort
 
-### Disabling `isort` extension
-
-If you want to disable isort extension, you can [disable this extension](https://code.visualstudio.com/docs/editor/extension-marketplace#_disable-an-extension) per workspace in Visual Studio Code.
+If you want to disable isort for your entire workspace or globally, you can [disable this extension](https://code.visualstudio.com/docs/editor/extension-marketplace#_disable-an-extension) in Visual Studio Code.
 
 ## Settings
 
 | Settings               | Default                           | Description                                                                                                                                                                                                                                                              |
 | ---------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| isort.args             | `[]`                              | Custom arguments passed to `isort`. E.g `"isort.args" = ["--settings-file", "<file>"]`                                                                                                                                                                                   |
-| isort.check            | `false`                           | Runs `isort --check` on open files and reports sorting issues as `Hint`. Update `isort.severity` to show sorting issues with higher severity.                                                                                                                            |
-| isort.severity         | `{ "W": "Warning", "E": "Hint" }` | Controls mapping of severity from `isort` to VS Code severity when displaying in the problems window.                                                                                                                                                                    |
-| isort.path             | `[]`                              | Setting to provide custom `isort` executable. This will slow down formatting, since we will have to run `isort` executable every time or file save or open. Example 1: `["~/global_env/isort"]` Example 2: `["conda", "run", "-n", "lint_env", "python", "-m", "isort"]` |
-| isort.interpreter      | `[]`                              | Path to a python interpreter to use to run the linter server. When set to `[]`, it will use the Python extension's selected interpreter. If set to some path, that path takes precedence, and the Python extension is not queried for the interpreter.                                                                                                                                                                                                            |
-| isort.importStrategy   | `useBundled`                      | Setting to choose where to load `isort` from. `useBundled` picks isort bundled with the extension. `fromEnvironment` uses `isort` available in the environment.                                                                                                          |
-| isort.showNotification | `off`                             | Setting to control when a notification is shown.                                                                                                                                                                                                                         |
-| isort.serverEnabled    | `true`                            | **Experimental** setting to control running `isort` in a server like mode. By default we run `isort` behind LSP server, this setting allows users to turn off the server and run isort directly.                                                                                                                                                                                                                            |
+| isort.args             | `[]`                              | Arguments passed to isort for sorting imports in Python files. Each argument should be provided as a separate string in the array. <br> Example: <br> `"isort.args" = ["--settings-file", "<file>"]`                                                                                                                                                                                   |
+| isort.check            | `false`                           | Whether to run `isort --check` on open Python files and report sorting issues as a "Hint" in the Problems window. You can update `isort.severity` to show sorting issues with higher severity.                                                                                                                            |
+| isort.severity         | `{ "W": "Warning", "E": "Hint" }` | Mapping of isort's message types to VS Code's diagnostic severity levels as displayed in the Problems window.                                                                                                                                                                   |
+| isort.path             | `[]`                              | Path of the isort binary to be used by this extension. Note: This may slow down formatting.<br> Examples: <br>- `isort.path : ["~/global_env/isort"]` <br> - `isort.path : ["conda", "run", "-n", "lint_env", "python", "-m", "isort"]` |
+| isort.interpreter      | `[]`                              | Path to a Python executable or a command that will be used to launch the isort server and any subprocess. Accepts an array of a single or multiple strings. When set to `[]`, the extension will use the path to the selected Python interpreter.                                                                                                                   |
+| isort.importStrategy   | `useBundled`                      | Defines which isort binary to be used to lint Python files. When set to `useBundled`, the extension will use the isort binary that is shipped with the extension. When set to `fromEnvironment`, the extension will attempt to use the isort binary and all dependencies that are available in the currently selected environment. Note: If the extension can't find a valid isort binary in the selected environment, it will fallback to using the isort binary that is shipped with the extension The `pylint.path` setting may also be ignored when this setting is set to `fromEnvironment`.                                                                                           |
+| isort.showNotification | `off`                             | Controls when notifications are shown by this extension. Accepted values are `onError`, `onWarning`, `always` and `off`.                                                                                                                                                                                                                         |
+| isort.serverEnabled    | `true`                            | **Experimental** setting to control whether to run isort in a server-like mode. By default `isort` is run behind LSP server, but you can disable this setting to run isort directly. Disabling this setting will also disable import sorting via Code Actions or Organize Imports, but you can still sort imports through the **isort: Sort Imports** command.                                                                                                                                                                                                                           |
 
 ## Commands
 
@@ -54,4 +62,8 @@ If you want to disable isort extension, you can [disable this extension](https:/
 
 ## Logging
 
-Use `Developer : Set Log Level...` command from the **Command Palette**, and select `isort` from the extensions list to set the Log Level for the extension. For detailed LSP traces, add `"isort.trace.server" : "verbose"` to your **User** `settings.json` file.
+From the Command Palette (**View** > **Command Palette ...**), run the **Developer: Set Log Level...** command. Select **isort** from the **Extension logs** group. Then select the log level you want to set.
+
+Alternatively, you can set the `isort.trace.server` setting to `verbose` to get more detailed logs from the isort server. This can be helpful when filing bug reports.
+
+To open the logs, click on the language status icon (`{}`) on the bottom right of the Status bar, next to the Python language mode. Locate the **isort** entry and select **Open logs**.
