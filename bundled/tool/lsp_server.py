@@ -602,6 +602,10 @@ def _run_tool_on_document(
 
     source = document.source.replace("\r\n", "\n")
 
+    argv = [
+        os.path.dirname(document.path) if a == "${fileDirname}" else a for a in argv
+    ]
+
     if use_path:
         # This mode is used when running executables.
         log_to_output(" ".join(argv))
