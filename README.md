@@ -26,7 +26,7 @@ The isort extension provides a series of import sorting features to help with re
       "editor.defaultFormatter": "ms-python.black-formatter",
       "editor.formatOnSave": true,
       "editor.codeActionsOnSave": {
-          "source.organizeImports": true
+          "source.organizeImports": "explicit"
       },
     },
     "isort.args":["--profile", "black"],
