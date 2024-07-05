@@ -651,7 +651,7 @@ def _run_tool_on_document(
                 source=source,
             )
         except isort.exceptions.FileSkipComment:
-            log_warning(f"Skipping file with 'isort:skip_file' comment: {document.path}")
+            log_warning(f"Skipping file with 'skip_file' comment: {document.path}")
             return None
         except isort.exceptions.FileSkipped:
             log_warning(traceback.format_exc(chain=True))
