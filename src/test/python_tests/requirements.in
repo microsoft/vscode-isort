@@ -7,3 +7,4 @@
 pytest
 PyHamcrest
 python-lsp-jsonrpc
+colorama # required for windows machines
