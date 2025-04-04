@@ -1,9 +1,10 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-import { ConfigurationChangeEvent, ConfigurationScope, WorkspaceConfiguration, WorkspaceFolder } from 'vscode';
-import { traceLog } from './logging';
+import { ConfigurationChangeEvent, WorkspaceConfiguration, WorkspaceFolder } from 'vscode';
+import { traceError, traceInfo, traceLog } from './logging';
 import { getInterpreterDetails } from './python';
+import { getInterpreterFromSetting } from './utilities';
 import { getConfiguration, getWorkspaceFolders } from './vscodeapi';
 
 export interface ISettings {
@@ -25,7 +26,25 @@ export function getExtensionSettings(namespace: string, includeInterpreter?: boo
     return Promise.all(getWorkspaceFolders().map((w) => getWorkspaceSettings(namespace, w, includeInterpreter)));
 }
 
-function resolveVariables(value: string[], workspace?: WorkspaceFolder): string[] {
+function resolveVariables(
+    value: string[],
+    key: string,
+    workspace?: WorkspaceFolder,
+    interpreter?: string[],
+    env?: NodeJS.ProcessEnv,
+): string[] {
+    for (const v of value) {
+        if (typeof v !== 'string') {
+            traceError(`Value [${v}] must be "string" for \`isort.${key}\`: ${value}`);
+            throw new Error(`Value [${v}] must be "string" for \`isort.${key}\`: ${value}`);
+        }
+        if (v.startsWith('--') && v.includes(' ')) {
+            traceError(
+                `Settings should be in the form ["--line-length=88"] or ["--line-length", "88"] but not ["--line-length 88"]`,
+            );
+        }
+    }
+
     const substitutions = new Map<string, string>();
     const home = process.env.HOME || process.env.USERPROFILE;
     if (home) {
@@ -39,7 +58,25 @@ function resolveVariables(value: string[], workspace?: WorkspaceFolder): string[
         substitutions.set('${workspaceFolder:' + w.name + '}', w.uri.fsPath);
     });
 
-    return value.map((s) => {
+    env = env || process.env;
+    if (env) {
+        for (const [key, value] of Object.entries(env)) {
+            if (value) {
+                substitutions.set('${env:' + key + '}', value);
+            }
+        }
+    }
+
+    const modifiedValue = [];
+    for (const v of value) {
+        if (interpreter && v === '${interpreter}') {
+            modifiedValue.push(...interpreter);
+        } else {
+            modifiedValue.push(v);
+        }
+    }
+
+    return modifiedValue.map((s) => {
         for (const [key, value] of substitutions) {
             s = s.replace(key, value);
         }
@@ -80,9 +117,9 @@ function getPath(namespace: string, workspace: WorkspaceFolder): string[] {
     return [];
 }
 
-export function getInterpreterFromSetting(namespace: string, scope?: ConfigurationScope) {
-    const config = getConfiguration(namespace, scope);
-    return config.get<string[]>('interpreter');
+function getCwd(config: WorkspaceConfiguration, workspace: WorkspaceFolder): string {
+    const cwd = config.get<string>('cwd', workspace.uri.fsPath);
+    return resolveVariables([cwd], 'cwd', workspace)[0];
 }
 
 export async function getWorkspaceSettings(
@@ -120,13 +157,16 @@ export async function getWorkspaceSettings(
         check: config.get<boolean>('check', false),
         cwd: workspace.uri.fsPath,
         workspace: workspace.uri.toString(),
-        args: resolveVariables(args, workspace),
-        path: resolveVariables(path, workspace),
+        args: resolveVariables(args, 'args', workspace),
+        path: resolveVariables(path, 'path', workspace, interpreter),
         severity: config.get<Record<string, string>>('severity', DEFAULT_SEVERITY),
-        interpreter: resolveVariables(interpreter, workspace),
+        interpreter: resolveVariables(interpreter, 'interpreter', workspace),
         importStrategy: config.get<string>('importStrategy', 'useBundled'),
         showNotifications: config.get<string>('showNotifications', 'off'),
     };
+    traceInfo(
+        `Workspace settings for ${workspace.uri.fsPath} (client side): ${JSON.stringify(workspaceSetting, null, 4)}`,
+    );
     return workspaceSetting;
 }
 
@@ -157,6 +197,7 @@ export async function getGlobalSettings(namespace: string, includeInterpreter?: 
         importStrategy: getGlobalValue<string>(config, 'importStrategy', 'fromEnvironment'),
         showNotifications: getGlobalValue<string>(config, 'showNotifications', 'off'),
     };
+    traceInfo(`Global settings (client side): ${JSON.stringify(setting, null, 4)}`);
     return setting;
 }
 

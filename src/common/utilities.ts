@@ -3,10 +3,10 @@
 
 import * as fs from 'fs-extra';
 import * as path from 'path';
-import { LogLevel, Uri, WorkspaceFolder } from 'vscode';
+import { ConfigurationScope, LogLevel, Uri, WorkspaceFolder } from 'vscode';
 import { Trace } from 'vscode-jsonrpc/node';
 import { DocumentSelector } from 'vscode-languageclient';
-import { getWorkspaceFolders, isVirtualWorkspace } from './vscodeapi';
+import { getConfiguration, getWorkspaceFolders, isVirtualWorkspace } from './vscodeapi';
 
 function logLevelToTrace(logLevel: LogLevel): Trace {
     switch (logLevel) {
@@ -39,11 +39,7 @@ export function getLSClientTraceLevel(channelLogLevel: LogLevel, globalLogLevel:
 export async function getProjectRoot(): Promise<WorkspaceFolder> {
     const workspaces: readonly WorkspaceFolder[] = getWorkspaceFolders();
     if (workspaces.length === 0) {
-        return {
-            uri: Uri.file(process.cwd()),
-            name: path.basename(process.cwd()),
-            index: 0,
-        };
+        return { uri: Uri.file(process.cwd()), name: path.basename(process.cwd()), index: 0 };
     } else if (workspaces.length === 1) {
         return workspaces[0];
     } else {
@@ -77,4 +73,9 @@ export function getDocumentSelector(): DocumentSelector {
               { scheme: 'vscode-notebook', language: 'python' },
               { scheme: 'vscode-notebook-cell', language: 'python' },
           ];
+}
+
+export function getInterpreterFromSetting(namespace: string, scope?: ConfigurationScope) {
+    const config = getConfiguration(namespace, scope);
+    return config.get<string[]>('interpreter');
 }
