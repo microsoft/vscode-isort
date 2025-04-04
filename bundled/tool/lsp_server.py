@@ -74,7 +74,7 @@ MIN_VERSION = "5.10.1"
 @LSP_SERVER.feature(lsp.TEXT_DOCUMENT_DID_OPEN)
 def did_open(params: lsp.DidOpenTextDocumentParams) -> None:
     """LSP handler for textDocument/didOpen request."""
-    document = LSP_SERVER.workspace.get_document(params.text_document.uri)
+    document = LSP_SERVER.workspace.get_text_document(params.text_document.uri)
     diagnostics: list[lsp.Diagnostic] = _linting_helper(document)
     LSP_SERVER.publish_diagnostics(document.uri, diagnostics)
 
@@ -82,7 +82,7 @@ def did_open(params: lsp.DidOpenTextDocumentParams) -> None:
 @LSP_SERVER.feature(lsp.TEXT_DOCUMENT_DID_SAVE)
 def did_save(params: lsp.DidSaveTextDocumentParams) -> None:
     """LSP handler for textDocument/didSave request."""
-    document = LSP_SERVER.workspace.get_document(params.text_document.uri)
+    document = LSP_SERVER.workspace.get_text_document(params.text_document.uri)
     diagnostics: list[lsp.Diagnostic] = _linting_helper(document)
     LSP_SERVER.publish_diagnostics(document.uri, diagnostics)
 
@@ -90,7 +90,7 @@ def did_save(params: lsp.DidSaveTextDocumentParams) -> None:
 @LSP_SERVER.feature(lsp.TEXT_DOCUMENT_DID_CLOSE)
 def did_close(params: lsp.DidCloseTextDocumentParams) -> None:
     """LSP handler for textDocument/didClose request."""
-    document = LSP_SERVER.workspace.get_document(params.text_document.uri)
+    document = LSP_SERVER.workspace.get_text_document(params.text_document.uri)
     # Publishing empty diagnostics to clear the entries for this file.
     LSP_SERVER.publish_diagnostics(document.uri, [])
 
@@ -548,6 +548,19 @@ def _get_settings_by_document(document: workspace.Document | None):
 # *****************************************************
 # Internal execution APIs.
 # *****************************************************
+def get_cwd(settings: Dict[str, Any], document: Optional[workspace.Document]) -> str:
+    """Returns cwd for the given settings and document."""
+    if settings["cwd"] == "${workspaceFolder}":
+        return settings["workspaceFS"]
+
+    if settings["cwd"] == "${fileDirname}":
+        if document is not None:
+            return os.fspath(pathlib.Path(document.path).parent)
+        return settings["workspaceFS"]
+
+    return settings["cwd"]
+
+
 # pylint: disable=too-many-branches
 def _run_tool_on_document(
     document: workspace.Document,
@@ -575,7 +588,7 @@ def _run_tool_on_document(
     settings = copy.deepcopy(_get_settings_by_document(document))
 
     code_workspace = settings["workspaceFS"]
-    cwd = settings["workspaceFS"]
+    cwd = get_cwd(settings, document)
 
     use_path = False
     use_rpc = False
@@ -671,7 +684,7 @@ def _run_tool_on_document(
 def _run_tool(extra_args: Sequence[str], settings: Dict[str, Any]) -> utils.RunResult:
     """Runs tool."""
     code_workspace = settings["workspaceFS"]
-    cwd = settings["workspaceFS"]
+    cwd = get_cwd(settings, None)
 
     use_path = False
     use_rpc = False

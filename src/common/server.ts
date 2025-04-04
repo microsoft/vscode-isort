@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 import * as fsapi from 'fs-extra';
-import { Disposable, env, l10n, LanguageStatusSeverity, LogOutputChannel } from 'vscode';
+import { Disposable, env, l10n, LanguageStatusSeverity, LogOutputChannel, Uri } from 'vscode';
 import { State } from 'vscode-languageclient';
 import {
     LanguageClient,
@@ -27,7 +27,8 @@ async function createServer(
     initializationOptions: IInitOptions,
 ): Promise<LanguageClient> {
     const command = settings.interpreter[0];
-    const cwd = settings.cwd;
+    const workspaceUri = Uri.parse(settings.workspace);
+    const cwd = settings.cwd === '${fileDirname}' ? workspaceUri.fsPath : settings.cwd;
 
     // Set debugger path needed for debugging python code.
     const newEnv = { ...process.env };
@@ -51,11 +52,7 @@ async function createServer(
             : settings.interpreter.slice(1).concat([DEBUG_SERVER_SCRIPT_PATH]);
     traceInfo(`Server run command: ${[command, ...args].join(' ')}`);
 
-    const serverOptions: ServerOptions = {
-        command,
-        args,
-        options: { cwd, env: newEnv },
-    };
+    const serverOptions: ServerOptions = { command, args, options: { cwd, env: newEnv } };
 
     // Options to control the language client
     const clientOptions: LanguageClientOptions = {
@@ -76,12 +73,12 @@ export async function restartServer(
     serverId: string,
     serverName: string,
     outputChannel: LogOutputChannel,
-    lsClient?: LanguageClient,
+    oldLsClient?: LanguageClient,
 ): Promise<LanguageClient | undefined> {
-    if (lsClient) {
+    if (oldLsClient) {
         traceInfo(`Server: Stop requested`);
         try {
-            await lsClient.stop();
+            await oldLsClient.stop();
         } catch (ex) {
             traceError(`Server: Stop failed: ${ex}`);
         }
