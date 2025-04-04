@@ -75,7 +75,7 @@ def _update_npm_packages(session: nox.Session) -> None:
     session.run("npm", "install", external=True)
 
 
-@nox.session(python="3.8")
+@nox.session(python="3.9")
 def install_bundled_libs(session):
     """Installs the libraries that will be bundled with the extension."""
     session.install("wheel")
