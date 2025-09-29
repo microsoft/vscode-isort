@@ -214,7 +214,7 @@
         "glob": "^10.3.12",
         "mocha": "^10.4.0",
         "prettier": "^3.2.5",
-        "sinon": "^17.0.1",
+        "sinon": "^21.0.0",
         "ts-loader": "^9.5.1",
         "typemoq": "^2.1.0",
         "typescript": "^5.4.3",
