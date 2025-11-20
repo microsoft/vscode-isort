@@ -212,7 +212,7 @@
         "chai-arrays": "^2.2.0",
         "chai-as-promised": "^8.0.1",
         "eslint": "^9.35.0",
-        "glob": "^10.3.12",
+        "glob": "^10.5.0",
         "mocha": "^11.7.2",
         "prettier": "^3.2.5",
         "sinon": "^21.0.0",
