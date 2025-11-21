@@ -25,3 +25,4 @@ noxfile.py
 **/requirements.in
 build/**
 **/tool/_debug_server.py
+packages.config
