@@ -69,7 +69,7 @@ extends:
               - task: npmAuthenticate@0
                 inputs:
                   workingFile: .npmrc
-              
+
               - script: npm config get registry
                 displayName: Verify NPM Registry
 
@@ -123,4 +123,3 @@ extends:
                       signatureName: extension.signature.p7s
                       publishFolder: drop
                       preRelease: true
-
