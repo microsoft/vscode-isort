@@ -3,6 +3,7 @@
 """
 Test for formatting over LSP.
 """
+
 import copy
 import os
 from threading import Event
