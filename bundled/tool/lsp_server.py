@@ -200,7 +200,7 @@ def _parse_output(
     ),
 )
 def code_action_organize_imports(params: lsp.CodeActionParams):
-    text_document = LSP_SERVER.workspace.get_document(params.text_document.uri)
+    text_document = LSP_SERVER.workspace.get_text_document(params.text_document.uri)
 
     if utils.is_stdlib_file(text_document.path):
         # Don't format standard library python files.
@@ -267,7 +267,7 @@ def code_action_organize_imports(params: lsp.CodeActionParams):
 
 @LSP_SERVER.feature(lsp.CODE_ACTION_RESOLVE)
 def code_action_resolve(params: lsp.CodeAction):
-    text_document = LSP_SERVER.workspace.get_document(params.data)
+    text_document = LSP_SERVER.workspace.get_text_document(params.data)
 
     results = _formatting_helper(text_document)
     if results:
