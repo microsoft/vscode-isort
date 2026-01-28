@@ -2,7 +2,7 @@
 
 A Visual Studio Code extension that provides import sorting for Python projects using isort. The extension uses the Language Server Protocol ([LSP](https://microsoft.github.io/language-server-protocol/)) to run `isort` in a server-like mode.
 
-This extension ships with `isort=6.0.1`.
+This extension ships with `isort=7.0.0`.
 
 > **Note**: The minimum version of isort this extension supports is `6.0.0`. If you have any issues sorting imports with isort, please report it to [this issue tracker](https://github.com/PyCQA/isort/issues) as this extension is just a wrapper around isort.
 
