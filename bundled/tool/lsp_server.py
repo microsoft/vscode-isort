@@ -43,7 +43,8 @@ import isort
 import lsp_jsonrpc as jsonrpc
 import lsp_utils as utils
 import lsprotocol.types as lsp
-from pygls import server, uris, workspace
+from pygls import uris, workspace
+from pygls.lsp import server
 
 WORKSPACE_SETTINGS = {}
 GLOBAL_SETTINGS = {}
@@ -77,7 +78,7 @@ def did_open(params: lsp.DidOpenTextDocumentParams) -> None:
     """LSP handler for textDocument/didOpen request."""
     document = LSP_SERVER.workspace.get_text_document(params.text_document.uri)
     diagnostics: list[lsp.Diagnostic] = _linting_helper(document)
-    LSP_SERVER.publish_diagnostics(document.uri, diagnostics)
+    LSP_SERVER.text_document_publish_diagnostics(document.uri, diagnostics)
 
 
 @LSP_SERVER.feature(lsp.TEXT_DOCUMENT_DID_SAVE)
@@ -85,7 +86,7 @@ def did_save(params: lsp.DidSaveTextDocumentParams) -> None:
     """LSP handler for textDocument/didSave request."""
     document = LSP_SERVER.workspace.get_text_document(params.text_document.uri)
     diagnostics: list[lsp.Diagnostic] = _linting_helper(document)
-    LSP_SERVER.publish_diagnostics(document.uri, diagnostics)
+    LSP_SERVER.text_document_publish_diagnostics(document.uri, diagnostics)
 
 
 @LSP_SERVER.feature(lsp.TEXT_DOCUMENT_DID_CLOSE)
@@ -93,10 +94,10 @@ def did_close(params: lsp.DidCloseTextDocumentParams) -> None:
     """LSP handler for textDocument/didClose request."""
     document = LSP_SERVER.workspace.get_text_document(params.text_document.uri)
     # Publishing empty diagnostics to clear the entries for this file.
-    LSP_SERVER.publish_diagnostics(document.uri, [])
+    LSP_SERVER.text_document_publish_diagnostics(document.uri, [])
 
 
-def _linting_helper(document: workspace.Document) -> list[lsp.Diagnostic]:
+def _linting_helper(document: workspace.TextDocument) -> list[lsp.Diagnostic]:
     # deep copy here to prevent accidentally updating global settings.
     settings = copy.deepcopy(_get_settings_by_document(document))
 
@@ -137,7 +138,7 @@ def _is_sorting_error(line: str) -> bool:
 
 
 def _parse_output(
-    document: workspace.Document,
+    document: workspace.TextDocument,
     output: str,
     severity: Dict[str, str],
 ) -> Sequence[lsp.Diagnostic]:
@@ -218,7 +219,7 @@ def code_action_organize_imports(params: lsp.CodeActionParams):
         if results:
             # Clear out diagnostics, since we are making changes to address
             # import sorting issues.
-            LSP_SERVER.publish_diagnostics(text_document.uri, [])
+            LSP_SERVER.text_document_publish_diagnostics(text_document.uri, [])
             return [
                 lsp.CodeAction(
                     title="isort: Organize Imports",
@@ -272,7 +273,7 @@ def code_action_resolve(params: lsp.CodeAction):
     if results:
         # Clear out diagnostics, since we are making changes to address
         # import sorting issues.
-        LSP_SERVER.publish_diagnostics(text_document.uri, [])
+        LSP_SERVER.text_document_publish_diagnostics(text_document.uri, [])
     else:
         # There are no changes so return the original code as is.
         # This could be due to error while running import sorter
@@ -306,7 +307,7 @@ def is_interactive(file_path: str) -> bool:
     return file_path.endswith(".interactive")
 
 
-def _formatting_helper(document: workspace.Document) -> list[lsp.TextEdit] | None:
+def _formatting_helper(document: workspace.TextDocument) -> list[lsp.TextEdit] | None:
     result = _run_tool_on_document(document, use_stdin=True)
     if result.stdout:
         new_source = _match_line_endings(document, result.stdout)
@@ -332,7 +333,7 @@ def _formatting_helper(document: workspace.Document) -> list[lsp.TextEdit] | Non
 
 
 def _create_workspace_edits(
-    document: workspace.Document, results: Optional[List[lsp.TextEdit]]
+    document: workspace.TextDocument, results: Optional[List[lsp.TextEdit]]
 ):
     return lsp.WorkspaceEdit(
         document_changes=[
@@ -357,7 +358,7 @@ def _get_line_endings(lines: list[str]) -> str:
         return None
 
 
-def _match_line_endings(document: workspace.Document, text: str) -> str:
+def _match_line_endings(document: workspace.TextDocument, text: str) -> str:
     """Ensures that the edited text line endings matches the document line endings."""
     expected = _get_line_endings(document.source.splitlines(keepends=True))
     actual = _get_line_endings(text.splitlines(keepends=True))
@@ -513,7 +514,7 @@ def _get_settings_by_path(file_path: pathlib.Path):
     return setting_values[0]
 
 
-def _get_document_key(document: workspace.Document):
+def _get_document_key(document: workspace.TextDocument):
     if WORKSPACE_SETTINGS:
         document_workspace = pathlib.Path(document.path)
         workspaces = {s["workspaceFS"] for s in WORKSPACE_SETTINGS.values()}
@@ -528,7 +529,7 @@ def _get_document_key(document: workspace.Document):
     return None
 
 
-def _get_settings_by_document(document: workspace.Document | None):
+def _get_settings_by_document(document: workspace.TextDocument | None):
     if document is None or document.path is None:
         return list(WORKSPACE_SETTINGS.values())[0]
 
@@ -549,7 +550,9 @@ def _get_settings_by_document(document: workspace.Document | None):
 # *****************************************************
 # Internal execution APIs.
 # *****************************************************
-def get_cwd(settings: Dict[str, Any], document: Optional[workspace.Document]) -> str:
+def get_cwd(
+    settings: Dict[str, Any], document: Optional[workspace.TextDocument]
+) -> str:
     """Returns cwd for the given settings and document."""
     if settings["cwd"] == "${workspaceFolder}":
         return settings["workspaceFS"]
@@ -564,7 +567,7 @@ def get_cwd(settings: Dict[str, Any], document: Optional[workspace.Document]) ->
 
 # pylint: disable=too-many-branches
 def _run_tool_on_document(
-    document: workspace.Document,
+    document: workspace.TextDocument,
     use_stdin: bool = False,
     extra_args: Sequence[str] = [],
 ) -> utils.RunResult | None:
