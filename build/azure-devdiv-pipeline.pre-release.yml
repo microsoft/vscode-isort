@@ -18,7 +18,9 @@ resources:
       ref: refs/tags/release
 
     - repository: templates
+      type: azuredevops
       name: DevDiv/Pylance-Eng
+      ref: refs/heads/main
 
 variables:
   - name: TeamName
@@ -40,8 +42,6 @@ parameters:
       - name: Linux
         packageArch: x64
         vsceTarget: linux-x64
-  
-
   - name: buildSteps
     type: stepList
     default:
