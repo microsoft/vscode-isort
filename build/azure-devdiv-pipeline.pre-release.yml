@@ -38,28 +38,9 @@ parameters:
     type: object
     default:
       - name: Linux
-        vsceTarget: ''
-      - name: Linux
-        packageArch: arm64
-        vsceTarget: linux-arm64
-      - name: Linux
-        packageArch: arm
-        vsceTarget: linux-armhf
-      - name: Linux
         packageArch: x64
         vsceTarget: linux-x64
-      - name: MacOS
-        packageArch: arm64
-        vsceTarget: darwin-arm64
-      - name: MacOS
-        packageArch: x64
-        vsceTarget: darwin-x64
-      - name: Windows
-        packageArch: arm
-        vsceTarget: win32-arm64
-      - name: Windows
-        packageArch: x64
-        vsceTarget: win32-x64
+  
 
   - name: buildSteps
     type: stepList
