@@ -18,7 +18,7 @@ resources:
       ref: refs/tags/release
 
     - repository: templates
-      type: azuredevops
+      type: git
       name: DevDiv/Pylance-Eng
       ref: refs/heads/main
 
