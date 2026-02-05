@@ -90,8 +90,7 @@ extends:
         dependsOn: Build
         jobs:
           - template: azure-pipelines/extension/templates/jobs/publish-extension.yml@templates
-            parameters:
-              buildPlatforms: ${{ parameters.buildPlatforms }}
+            parameters:              
               publishExtension: ${{ parameters.publishExtension }}
               preRelease: true
               teamName: $(TeamName)
