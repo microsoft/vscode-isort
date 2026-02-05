@@ -80,7 +80,6 @@ extends:
         jobs:
           - template: azure-pipelines/extension/templates/jobs/package.yml@templates
             parameters:
-              buildPlatforms: ${{ parameters.buildPlatforms }}
               buildSteps: ${{ parameters.buildSteps }}
               isPreRelease: true
               standardizedVersioning: true
