@@ -3,6 +3,7 @@
 
 import * as vscode from 'vscode';
 import { LanguageClient } from 'vscode-languageclient/node';
+import { createConfigFileWatchers } from './common/configWatcher';
 import { LS_SERVER_RESTART_DELAY, PYTHON_VERSION } from './common/constants';
 import { registerLogger, traceError, traceLog, traceVerbose } from './common/logging';
 import { initializePython, onDidChangePythonInterpreter } from './common/python';
@@ -49,8 +50,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
                 updateStatus(vscode.l10n.t('Please select a Python interpreter.'), vscode.LanguageStatusSeverity.Error);
                 traceError(
                     'Python interpreter missing:\r\n' +
-                        '[Option 1] Select python interpreter using the ms-python.python (select interpreter command).\r\n' +
-                        `[Option 2] Set an interpreter using "${serverId}.interpreter" setting.\r\n`,
+                    '[Option 1] Select python interpreter using the ms-python.python (select interpreter command).\r\n' +
+                    `[Option 2] Set an interpreter using "${serverId}.interpreter" setting.\r\n`,
                     `Please use Python ${PYTHON_VERSION} or greater.`,
                 );
             } else {
@@ -61,7 +62,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         }
     };
 
+    // Create file watchers for isort configuration files
+    const configFileWatchers = createConfigFileWatchers(runServer);
+
     context.subscriptions.push(
+        ...configFileWatchers,
         onDidChangePythonInterpreter(async () => {
             await runServer();
         }),
