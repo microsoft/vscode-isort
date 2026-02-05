@@ -20,8 +20,7 @@ resources:
     - repository: templates
       type: git
       name: DevDiv/Pylance-Eng
-      ref: refs/heads/refactor-layout
-
+      ref: refs/heads/default-platform
 variables:
   - name: TeamName
     value: VSCode-isort
@@ -36,12 +35,6 @@ parameters:
     type: boolean
     default: false
 
-  - name: buildPlatforms
-    type: object
-    default:
-      - name: Linux
-        packageArch: x64
-        vsceTarget: linux-x64
   - name: buildSteps
     type: stepList
     default:
