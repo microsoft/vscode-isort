@@ -14,10 +14,4 @@ export const PYTHON_MAJOR = 3;
 export const PYTHON_MINOR = 8;
 export const PYTHON_VERSION = `${PYTHON_MAJOR}.${PYTHON_MINOR}`;
 export const LS_SERVER_RESTART_DELAY = 1000;
-export const ISORT_CONFIG_FILES = [
-    '.isort.cfg',
-    'pyproject.toml',
-    'setup.cfg',
-    'tox.ini',
-    '.editorconfig',
-];
+export const ISORT_CONFIG_FILES = ['.isort.cfg', 'pyproject.toml', 'setup.cfg', 'tox.ini', '.editorconfig'];

@@ -22,17 +22,17 @@ function createMockFileSystemWatcher(): MockFileSystemWatcher {
     const watcher = {
         onDidChange: (handler: () => Promise<void>): Disposable => {
             onDidChangeHandler = handler;
-            return { dispose: () => { } };
+            return { dispose: () => {} };
         },
         onDidCreate: (handler: () => Promise<void>): Disposable => {
             onDidCreateHandler = handler;
-            return { dispose: () => { } };
+            return { dispose: () => {} };
         },
         onDidDelete: (handler: () => Promise<void>): Disposable => {
             onDidDeleteHandler = handler;
-            return { dispose: () => { } };
+            return { dispose: () => {} };
         },
-        dispose: () => { },
+        dispose: () => {},
     } as unknown as FileSystemWatcher;
 
     return {
@@ -104,10 +104,7 @@ suite('Config File Watcher Tests', () => {
         // Simulate modifying pyproject.toml
         await mockWatchers[1].fireDidChange();
 
-        assert.isTrue(
-            onConfigChanged.calledOnce,
-            'Expected onConfigChanged to be called when config file is changed',
-        );
+        assert.isTrue(onConfigChanged.calledOnce, 'Expected onConfigChanged to be called when config file is changed');
     });
 
     test('Server restarts when a config file is deleted', async () => {
@@ -117,10 +114,7 @@ suite('Config File Watcher Tests', () => {
         // Simulate deleting setup.cfg
         await mockWatchers[2].fireDidDelete();
 
-        assert.isTrue(
-            onConfigChanged.calledOnce,
-            'Expected onConfigChanged to be called when config file is deleted',
-        );
+        assert.isTrue(onConfigChanged.calledOnce, 'Expected onConfigChanged to be called when config file is deleted');
     });
 
     test('Server restarts for each config file type on create', async () => {
