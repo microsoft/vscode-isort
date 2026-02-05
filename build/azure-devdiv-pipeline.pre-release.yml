@@ -20,7 +20,7 @@ resources:
     - repository: templates
       type: git
       name: DevDiv/Pylance-Eng
-      ref: refs/heads/main
+      ref: refs/heads/test-template
 
 variables:
   - name: TeamName
