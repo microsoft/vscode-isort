@@ -20,7 +20,7 @@ resources:
     - repository: templates
       type: git
       name: DevDiv/Pylance-Eng
-      ref: refs/heads/default-platform
+      ref: refs/heads/main
 variables:
   - name: TeamName
     value: VSCode-isort
