@@ -8,7 +8,7 @@ import { LS_SERVER_RESTART_DELAY, PYTHON_VERSION } from './common/constants';
 import { registerLogger, traceError, traceLog, traceVerbose } from './common/logging';
 import { initializePython, onDidChangePythonInterpreter } from './common/python';
 import { restartServer } from './common/server';
-import { ISettings, checkIfConfigurationChanged, getExtensionSettings, getWorkspaceSettings } from './common/settings';
+import { checkIfConfigurationChanged, getWorkspaceSettings } from './common/settings';
 import { loadServerDefaults } from './common/setup';
 import { registerLanguageStatusItem, updateStatus } from './common/status';
 import { getInterpreterFromSetting, getProjectRoot } from './common/utilities';
@@ -21,8 +21,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const serverInfo = loadServerDefaults();
     const serverName = serverInfo.name;
     const serverId = serverInfo.module;
-
-    const settings: ISettings[] = await getExtensionSettings(serverId);
 
     // Setup logging
     const outputChannel = createOutputChannel(serverName);
@@ -50,8 +48,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
                 updateStatus(vscode.l10n.t('Please select a Python interpreter.'), vscode.LanguageStatusSeverity.Error);
                 traceError(
                     'Python interpreter missing:\r\n' +
-                        '[Option 1] Select python interpreter using the ms-python.python (select interpreter command).\r\n' +
-                        `[Option 2] Set an interpreter using "${serverId}.interpreter" setting.\r\n`,
+                    '[Option 1] Select python interpreter using the ms-python.python (select interpreter command).\r\n' +
+                    `[Option 2] Set an interpreter using "${serverId}.interpreter" setting.\r\n`,
                     `Please use Python ${PYTHON_VERSION} or greater.`,
                 );
             } else {
