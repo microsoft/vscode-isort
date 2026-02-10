@@ -131,6 +131,7 @@ def test_interpreter():
 
     assert_that(actual, is_(False))
 
+
 def test_notebook_document_path():
     """Test resolving notebook cell paths."""
     document = MagicMock()
