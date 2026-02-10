@@ -42,16 +42,50 @@ import isort
 import lsp_jsonrpc as jsonrpc
 import lsp_utils as utils
 import lsprotocol.types as lsp
-from pygls import server, uris, workspace
+from pygls import uris, workspace
+from pygls.lsp.server import LanguageServer
 
 WORKSPACE_SETTINGS = {}
 GLOBAL_SETTINGS = {}
 RUNNER = pathlib.Path(__file__).parent / "lsp_runner.py"
 
 MAX_WORKERS = 5
-LSP_SERVER = server.LanguageServer(
+LSP_SERVER = LanguageServer(
     name="isort-server", version="v0.1.0", max_workers=MAX_WORKERS
 )
+
+
+def _get_document_path(document: workspace.TextDocument) -> str:
+    """Returns the proper filesystem path for a document.
+
+    For regular file: URIs, document.path works correctly.
+    For other URI schemes (e.g. vscode-notebook-cell:), document.path
+    returns the raw URI path which doesn't resolve correctly on Windows.
+    This helper reconstructs a file: URI and converts it to a proper
+    filesystem path.
+
+    Example:
+        Given a notebook cell URI like:
+            vscode-notebook-cell:/c:/Users/user/project/notebook.ipynb#C00001
+        The scheme "vscode-notebook-cell" is replaced with "file", yielding:
+            file:/c:/Users/user/project/notebook.ipynb
+        Which is then converted to a proper filesystem path:
+            c:\\Users\\user\\project\\notebook.ipynb
+
+        For a regular file URI like:
+            file:///c:/Users/user/project/script.py
+        The function simply returns document.path directly.
+    """
+    if not document.uri.startswith("file:"):
+        # Extract the path from the URI, strip the fragment (e.g. #C00001)
+        uri_without_fragment = document.uri.split("#")[0]
+        # Replace the original scheme with file: so to_fs_path can handle it
+        scheme_end = uri_without_fragment.index(":")
+        file_uri = "file" + uri_without_fragment[scheme_end:]
+        result = uris.to_fs_path(file_uri)
+        if result:
+            return result
+    return document.path
 
 
 # **********************************************************
@@ -76,7 +110,9 @@ def did_open(params: lsp.DidOpenTextDocumentParams) -> None:
     """LSP handler for textDocument/didOpen request."""
     document = LSP_SERVER.workspace.get_text_document(params.text_document.uri)
     diagnostics: list[lsp.Diagnostic] = _linting_helper(document)
-    LSP_SERVER.publish_diagnostics(document.uri, diagnostics)
+    LSP_SERVER.text_document_publish_diagnostics(
+        lsp.PublishDiagnosticsParams(uri=document.uri, diagnostics=diagnostics)
+    )
 
 
 @LSP_SERVER.feature(lsp.TEXT_DOCUMENT_DID_SAVE)
@@ -84,7 +120,9 @@ def did_save(params: lsp.DidSaveTextDocumentParams) -> None:
     """LSP handler for textDocument/didSave request."""
     document = LSP_SERVER.workspace.get_text_document(params.text_document.uri)
     diagnostics: list[lsp.Diagnostic] = _linting_helper(document)
-    LSP_SERVER.publish_diagnostics(document.uri, diagnostics)
+    LSP_SERVER.text_document_publish_diagnostics(
+        lsp.PublishDiagnosticsParams(uri=document.uri, diagnostics=diagnostics)
+    )
 
 
 @LSP_SERVER.feature(lsp.TEXT_DOCUMENT_DID_CLOSE)
@@ -92,10 +130,12 @@ def did_close(params: lsp.DidCloseTextDocumentParams) -> None:
     """LSP handler for textDocument/didClose request."""
     document = LSP_SERVER.workspace.get_text_document(params.text_document.uri)
     # Publishing empty diagnostics to clear the entries for this file.
-    LSP_SERVER.publish_diagnostics(document.uri, [])
+    LSP_SERVER.text_document_publish_diagnostics(
+        lsp.PublishDiagnosticsParams(uri=document.uri, diagnostics=[])
+    )
 
 
-def _linting_helper(document: workspace.Document) -> list[lsp.Diagnostic]:
+def _linting_helper(document: workspace.TextDocument) -> list[lsp.Diagnostic]:
     # deep copy here to prevent accidentally updating global settings.
     settings = copy.deepcopy(_get_settings_by_document(document))
 
@@ -110,9 +150,11 @@ def _linting_helper(document: workspace.Document) -> list[lsp.Diagnostic]:
                 document, result.stderr, severity=settings.get("severity", [])
             )
     except Exception:  # pylint: disable=broad-except
-        LSP_SERVER.show_message_log(
-            f"isort check failed with error:\r\n{traceback.format_exc()}",
-            lsp.MessageType.Error,
+        LSP_SERVER.window_log_message(
+            lsp.LogMessageParams(
+                type=lsp.MessageType.Error,
+                message=f"isort check failed with error:\r\n{traceback.format_exc()}",
+            )
         )
     return []
 
@@ -136,7 +178,7 @@ def _is_sorting_error(line: str) -> bool:
 
 
 def _parse_output(
-    document: workspace.Document,
+    document: workspace.TextDocument,
     output: str,
     severity: Dict[str, str],
 ) -> Sequence[lsp.Diagnostic]:
@@ -198,9 +240,9 @@ def _parse_output(
     ),
 )
 def code_action_organize_imports(params: lsp.CodeActionParams):
-    text_document = LSP_SERVER.workspace.get_document(params.text_document.uri)
+    text_document = LSP_SERVER.workspace.get_text_document(params.text_document.uri)
 
-    if utils.is_stdlib_file(text_document.path):
+    if utils.is_stdlib_file(_get_document_path(text_document)):
         # Don't format standard library python files.
         # Publishing empty diagnostics clears the entry
         return None
@@ -217,7 +259,9 @@ def code_action_organize_imports(params: lsp.CodeActionParams):
         if results:
             # Clear out diagnostics, since we are making changes to address
             # import sorting issues.
-            LSP_SERVER.publish_diagnostics(text_document.uri, [])
+            LSP_SERVER.text_document_publish_diagnostics(
+                lsp.PublishDiagnosticsParams(uri=text_document.uri, diagnostics=[])
+            )
             return [
                 lsp.CodeAction(
                     title="isort: Organize Imports",
@@ -265,13 +309,15 @@ def code_action_organize_imports(params: lsp.CodeActionParams):
 
 @LSP_SERVER.feature(lsp.CODE_ACTION_RESOLVE)
 def code_action_resolve(params: lsp.CodeAction):
-    text_document = LSP_SERVER.workspace.get_document(params.data)
+    text_document = LSP_SERVER.workspace.get_text_document(params.data)
 
     results = _formatting_helper(text_document)
     if results:
         # Clear out diagnostics, since we are making changes to address
         # import sorting issues.
-        LSP_SERVER.publish_diagnostics(text_document.uri, [])
+        LSP_SERVER.text_document_publish_diagnostics(
+            lsp.PublishDiagnosticsParams(uri=text_document.uri, diagnostics=[])
+        )
     else:
         # There are no changes so return the original code as is.
         # This could be due to error while running import sorter
@@ -305,7 +351,7 @@ def is_interactive(file_path: str) -> bool:
     return file_path.endswith(".interactive")
 
 
-def _formatting_helper(document: workspace.Document) -> list[lsp.TextEdit] | None:
+def _formatting_helper(document: workspace.TextDocument) -> list[lsp.TextEdit] | None:
     result = _run_tool_on_document(document, use_stdin=True)
     if result.stdout:
         new_source = _match_line_endings(document, result.stdout)
@@ -331,7 +377,7 @@ def _formatting_helper(document: workspace.Document) -> list[lsp.TextEdit] | Non
 
 
 def _create_workspace_edits(
-    document: workspace.Document, results: Optional[List[lsp.TextEdit]]
+    document: workspace.TextDocument, results: Optional[List[lsp.TextEdit]]
 ):
     return lsp.WorkspaceEdit(
         document_changes=[
@@ -356,7 +402,7 @@ def _get_line_endings(lines: list[str]) -> str:
         return None
 
 
-def _match_line_endings(document: workspace.Document, text: str) -> str:
+def _match_line_endings(document: workspace.TextDocument, text: str) -> str:
     """Ensures that the edited text line endings matches the document line endings."""
     expected = _get_line_endings(document.source.splitlines(keepends=True))
     actual = _get_line_endings(text.splitlines(keepends=True))
@@ -451,7 +497,7 @@ def _log_version_info(settings: Dict[str, str]) -> None:
 
 
 def _log_verbose_config(settings: Dict[str, str]) -> None:
-    if LSP_SERVER.lsp.trace == lsp.TraceValues.Verbose:
+    if LSP_SERVER.protocol.trace == lsp.TraceValue.Verbose:
         try:
             settings = copy.deepcopy(settings)
             result = _run_tool(["--show-config"], settings)
@@ -512,9 +558,9 @@ def _get_settings_by_path(file_path: pathlib.Path):
     return setting_values[0]
 
 
-def _get_document_key(document: workspace.Document):
+def _get_document_key(document: workspace.TextDocument):
     if WORKSPACE_SETTINGS:
-        document_workspace = pathlib.Path(document.path)
+        document_workspace = pathlib.Path(_get_document_path(document))
         workspaces = {s["workspaceFS"] for s in WORKSPACE_SETTINGS.values()}
 
         # Find workspace settings for the given file.
@@ -527,14 +573,14 @@ def _get_document_key(document: workspace.Document):
     return None
 
 
-def _get_settings_by_document(document: workspace.Document | None):
+def _get_settings_by_document(document: workspace.TextDocument | None):
     if document is None or document.path is None:
         return list(WORKSPACE_SETTINGS.values())[0]
 
     key = _get_document_key(document)
     if key is None:
         # This is either a non-workspace file or there is no workspace.
-        key = utils.normalize_path(pathlib.Path(document.path).parent)
+        key = utils.normalize_path(pathlib.Path(_get_document_path(document)).parent)
         return {
             "cwd": key,
             "workspaceFS": key,
@@ -548,14 +594,14 @@ def _get_settings_by_document(document: workspace.Document | None):
 # *****************************************************
 # Internal execution APIs.
 # *****************************************************
-def get_cwd(settings: Dict[str, Any], document: Optional[workspace.Document]) -> str:
+def get_cwd(settings: Dict[str, Any], document: Optional[workspace.TextDocument]) -> str:
     """Returns cwd for the given settings and document."""
     if settings["cwd"] == "${workspaceFolder}":
         return settings["workspaceFS"]
 
     if settings["cwd"] == "${fileDirname}":
         if document is not None:
-            return os.fspath(pathlib.Path(document.path).parent)
+            return os.fspath(pathlib.Path(_get_document_path(document)).parent)
         return settings["workspaceFS"]
 
     return settings["cwd"]
@@ -563,7 +609,7 @@ def get_cwd(settings: Dict[str, Any], document: Optional[workspace.Document]) ->
 
 # pylint: disable=too-many-branches
 def _run_tool_on_document(
-    document: workspace.Document,
+    document: workspace.TextDocument,
     use_stdin: bool = False,
     extra_args: Sequence[str] = [],
 ) -> utils.RunResult | None:
@@ -572,16 +618,17 @@ def _run_tool_on_document(
     if use_stdin is true then contents of the document is passed to the
     tool via stdin.
     """
-    if utils.is_stdlib_file(document.path):
-        log_warning(f"Skipping standard library file: {document.path}")
+    doc_path = _get_document_path(document)
+    if utils.is_stdlib_file(doc_path):
+        log_warning(f"Skipping standard library file: {doc_path}")
         return None
 
-    if is_interactive(document.path):
-        log_warning(f"Skipping interactive window: {document.path}")
+    if is_interactive(doc_path):
+        log_warning(f"Skipping interactive window: {doc_path}")
         return None
 
     if not is_python(document.source):
-        log_warning(f"Skipping non python code: {document.path}")
+        log_warning(f"Skipping non python code: {doc_path}")
         return None
 
     # deep copy here to prevent accidentally updating global settings.
@@ -611,15 +658,15 @@ def _run_tool_on_document(
     if use_stdin:
         # `isort` requires the first argument to be "-" when using stdin.
         argv += ["-"] + TOOL_ARGS + settings["args"] + extra_args
-        argv += ["--filename", document.path]
+        argv += ["--filename", doc_path]
     else:
         argv += TOOL_ARGS + settings["args"] + extra_args
-        argv += [document.path]
+        argv += [doc_path]
 
     source = document.source.replace("\r\n", "\n")
 
     argv = [
-        os.path.dirname(document.path) if a == "${fileDirname}" else a for a in argv
+        os.path.dirname(doc_path) if a == "${fileDirname}" else a for a in argv
     ]
 
     if use_path:
@@ -667,7 +714,7 @@ def _run_tool_on_document(
                 source=source,
             )
         except isort.exceptions.FileSkipComment:
-            log_warning(f"Skipping file with 'skip_file' comment: {document.path}")
+            log_warning(f"Skipping file with 'skip_file' comment: {doc_path}")
             return None
         except isort.exceptions.FileSkipped:
             log_warning(traceback.format_exc(chain=True))
@@ -768,28 +815,40 @@ def log_to_output(
     message: str, msg_type: lsp.MessageType = lsp.MessageType.Log
 ) -> None:
     """Logs messages to Output > Pylint channel only."""
-    LSP_SERVER.show_message_log(message, msg_type)
+    LSP_SERVER.window_log_message(lsp.LogMessageParams(type=msg_type, message=message))
 
 
 def log_error(message: str) -> None:
     """Logs messages with notification on error."""
-    LSP_SERVER.show_message_log(message, lsp.MessageType.Error)
+    LSP_SERVER.window_log_message(
+        lsp.LogMessageParams(type=lsp.MessageType.Error, message=message)
+    )
     if os.getenv("LS_SHOW_NOTIFICATION", "off") in ["onError", "onWarning", "always"]:
-        LSP_SERVER.show_message(message, lsp.MessageType.Error)
+        LSP_SERVER.window_show_message(
+            lsp.ShowMessageParams(type=lsp.MessageType.Error, message=message)
+        )
 
 
 def log_warning(message: str) -> None:
     """Logs messages with notification on warning."""
-    LSP_SERVER.show_message_log(message, lsp.MessageType.Warning)
+    LSP_SERVER.window_log_message(
+        lsp.LogMessageParams(type=lsp.MessageType.Warning, message=message)
+    )
     if os.getenv("LS_SHOW_NOTIFICATION", "off") in ["onWarning", "always"]:
-        LSP_SERVER.show_message(message, lsp.MessageType.Warning)
+        LSP_SERVER.window_show_message(
+            lsp.ShowMessageParams(type=lsp.MessageType.Warning, message=message)
+        )
 
 
 def log_always(message: str) -> None:
     """Logs messages with notification."""
-    LSP_SERVER.show_message_log(message, lsp.MessageType.Info)
+    LSP_SERVER.window_log_message(
+        lsp.LogMessageParams(type=lsp.MessageType.Info, message=message)
+    )
     if os.getenv("LS_SHOW_NOTIFICATION", "off") in ["always"]:
-        LSP_SERVER.show_message(message, lsp.MessageType.Info)
+        LSP_SERVER.window_show_message(
+            lsp.ShowMessageParams(type=lsp.MessageType.Info, message=message)
+        )
 
 
 # *****************************************************
