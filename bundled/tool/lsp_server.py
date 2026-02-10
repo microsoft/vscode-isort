@@ -12,6 +12,7 @@ import pathlib
 import sys
 import traceback
 from typing import Any, Dict, List, Optional, Sequence
+from urllib.parse import urlparse, urlunparse
 
 
 # **********************************************************
@@ -57,34 +58,17 @@ LSP_SERVER = LanguageServer(
 
 
 def _get_document_path(document: workspace.TextDocument) -> str:
-    """Returns the proper filesystem path for a document.
-
-    For regular file: URIs, document.path works correctly.
-    For other URI schemes (e.g. vscode-notebook-cell:), document.path
-    returns the raw URI path which doesn't resolve correctly on Windows.
-    This helper reconstructs a file: URI and converts it to a proper
-    filesystem path.
-
-    Example:
-        Given a notebook cell URI like:
-            vscode-notebook-cell:/c:/Users/user/project/notebook.ipynb#C00001
-        The scheme "vscode-notebook-cell" is replaced with "file", yielding:
-            file:/c:/Users/user/project/notebook.ipynb
-        Which is then converted to a proper filesystem path:
-            c:\\Users\\user\\project\\notebook.ipynb
-
-        For a regular file URI like:
-            file:///c:/Users/user/project/script.py
-        The function simply returns document.path directly.
+    """Returns the filesystem path for a document.
+    
+    Examples:
+        file:///path/to/file.py -> /path/to/file.py
+        vscode-notebook-cell:... -> /path/to/file.py
     """
+
     if not document.uri.startswith("file:"):
-        # Extract the path from the URI, strip the fragment (e.g. #C00001)
-        uri_without_fragment = document.uri.split("#")[0]
-        # Replace the original scheme with file: so to_fs_path can handle it
-        scheme_end = uri_without_fragment.index(":")
-        file_uri = "file" + uri_without_fragment[scheme_end:]
-        result = uris.to_fs_path(file_uri)
-        if result:
+        parsed = urlparse(document.uri)
+        file_uri = urlunparse(parsed._replace(scheme="file", fragment=""))
+        if result := uris.to_fs_path(file_uri):
             return result
     return document.path
 
