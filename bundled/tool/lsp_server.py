@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 """Implementation of tool support over LSP."""
+
 from __future__ import annotations
 
 import ast
@@ -594,7 +595,9 @@ def _get_settings_by_document(document: workspace.TextDocument | None):
 # *****************************************************
 # Internal execution APIs.
 # *****************************************************
-def get_cwd(settings: Dict[str, Any], document: Optional[workspace.TextDocument]) -> str:
+def get_cwd(
+    settings: Dict[str, Any], document: Optional[workspace.TextDocument]
+) -> str:
     """Returns cwd for the given settings and document."""
     if settings["cwd"] == "${workspaceFolder}":
         return settings["workspaceFS"]
@@ -665,9 +668,7 @@ def _run_tool_on_document(
 
     source = document.source.replace("\r\n", "\n")
 
-    argv = [
-        os.path.dirname(doc_path) if a == "${fileDirname}" else a for a in argv
-    ]
+    argv = [os.path.dirname(doc_path) if a == "${fileDirname}" else a for a in argv]
 
     if use_path:
         # This mode is used when running executables.
