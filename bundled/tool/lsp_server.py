@@ -59,7 +59,7 @@ LSP_SERVER = LanguageServer(
 
 def _get_document_path(document: workspace.TextDocument) -> str:
     """Returns the filesystem path for a document.
-    
+
     Examples:
         file:///path/to/file.py -> /path/to/file.py
         vscode-notebook-cell:... -> /path/to/file.py
