@@ -67,7 +67,7 @@ def _get_document_path(document: workspace.TextDocument) -> str:
 
     if not document.uri.startswith("file:"):
         parsed = urlparse(document.uri)
-        file_uri = urlunparse(parsed._replace(scheme="file", fragment=""))
+        file_uri = urlunparse(("file", parsed.netloc, parsed.path, parsed.params, parsed.query, ""))
         if result := uris.to_fs_path(file_uri):
             return result
     return document.path
