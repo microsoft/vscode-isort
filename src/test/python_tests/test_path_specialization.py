@@ -139,5 +139,4 @@ def test_notebook_document_path():
 
     path = _get_document_path(document)
 
-    assert "notebook.ipynb" in path
-    assert path != document.path
+    assert_that(pathlib.Path(path), is_(pathlib.Path("/path/to/notebook.ipynb")))
