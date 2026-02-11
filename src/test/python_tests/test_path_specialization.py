@@ -13,8 +13,8 @@ from .lsp_test_client import constants, defaults, session, utils
 
 # Add bundled paths so lsp_server and its deps can be imported
 _PROJECT_ROOT = pathlib.Path(__file__).parent.parent.parent.parent
-sys.path.insert(0, str(_PROJECT_ROOT / "bundled" / "libs"))
-sys.path.insert(0, str(_PROJECT_ROOT / "bundled" / "tool"))
+sys.path.insert(0, os.fsdecode(_PROJECT_ROOT / "bundled" / "libs"))
+sys.path.insert(0, os.fsdecode(_PROJECT_ROOT / "bundled" / "tool"))
 
 from lsp_server import _get_document_path
 
