@@ -3,6 +3,7 @@ Test for path and interpreter settings.
 """
 
 import copy
+import os
 import pathlib
 import sys
 from unittest.mock import MagicMock
