@@ -7,5 +7,5 @@
 
 pygls
 packaging
-isort
+isort>=7.0.0
 colorama # required for windows machines

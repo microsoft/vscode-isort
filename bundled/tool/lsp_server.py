@@ -83,7 +83,7 @@ TOOL_DISPLAY = "isort"
 TOOL_ARGS = []
 
 # Minimum version of isort supported.
-MIN_VERSION = "5.10.1"
+MIN_VERSION = "7.0.0"
 
 # **********************************************************
 # Linting features start here
