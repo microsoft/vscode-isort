@@ -655,7 +655,4 @@ def test_organize_import_cell_with_magic_commands():
             edits = actual_resolved["edit"]["documentChanges"][0]["edits"]
             assert len(edits) == 1
             new_text = edits[0]["newText"]
-            # The magic command should be preserved at the top
-            assert new_text.startswith("%matplotlib inline")
-            # Imports should be sorted (os before sys)
-            assert new_text.index("import os") < new_text.index("import sys")
+            assert_that(new_text, is_(expected))
