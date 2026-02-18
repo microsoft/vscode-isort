@@ -23,7 +23,7 @@ interface Result {
     stderr: string;
 }
 
-function runScript(
+export function runScript(
     runner: string,
     args: string[],
     options?: {
