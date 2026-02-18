@@ -2,25 +2,105 @@
 // Licensed under the MIT License.
 
 import { assert } from 'chai';
-import { WorkspaceEdit } from 'vscode';
+import * as sinon from 'sinon';
+import { EndOfLine, TextDocument, Uri, WorkspaceEdit } from 'vscode';
+import * as runner from '../../../../common/runner';
+import * as settings from '../../../../common/settings';
 
-suite('Runner Tests', () => {
-    test('WorkspaceEdit is empty when no changes needed', () => {
-        // Test that an empty WorkspaceEdit has no entries
-        const emptyEdit = new WorkspaceEdit();
-        assert.strictEqual(emptyEdit.size, 0, 'Empty WorkspaceEdit should have size 0');
+suite('textEditRunner Tests', () => {
+    let sandbox: sinon.SinonSandbox;
+    let getWorkspaceSettingsStub: sinon.SinonStub;
+    let runnerModule: typeof runner;
+
+    const mockSettings = {
+        interpreter: ['/usr/bin/python3'],
+        args: [],
+        path: [],
+        importStrategy: 'fromEnvironment',
+        check: false,
+        severity: { E: 'Error' }, // eslint-disable-line @typescript-eslint/naming-convention
+        cwd: '/workspace',
+    };
+
+    setup(() => {
+        sandbox = sinon.createSandbox();
+        getWorkspaceSettingsStub = sandbox.stub(settings, 'getWorkspaceSettings');
+        runnerModule = runner;
     });
 
-    test('WorkspaceEdit behavior when content unchanged', () => {
-        // This test validates the expected behavior:
-        // When content is unchanged (newContent === content),
-        // textEditRunner should return an empty WorkspaceEdit
-        // to avoid cursor jumps in diff views.
+    teardown(() => {
+        sandbox.restore();
+    });
 
-        const emptyEdit = new WorkspaceEdit();
+    function createMockTextDocument(content: string, isDirty = false): TextDocument {
+        return {
+            uri: Uri.file('/workspace/test.py'),
+            getText: () => content,
+            eol: EndOfLine.LF,
+            isDirty,
+            isUntitled: false,
+            languageId: 'python',
+            version: 1,
+            fileName: '/workspace/test.py',
+        } as unknown as TextDocument;
+    }
 
-        // Verify that an empty WorkspaceEdit has no entries
-        assert.strictEqual(emptyEdit.size, 0);
-        assert.strictEqual(emptyEdit.entries().length, 0);
+    test('Returns empty WorkspaceEdit when content is unchanged', async () => {
+        // Stub settings to return valid configuration
+        getWorkspaceSettingsStub.resolves(mockSettings);
+
+        // Stub runScript to return empty stdout (simulating no changes from isort)
+        sandbox.stub(runnerModule as any, 'runScript').resolves({ // eslint-disable-line @typescript-eslint/no-explicit-any
+            stdout: '',
+            stderr: '',
+        });
+
+        const content = 'import os\nimport sys\n';
+        const doc = createMockTextDocument(content);
+        const result = await runnerModule.textEditRunner('isort', doc);
+
+        // Verify that an empty WorkspaceEdit is returned when content is unchanged
+        assert.instanceOf(result, WorkspaceEdit);
+        assert.strictEqual(result.size, 0, 'WorkspaceEdit should be empty when content is unchanged');
+        assert.strictEqual(result.entries().length, 0, 'WorkspaceEdit should have no entries');
+    });
+
+    test('Returns WorkspaceEdit with edits when content is changed', async () => {
+        getWorkspaceSettingsStub.resolves(mockSettings);
+
+        const originalContent = 'import sys\nimport os\n';
+        const sortedContent = 'import os\nimport sys\n';
+
+        // Stub runScript to return sorted content
+        sandbox.stub(runnerModule as any, 'runScript').resolves({ // eslint-disable-line @typescript-eslint/no-explicit-any
+            stdout: sortedContent,
+            stderr: '',
+        });
+
+        const doc = createMockTextDocument(originalContent);
+        const result = await runnerModule.textEditRunner('isort', doc);
+
+        // Verify that a WorkspaceEdit with entries is returned when content changes
+        assert.instanceOf(result, WorkspaceEdit);
+        assert.isTrue(result.size > 0, 'WorkspaceEdit should have entries when content is changed');
+
+        const entries = result.entries();
+        assert.strictEqual(entries.length, 1);
+        const [uri, edits] = entries[0];
+        assert.strictEqual(uri.fsPath, doc.uri.fsPath);
+        assert.strictEqual(edits.length, 1);
+        assert.strictEqual(edits[0].newText, sortedContent);
+    });
+
+    test('Returns empty WorkspaceEdit when settings are unavailable', async () => {
+        // Return undefined settings (no interpreter configured)
+        getWorkspaceSettingsStub.resolves(undefined);
+
+        const doc = createMockTextDocument('import os\nimport sys\n');
+        const result = await runnerModule.textEditRunner('isort', doc);
+
+        // Verify that an empty WorkspaceEdit is returned in fallback path
+        assert.instanceOf(result, WorkspaceEdit);
+        assert.strictEqual(result.size, 0, 'WorkspaceEdit should be empty when settings are unavailable');
     });
 });
