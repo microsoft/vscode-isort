@@ -63,6 +63,7 @@ suite('textEditRunner Tests', () => {
 
     test('Returns empty WorkspaceEdit when content is unchanged (stdout empty)', async () => {
         getWorkspaceSettingsStub.resolves(mockSettings);
+        runScriptStub.reset();
         runScriptStub.resolves({ stdout: '', stderr: '' });
 
         const content = 'import os\nimport sys\n';
@@ -76,6 +77,7 @@ suite('textEditRunner Tests', () => {
     test('Returns empty WorkspaceEdit when content is unchanged (stdout equals content)', async () => {
         getWorkspaceSettingsStub.resolves(mockSettings);
         const content = 'import os\nimport sys\n';
+        runScriptStub.reset();
         runScriptStub.resolves({ stdout: content, stderr: '' });
 
         const doc = createMockTextDocument(content);
@@ -89,6 +91,7 @@ suite('textEditRunner Tests', () => {
         getWorkspaceSettingsStub.resolves(mockSettings);
         const originalContent = 'import sys\nimport os\n';
         const sortedContent = 'import os\nimport sys\n';
+        runScriptStub.reset();
         runScriptStub.resolves({ stdout: sortedContent, stderr: '' });
 
         const doc = createMockTextDocument(originalContent);
@@ -106,6 +109,7 @@ suite('textEditRunner Tests', () => {
     });
 
     test('Returns empty WorkspaceEdit when settings are unavailable', async () => {
+        getWorkspaceSettingsStub.reset();
         getWorkspaceSettingsStub.resolves({ ...mockSettings, interpreter: [] });
 
         const doc = createMockTextDocument('import os\nimport sys\n');
@@ -117,6 +121,7 @@ suite('textEditRunner Tests', () => {
 
     test('Returns empty WorkspaceEdit when runScript throws error', async () => {
         getWorkspaceSettingsStub.resolves(mockSettings);
+        runScriptStub.reset();
         runScriptStub.rejects(new Error('Command failed'));
 
         const doc = createMockTextDocument('import os\nimport sys\n');
