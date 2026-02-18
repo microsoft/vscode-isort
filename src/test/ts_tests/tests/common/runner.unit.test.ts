@@ -4,14 +4,24 @@
 import { assert } from 'chai';
 import * as childProcess from 'child_process';
 import * as sinon from 'sinon';
-import { EndOfLine, TextDocument, Uri, WorkspaceEdit } from 'vscode';
+import { EndOfLine, TextDocument, Uri, WorkspaceEdit, WorkspaceFolder } from 'vscode';
 import * as runner from '../../../../common/runner';
 import * as settings from '../../../../common/settings';
+import * as utilities from '../../../../common/utilities';
+import * as vscodeapi from '../../../../common/vscodeapi';
 
 suite('textEditRunner Tests', () => {
     let sandbox: sinon.SinonSandbox;
     let getWorkspaceSettingsStub: sinon.SinonStub;
+    let getWorkspaceFolderStub: sinon.SinonStub;
+    let getProjectRootStub: sinon.SinonStub;
     let execFileStub: sinon.SinonStub;
+
+    const mockWorkspaceFolder: WorkspaceFolder = {
+        uri: Uri.file('/workspace'),
+        name: 'workspace',
+        index: 0,
+    };
 
     const mockSettings = {
         interpreter: ['/usr/bin/python3'],
@@ -26,7 +36,13 @@ suite('textEditRunner Tests', () => {
     setup(() => {
         sandbox = sinon.createSandbox();
         getWorkspaceSettingsStub = sandbox.stub(settings, 'getWorkspaceSettings');
+        getWorkspaceFolderStub = sandbox.stub(vscodeapi, 'getWorkspaceFolder');
+        getProjectRootStub = sandbox.stub(utilities, 'getProjectRoot');
         execFileStub = sandbox.stub(childProcess, 'execFile');
+
+        // Default stubs for workspace folder
+        getWorkspaceFolderStub.returns(mockWorkspaceFolder);
+        getProjectRootStub.resolves(mockWorkspaceFolder);
     });
 
     teardown(() => {
@@ -46,7 +62,7 @@ suite('textEditRunner Tests', () => {
         } as unknown as TextDocument;
     }
 
-    test('Returns empty WorkspaceEdit when content is unchanged', async () => {
+    test('Returns empty WorkspaceEdit when content is unchanged (stdout empty)', async () => {
         // Stub settings to return valid configuration
         getWorkspaceSettingsStub.resolves(mockSettings);
 
@@ -64,6 +80,33 @@ suite('textEditRunner Tests', () => {
         );
 
         const content = 'import os\nimport sys\n';
+        const doc = createMockTextDocument(content);
+        const result = await runner.textEditRunner('isort', doc);
+
+        // Verify that an empty WorkspaceEdit is returned when content is unchanged
+        assert.instanceOf(result, WorkspaceEdit);
+        assert.strictEqual(result.size, 0, 'WorkspaceEdit should be empty when content is unchanged');
+        assert.strictEqual(result.entries().length, 0, 'WorkspaceEdit should have no entries');
+    });
+
+    test('Returns empty WorkspaceEdit when content is unchanged (stdout equals content)', async () => {
+        getWorkspaceSettingsStub.resolves(mockSettings);
+
+        const content = 'import os\nimport sys\n';
+
+        // Stub execFile to return the same content (simulating no changes from isort)
+        execFileStub.callsFake(
+            (
+                _file: string,
+                _args: string[],
+                _options: childProcess.ExecFileOptions,
+                callback: (error: Error | null, stdout: string, stderr: string) => void,
+            ) => {
+                callback(null, content, '');
+                return {} as childProcess.ChildProcess;
+            },
+        );
+
         const doc = createMockTextDocument(content);
         const result = await runner.textEditRunner('isort', doc);
 
@@ -108,8 +151,8 @@ suite('textEditRunner Tests', () => {
     });
 
     test('Returns empty WorkspaceEdit when settings are unavailable', async () => {
-        // Return undefined settings (no interpreter configured)
-        getWorkspaceSettingsStub.resolves(undefined);
+        // Return settings with empty interpreter (triggers undefined return)
+        getWorkspaceSettingsStub.resolves({ ...mockSettings, interpreter: [] });
 
         const doc = createMockTextDocument('import os\nimport sys\n');
         const result = await runner.textEditRunner('isort', doc);
@@ -117,5 +160,29 @@ suite('textEditRunner Tests', () => {
         // Verify that an empty WorkspaceEdit is returned in fallback path
         assert.instanceOf(result, WorkspaceEdit);
         assert.strictEqual(result.size, 0, 'WorkspaceEdit should be empty when settings are unavailable');
+    });
+
+    test('Returns empty WorkspaceEdit when execFile throws error', async () => {
+        getWorkspaceSettingsStub.resolves(mockSettings);
+
+        // Stub execFile to throw an error
+        execFileStub.callsFake(
+            (
+                _file: string,
+                _args: string[],
+                _options: childProcess.ExecFileOptions,
+                callback: (error: Error | null, stdout: string, stderr: string) => void,
+            ) => {
+                callback(new Error('Command failed'), '', 'Error executing isort');
+                return {} as childProcess.ChildProcess;
+            },
+        );
+
+        const doc = createMockTextDocument('import os\nimport sys\n');
+        const result = await runner.textEditRunner('isort', doc);
+
+        // Verify that an empty WorkspaceEdit is returned on error
+        assert.instanceOf(result, WorkspaceEdit);
+        assert.strictEqual(result.size, 0, 'WorkspaceEdit should be empty when execFile throws error');
     });
 });
