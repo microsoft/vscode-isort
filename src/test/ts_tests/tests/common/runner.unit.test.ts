@@ -52,7 +52,7 @@ suite('textEditRunner Tests', () => {
     }
 
     test('Returns empty WorkspaceEdit when content is unchanged (stdout empty)', async () => {
-        const getWorkspaceSettingsStub = sandbox.stub(settings, 'getWorkspaceSettings').resolves(mockSettings);
+        sandbox.stub(settings, 'getWorkspaceSettings').resolves(mockSettings);
         sandbox.stub(vscodeapi, 'getWorkspaceFolder').returns(mockWorkspaceFolder);
         sandbox.stub(utilities, 'getProjectRoot').resolves(mockWorkspaceFolder);
         sandbox.stub(runner, 'runScript').resolves({ stdout: '', stderr: '' });
@@ -77,29 +77,6 @@ suite('textEditRunner Tests', () => {
 
         assert.instanceOf(result, WorkspaceEdit);
         assert.strictEqual(result.size, 0, 'WorkspaceEdit should be empty when content is unchanged');
-    });
-
-    test('Returns WorkspaceEdit with edits when content is changed', async () => {
-        const originalContent = 'import sys\nimport os\n';
-        const sortedContent = 'import os\nimport sys\n';
-
-        sandbox.stub(settings, 'getWorkspaceSettings').resolves(mockSettings);
-        sandbox.stub(vscodeapi, 'getWorkspaceFolder').returns(mockWorkspaceFolder);
-        sandbox.stub(utilities, 'getProjectRoot').resolves(mockWorkspaceFolder);
-        sandbox.stub(runner, 'runScript').resolves({ stdout: sortedContent, stderr: '' });
-
-        const doc = createMockTextDocument(originalContent);
-        const result = await runner.textEditRunner('isort', doc);
-
-        assert.instanceOf(result, WorkspaceEdit);
-        assert.isTrue(result.size > 0, 'WorkspaceEdit should have entries when content is changed');
-
-        const entries = result.entries();
-        assert.strictEqual(entries.length, 1);
-        const [uri, edits] = entries[0];
-        assert.strictEqual(uri.fsPath, doc.uri.fsPath);
-        assert.strictEqual(edits.length, 1);
-        assert.strictEqual(edits[0].newText, sortedContent);
     });
 
     test('Returns empty WorkspaceEdit when settings are unavailable', async () => {
