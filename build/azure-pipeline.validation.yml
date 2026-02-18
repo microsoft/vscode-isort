@@ -63,6 +63,7 @@ extends:
   parameters:
     sdl:
       enabled: false
+      sourceAnalysisPool: VSEngSS-MicroBuild2022-1ES
     pool:
       name: AzurePipelines-EO
       vmImage: 1ESPT-Windows2022
