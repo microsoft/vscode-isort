@@ -21,3 +21,15 @@ pipelines:
           lastModifiedDate: 2025-02-04
         spotbugs:
           lastModifiedDate: 2024-11-12
+  27887:
+    retail:
+      binary:
+        binskim:
+          lastModifiedDate: 2026-02-18
+      source:
+        eslint:
+          lastModifiedDate: 2026-02-18
+        armory:
+          lastModifiedDate: 2026-02-18
+        accessibilityinsights:
+          lastModifiedDate: 2026-02-18
