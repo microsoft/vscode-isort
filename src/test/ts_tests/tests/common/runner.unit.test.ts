@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 import { assert } from 'chai';
+import * as childProcess from 'child_process';
 import * as sinon from 'sinon';
 import { EndOfLine, TextDocument, Uri, WorkspaceEdit } from 'vscode';
 import * as runner from '../../../../common/runner';
@@ -10,7 +11,7 @@ import * as settings from '../../../../common/settings';
 suite('textEditRunner Tests', () => {
     let sandbox: sinon.SinonSandbox;
     let getWorkspaceSettingsStub: sinon.SinonStub;
-    let runnerModule: typeof runner;
+    let execFileStub: sinon.SinonStub;
 
     const mockSettings = {
         interpreter: ['/usr/bin/python3'],
@@ -25,7 +26,7 @@ suite('textEditRunner Tests', () => {
     setup(() => {
         sandbox = sinon.createSandbox();
         getWorkspaceSettingsStub = sandbox.stub(settings, 'getWorkspaceSettings');
-        runnerModule = runner;
+        execFileStub = sandbox.stub(childProcess, 'execFile');
     });
 
     teardown(() => {
@@ -49,15 +50,22 @@ suite('textEditRunner Tests', () => {
         // Stub settings to return valid configuration
         getWorkspaceSettingsStub.resolves(mockSettings);
 
-        // Stub runScript to return empty stdout (simulating no changes from isort)
-        sandbox.stub(runnerModule as any, 'runScript').resolves({ // eslint-disable-line @typescript-eslint/no-explicit-any
-            stdout: '',
-            stderr: '',
-        });
+        // Stub execFile to return empty stdout (simulating no changes from isort)
+        execFileStub.callsFake(
+            (
+                _file: string,
+                _args: string[],
+                _options: childProcess.ExecFileOptions,
+                callback: (error: Error | null, stdout: string, stderr: string) => void,
+            ) => {
+                callback(null, '', '');
+                return {} as childProcess.ChildProcess;
+            },
+        );
 
         const content = 'import os\nimport sys\n';
         const doc = createMockTextDocument(content);
-        const result = await runnerModule.textEditRunner('isort', doc);
+        const result = await runner.textEditRunner('isort', doc);
 
         // Verify that an empty WorkspaceEdit is returned when content is unchanged
         assert.instanceOf(result, WorkspaceEdit);
@@ -71,14 +79,21 @@ suite('textEditRunner Tests', () => {
         const originalContent = 'import sys\nimport os\n';
         const sortedContent = 'import os\nimport sys\n';
 
-        // Stub runScript to return sorted content
-        sandbox.stub(runnerModule as any, 'runScript').resolves({ // eslint-disable-line @typescript-eslint/no-explicit-any
-            stdout: sortedContent,
-            stderr: '',
-        });
+        // Stub execFile to return sorted content
+        execFileStub.callsFake(
+            (
+                _file: string,
+                _args: string[],
+                _options: childProcess.ExecFileOptions,
+                callback: (error: Error | null, stdout: string, stderr: string) => void,
+            ) => {
+                callback(null, sortedContent, '');
+                return {} as childProcess.ChildProcess;
+            },
+        );
 
         const doc = createMockTextDocument(originalContent);
-        const result = await runnerModule.textEditRunner('isort', doc);
+        const result = await runner.textEditRunner('isort', doc);
 
         // Verify that a WorkspaceEdit with entries is returned when content changes
         assert.instanceOf(result, WorkspaceEdit);
@@ -97,7 +112,7 @@ suite('textEditRunner Tests', () => {
         getWorkspaceSettingsStub.resolves(undefined);
 
         const doc = createMockTextDocument('import os\nimport sys\n');
-        const result = await runnerModule.textEditRunner('isort', doc);
+        const result = await runner.textEditRunner('isort', doc);
 
         // Verify that an empty WorkspaceEdit is returned in fallback path
         assert.instanceOf(result, WorkspaceEdit);
