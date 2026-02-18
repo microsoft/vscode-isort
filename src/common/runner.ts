@@ -192,7 +192,11 @@ export async function textEditRunner(
             const newContent = stdout.length === 0 ? content : fixLineEndings(textDocument.eol, stdout);
             if (newContent !== content) {
                 const edits = new WorkspaceEdit();
-                edits.replace(textDocument.uri, new Range(new Position(0, 0), new Position(lines.length, 0)), newContent);
+                edits.replace(
+                    textDocument.uri,
+                    new Range(new Position(0, 0), new Position(lines.length, 0)),
+                    newContent,
+                );
                 return edits;
             }
             return new WorkspaceEdit();

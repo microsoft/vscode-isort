@@ -26,7 +26,7 @@ suite('textEditRunner Tests', () => {
     setup(() => {
         sandbox = sinon.createSandbox();
         getWorkspaceSettingsStub = sandbox.stub(settings, 'getWorkspaceSettings');
-        
+
         // Stub childProcess.execFile
         execFileStub = sandbox.stub(childProcess, 'execFile');
     });
@@ -50,7 +50,7 @@ suite('textEditRunner Tests', () => {
 
     test('Returns empty WorkspaceEdit when content is unchanged (stdout empty)', async () => {
         getWorkspaceSettingsStub.resolves(mockSettings);
-        
+
         execFileStub.callsFake((runner, args, options, callback) => {
             callback(null, '', '');
         });
@@ -65,7 +65,7 @@ suite('textEditRunner Tests', () => {
 
     test('Returns empty WorkspaceEdit when content is unchanged (stdout equals content)', async () => {
         getWorkspaceSettingsStub.resolves(mockSettings);
-        
+
         const originalContent = 'import os\nimport sys\n';
         execFileStub.callsFake((runner, args, options, callback) => {
             // isort returns the same content
@@ -82,10 +82,10 @@ suite('textEditRunner Tests', () => {
 
     test('Returns WorkspaceEdit with edits when content is changed', async () => {
         getWorkspaceSettingsStub.resolves(mockSettings);
-        
+
         const originalContent = 'import sys\nimport os\n';
         const sortedContent = 'import os\nimport sys\n';
-        
+
         execFileStub.callsFake((runner, args, options, callback) => {
             callback(null, sortedContent, '');
         });
@@ -96,7 +96,7 @@ suite('textEditRunner Tests', () => {
         assert.instanceOf(result, WorkspaceEdit);
         // Check that the WorkspaceEdit has entries
         assert.isTrue(result.size > 0);
-        
+
         // Verify the edit contains the sorted content
         const entries = result.entries();
         assert.strictEqual(entries.length, 1);
@@ -120,7 +120,7 @@ suite('textEditRunner Tests', () => {
 
     test('Returns empty WorkspaceEdit when execFile throws error', async () => {
         getWorkspaceSettingsStub.resolves(mockSettings);
-        
+
         execFileStub.callsFake((runner, args, options, callback) => {
             callback(new Error('Command failed'), '', 'Error executing isort');
         });
@@ -135,10 +135,10 @@ suite('textEditRunner Tests', () => {
 
     test('Handles line ending conversion correctly', async () => {
         getWorkspaceSettingsStub.resolves(mockSettings);
-        
+
         const originalContent = 'import sys\nimport os\n';
         const sortedContent = 'import os\nimport sys\n';
-        
+
         execFileStub.callsFake((runner, args, options, callback) => {
             callback(null, sortedContent, '');
         });
@@ -148,12 +148,12 @@ suite('textEditRunner Tests', () => {
             ...createMockTextDocument(originalContent),
             eol: EndOfLine.CRLF,
         } as unknown as TextDocument;
-        
+
         const result = await runner.textEditRunner('isort', doc);
 
         assert.instanceOf(result, WorkspaceEdit);
         assert.isTrue(result.size > 0);
-        
+
         const entries = result.entries();
         const [, edits] = entries[0];
         // The content should be converted to CRLF
