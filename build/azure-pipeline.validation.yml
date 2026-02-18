@@ -66,6 +66,7 @@ extends:
     pool:
       name: AzurePipelines-EO
       vmImage: 1ESPT-Windows2022
+      os: windows
 
     customBuildTags:
       - ES365AIMigrationTooling
