@@ -583,9 +583,7 @@ def test_organize_import_cell_with_magic_commands():
     init_params = copy.deepcopy(defaults.VSCODE_DEFAULT_INITIALIZE)
     init_params["initializationOptions"]["settings"][0]["check"] = True
 
-    FORMATTED_TEST_FILE_PATH = (
-        constants.TEST_DATA / "sample_magic" / "sample.formatted"
-    )
+    FORMATTED_TEST_FILE_PATH = constants.TEST_DATA / "sample_magic" / "sample.formatted"
     UNFORMATTED_TEST_FILE_PATH = (
         constants.TEST_DATA / "sample_magic" / "sample.unformatted"
     )
