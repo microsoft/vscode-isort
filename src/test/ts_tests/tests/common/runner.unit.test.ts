@@ -18,7 +18,7 @@ suite('textEditRunner Tests', () => {
         index: 0,
     };
 
-    const mockSettings = {
+    const mockSettings: settings.ISettings = {
         interpreter: ['/usr/bin/python3'],
         args: [],
         path: [],
@@ -26,6 +26,8 @@ suite('textEditRunner Tests', () => {
         check: false,
         severity: { E: 'Error' }, // eslint-disable-line @typescript-eslint/naming-convention
         cwd: '/workspace',
+        workspace: '/workspace',
+        showNotifications: 'off',
     };
 
     setup(() => {
