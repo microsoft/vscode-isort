@@ -338,7 +338,7 @@ def is_interactive(file_path: str) -> bool:
 
 def _formatting_helper(document: workspace.TextDocument) -> list[lsp.TextEdit] | None:
     result = _run_tool_on_document(document, use_stdin=True)
-    if result.stdout:
+    if result and result.stdout:
         new_source = _match_line_endings(document, result.stdout)
 
         # Skip last line ending in a notebook cell
