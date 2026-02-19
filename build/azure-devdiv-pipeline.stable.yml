@@ -88,4 +88,7 @@ extends:
               publishExtension: ${{ parameters.publishExtension }}
               preRelease: false
               teamName: $(TeamName)
+              ghCreateTag: true
+              ghCreateRelease: true
+              ghReleaseAddChangeLog: true
               customNPMRegistry: $(AZURE_ARTIFACTS_FEED)
