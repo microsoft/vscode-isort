@@ -12,16 +12,20 @@ permissions:
 tools:
   github:
     toolsets: [repos, issues]
+network:
+  allowed: []
 safe-outputs:
   add-comment:
-    max: 2
+    max: 1
   noop:
     max: 1
 steps:
 - name: Checkout template repo
   uses: actions/checkout@v5
   with:
-    path: microsoft/vscode-python-tools-extension-template
+    repository: microsoft/vscode-python-tools-extension-template
+    path: template
+    persist-credentials: false
 ---
 
 # Issue Root-Cause & Template Check
@@ -63,6 +67,8 @@ Read the newly opened issue carefully. Identify:
 - Any error messages, logs, stack traces, or reproduction steps.
 - Which part of the codebase is likely involved (TypeScript client, Python server, build/CI, configuration).
 
+Search open and recently closed issues for similar symptoms or error messages. If a clear duplicate exists, call the `noop` safe output with a reference to the existing issue and stop.
+
 If the issue is clearly a feature request, spam, or not actionable, call the `noop` safe output with a brief explanation and stop.
 
 ### Step 2: Investigate the root cause
@@ -81,7 +87,7 @@ Compare the relevant code in this repository against the corresponding code in `
 
 Specifically:
 
-1. **Read the equivalent file(s)** in the template repository using GitHub tools (e.g., `src/common/settings.ts`, `bundled/tool/lsp_server.py`, `noxfile.py`, etc.).
+1. **Read the equivalent file(s)** in the template repository (checked out to the `template/` directory). Focus on the most commonly shared files: `src/common/settings.ts`, `src/common/server.ts`, `src/common/utilities.ts`, `bundled/tool/lsp_server.py`, `bundled/tool/lsp_utils.py`, `bundled/tool/lsp_runner.py`, and `noxfile.py`.
 2. **Determine if the root cause exists in the template** — i.e., whether the problematic code originated from the template and has not been fixed there.
 3. **Check if the issue is isort-specific** — some issues may be caused by isort-specific customizations that do not exist in the template. In that case, note that the fix is local to this repository only.
 
