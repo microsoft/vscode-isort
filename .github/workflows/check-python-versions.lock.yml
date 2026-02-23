@@ -21,7 +21,7 @@
 #
 # For more information: https://github.github.com/gh-aw/introduction/overview/
 #
-# Annual check of the latest supported Python versions from devguide.python.org. Creates a PR to add newly released versions and remove end-of-life versions from CI workflows, actions, Azure Pipelines, and source code.
+# Annual check of the latest supported Python versions from peps.python.org. Creates a PR to add newly released versions and remove end-of-life versions from CI workflows, actions, Azure Pipelines, and source code.
 #
 # gh-aw-metadata: {"schema_version":"v1","frontmatter_hash":"9d3296491efb7bf7c3e0a99978036edb72d9a02f8e161a3522fe3da88a67ba65","compiler_version":"v0.47.5"}
 
@@ -312,7 +312,7 @@ jobs:
               actor: context.actor,
               event_name: context.eventName,
               staged: false,
-              allowed_domains: ["python"],
+              allowed_domains: ["defaults","python","peps.python.org"],
               firewall_enabled: true,
               awf_version: "v0.20.2",
               awmg_version: "v0.1.4",
@@ -978,7 +978,7 @@ jobs:
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
           WORKFLOW_NAME: 'Annual Python Version Update'
-          WORKFLOW_DESCRIPTION: 'Annual check of the latest supported Python versions from devguide.python.org. Creates a PR to add newly released versions and remove end-of-life versions from CI workflows, actions, Azure Pipelines, and source code.'
+          WORKFLOW_DESCRIPTION: 'Annual check of the latest supported Python versions from peps.python.org. Creates a PR to add newly released versions and remove end-of-life versions from CI workflows, actions, Azure Pipelines, and source code.'
           HAS_PATCH: ${{ needs.agent.outputs.has_patch }}
         with:
           script: |

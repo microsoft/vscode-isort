@@ -10,7 +10,6 @@ import {
     Position,
     Range,
     TextDocument,
-    TextEdit,
     WorkspaceEdit,
 } from 'vscode';
 import { RUNNER_SCRIPT_PATH } from './constants';
@@ -24,7 +23,7 @@ interface Result {
     stderr: string;
 }
 
-function runScript(
+export function runScript(
     runner: string,
     args: string[],
     options?: {
@@ -191,16 +190,19 @@ export async function textEditRunner(
                 content,
             );
             const newContent = stdout.length === 0 ? content : fixLineEndings(textDocument.eol, stdout);
-            const edits = new WorkspaceEdit();
-            edits.replace(textDocument.uri, new Range(new Position(0, 0), new Position(lines.length, 0)), newContent);
-            return edits;
+            if (newContent !== content) {
+                const edits = new WorkspaceEdit();
+                edits.replace(
+                    textDocument.uri,
+                    new Range(new Position(0, 0), new Position(lines.length, 0)),
+                    newContent,
+                );
+                return edits;
+            }
+            return new WorkspaceEdit();
         } catch (err) {
             traceError(err);
         }
     }
-    const edits = new WorkspaceEdit();
-    edits.set(textDocument.uri, [
-        TextEdit.replace(new Range(new Position(0, 0), new Position(lines.length, 0)), content),
-    ]);
-    return edits;
+    return new WorkspaceEdit();
 }

@@ -9,6 +9,7 @@ import copy
 import json
 import os
 import pathlib
+import re
 import sys
 import traceback
 from typing import Any, Dict, List, Optional, Sequence
@@ -321,8 +322,23 @@ def code_action_resolve(params: lsp.CodeAction):
     return params
 
 
+# Matches Jupyter/IPython magic commands and shell escapes:
+#   %matplotlib inline   - line magic
+#   %%time               - cell magic
+#   !pip install foo     - shell escape
+MAGIC_COMMAND_REGEX = re.compile(r"^\s*(%{1,2}\w|!)")
+
+
+def strip_magic_commands(source: str) -> str:
+    """Strips magic commands from the source code."""
+    lines = source.splitlines(keepends=True)
+    new_lines = ["\n" if MAGIC_COMMAND_REGEX.match(line) else line for line in lines]
+    return "".join(new_lines)
+
+
 def is_python(code: str) -> bool:
     """Ensures that the code provided is python."""
+    code = strip_magic_commands(code)
     try:
         ast.parse(code)
     except SyntaxError:
