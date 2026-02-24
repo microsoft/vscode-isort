@@ -21,12 +21,15 @@
 #
 # For more information: https://github.github.com/gh-aw/introduction/overview/
 #
-# When a new issue is opened, analyze its root cause, check whether the same issue could affect other extensions built from the microsoft/vscode-python-tools-extension-template, and look for related open issues on the upstream isort repository (PyCQA/isort). If applicable, suggest an upstream fix and surface relevant isort issues to the reporter.
+# When a new issue is opened — or when a maintainer comments `/triage-issue` on an existing issue — analyze its root cause, check whether the same issue could affect other extensions built from the microsoft/vscode-python-tools-extension-template, and look for related open issues on the upstream isort repository (PyCQA/isort). If applicable, suggest an upstream fix and surface relevant isort issues to the reporter.
 #
-# gh-aw-metadata: {"schema_version":"v1","frontmatter_hash":"e45af9bdcc0a03d83d8f179ad1744585f2b2a08d066666c3441abbb674a879bc","compiler_version":"v0.47.5"}
+# gh-aw-metadata: {"schema_version":"v1","frontmatter_hash":"1d65686a796acb4ea0201c4773a83004ddc9a93059ed26a49941c610251d848c","compiler_version":"v0.47.5"}
 
 name: 'Issue Triage'
 'on':
+  issue_comment:
+    types:
+      - created
   issues:
     types:
       - opened
@@ -961,7 +964,7 @@ jobs:
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
           WORKFLOW_NAME: 'Issue Triage'
-          WORKFLOW_DESCRIPTION: 'When a new issue is opened, analyze its root cause, check whether the same issue could affect other extensions built from the microsoft/vscode-python-tools-extension-template, and look for related open issues on the upstream isort repository (PyCQA/isort). If applicable, suggest an upstream fix and surface relevant isort issues to the reporter.'
+          WORKFLOW_DESCRIPTION: 'When a new issue is opened — or when a maintainer comments `/triage-issue` on an existing issue — analyze its root cause, check whether the same issue could affect other extensions built from the microsoft/vscode-python-tools-extension-template, and look for related open issues on the upstream isort repository (PyCQA/isort). If applicable, suggest an upstream fix and surface relevant isort issues to the reporter.'
           HAS_PATCH: ${{ needs.agent.outputs.has_patch }}
         with:
           script: |
