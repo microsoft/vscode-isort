@@ -1,13 +1,16 @@
 ---
 description: >
-  When a new issue is opened, analyze its root cause, check whether the same
-  issue could affect other extensions built from the
+  When a new issue is opened — or when a maintainer comments `/check-template`
+  on an existing issue — analyze its root cause, check whether the same issue
+  could affect other extensions built from the
   microsoft/vscode-python-tools-extension-template, and look for related open
   issues on the upstream isort repository (PyCQA/isort). If applicable, suggest
   an upstream fix and surface relevant isort issues to the reporter.
 on:
   issues:
     types: [opened]
+  issue_comment:
+    types: [created]
 permissions:
   contents: read
   issues: read
@@ -32,7 +35,14 @@ steps:
 
 # Issue Triage
 
-You are an AI agent that triages newly opened issues in the **vscode-isort** repository.
+You are an AI agent that triages issues in the **vscode-isort** repository.
+
+This workflow is triggered in two ways:
+1. **Automatically** when a new issue is opened.
+2. **On demand** when a maintainer posts a `/triage-issue` comment on an existing issue.
+
+If triggered by a comment, first verify the comment body is exactly `/triage-issue` (ignoring leading/trailing whitespace). If it is not, call the `noop` safe output and stop — do not process arbitrary comments.
+
 Your goals are:
 
 1. **Explain the likely root cause** of the reported issue.
@@ -152,6 +162,7 @@ The following open issue(s) on the [isort repository](https://github.com/PyCQA/i
 
 ---
 *This analysis was generated automatically. It may not be fully accurate — maintainer review is recommended.*
+*To re-run this analysis (e.g., after new information is added to the issue), comment `/triage-issue`.*
 ```
 
 ### Step 6: Handle edge cases
