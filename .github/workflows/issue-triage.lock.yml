@@ -23,7 +23,7 @@
 #
 # When a new issue is opened — or when a maintainer comments `/triage-issue` on an existing issue — analyze its root cause, check whether the same issue could affect other extensions built from the microsoft/vscode-python-tools-extension-template, and look for related open issues on the upstream isort repository (PyCQA/isort). If applicable, suggest an upstream fix and surface relevant isort issues to the reporter.
 #
-# gh-aw-metadata: {"schema_version":"v1","frontmatter_hash":"1d65686a796acb4ea0201c4773a83004ddc9a93059ed26a49941c610251d848c","compiler_version":"v0.47.5"}
+# gh-aw-metadata: {"schema_version":"v1","frontmatter_hash":"c0d52aa65884593f62213d1bd67b15f95d300feb9cf81ddb021b1d9d93090b25","compiler_version":"v0.47.5"}
 
 name: 'Issue Triage'
 'on':
@@ -290,6 +290,10 @@ jobs:
           destination: /opt/gh-aw/actions
       - name: Create gh-aw temp directory
         run: bash /opt/gh-aw/actions/create_gh_aw_tmp_dir.sh
+      - name: Checkout repository
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          persist-credentials: false
       - name: Checkout template repo
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
