@@ -72,6 +72,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
                     lsClient = undefined;
                 }
                 unRegisterSortImportFeatures();
+                if (sortFeaturesDisposable) {
+                    const idx = context.subscriptions.indexOf(sortFeaturesDisposable);
+                    if (idx >= 0) context.subscriptions.splice(idx, 1);
+                }
                 sortFeaturesDisposable = registerSortImportFeatures(serverId);
                 context.subscriptions.push(sortFeaturesDisposable);
                 await sortFeaturesDisposable.startup();
