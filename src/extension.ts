@@ -16,6 +16,7 @@ import { getInterpreterFromSetting, getProjectRoot } from './common/utilities';
 import { createOutputChannel, onDidChangeConfiguration, registerCommand } from './common/vscodeapi';
 
 let lsClient: LanguageClient | undefined;
+let sortFeaturesDisposable: (vscode.Disposable & { startup: () => Promise<void> }) | undefined;
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
     // This is required to get server name and module. This should be
     // the first thing that we do in this extension.
@@ -70,9 +71,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
                     }
                     lsClient = undefined;
                 }
-                const sortFeatures = registerSortImportFeatures(serverId);
-                context.subscriptions.push(sortFeatures);
-                await sortFeatures.startup();
+                if (sortFeaturesDisposable) {
+                    sortFeaturesDisposable.dispose();
+                }
+                sortFeaturesDisposable = registerSortImportFeatures(serverId);
+                context.subscriptions.push(sortFeaturesDisposable);
+                await sortFeaturesDisposable.startup();
             }
         } finally {
             isRestarting = false;
