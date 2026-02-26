@@ -46,6 +46,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         try {
             if (getServerEnabled(serverId)) {
                 unRegisterSortImportFeatures();
+                if (sortFeaturesDisposable) {
+                    const idx = context.subscriptions.indexOf(sortFeaturesDisposable);
+                    if (idx >= 0) context.subscriptions.splice(idx, 1);
+                    sortFeaturesDisposable = undefined;
+                }
                 const projectRoot = await getProjectRoot();
                 const workspaceSetting = await getWorkspaceSettings(serverId, projectRoot, true);
                 if (workspaceSetting.interpreter.length === 0) {
@@ -78,6 +83,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
                 }
                 sortFeaturesDisposable = registerSortImportFeatures(serverId);
                 context.subscriptions.push(sortFeaturesDisposable);
+                // isRestarting prevents concurrent runServer() calls, so startup() cannot
+                // be orphaned by a re-entrant dispose while it is still awaiting.
                 await sortFeaturesDisposable.startup();
             }
         } finally {
