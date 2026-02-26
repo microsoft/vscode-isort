@@ -32,6 +32,17 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     traceLog(`Module: ${serverInfo.module}`);
     traceVerbose(`Configuration: ${JSON.stringify(serverInfo)}`);
 
+    const cleanupSortFeatures = () => {
+        unRegisterSortImportFeatures();
+        if (sortFeaturesDisposable) {
+            const idx = context.subscriptions.indexOf(sortFeaturesDisposable);
+            if (idx >= 0) {
+                context.subscriptions.splice(idx, 1);
+            }
+            sortFeaturesDisposable = undefined;
+        }
+    };
+
     let isRestarting = false;
     let restartTimer: NodeJS.Timeout | undefined;
     const runServer = async () => {
@@ -45,14 +56,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         isRestarting = true;
         try {
             if (getServerEnabled(serverId)) {
-                unRegisterSortImportFeatures();
-                if (sortFeaturesDisposable) {
-                    const idx = context.subscriptions.indexOf(sortFeaturesDisposable);
-                    if (idx >= 0) {
-                        context.subscriptions.splice(idx, 1);
-                    }
-                    sortFeaturesDisposable = undefined;
-                }
+                cleanupSortFeatures();
                 const projectRoot = await getProjectRoot();
                 const workspaceSetting = await getWorkspaceSettings(serverId, projectRoot, true);
                 if (workspaceSetting.interpreter.length === 0) {
@@ -78,13 +82,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
                     }
                     lsClient = undefined;
                 }
-                unRegisterSortImportFeatures();
-                if (sortFeaturesDisposable) {
-                    const idx = context.subscriptions.indexOf(sortFeaturesDisposable);
-                    if (idx >= 0) {
-                        context.subscriptions.splice(idx, 1);
-                    }
-                }
+                cleanupSortFeatures();
                 sortFeaturesDisposable = registerSortImportFeatures(serverId);
                 context.subscriptions.push(sortFeaturesDisposable);
                 // isRestarting prevents concurrent runServer() calls, so startup() cannot
