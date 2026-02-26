@@ -48,7 +48,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
                 unRegisterSortImportFeatures();
                 if (sortFeaturesDisposable) {
                     const idx = context.subscriptions.indexOf(sortFeaturesDisposable);
-                    if (idx >= 0) context.subscriptions.splice(idx, 1);
+                    if (idx >= 0) {
+                        context.subscriptions.splice(idx, 1);
+                    }
                     sortFeaturesDisposable = undefined;
                 }
                 const projectRoot = await getProjectRoot();
@@ -79,7 +81,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
                 unRegisterSortImportFeatures();
                 if (sortFeaturesDisposable) {
                     const idx = context.subscriptions.indexOf(sortFeaturesDisposable);
-                    if (idx >= 0) context.subscriptions.splice(idx, 1);
+                    if (idx >= 0) {
+                        context.subscriptions.splice(idx, 1);
+                    }
                 }
                 sortFeaturesDisposable = registerSortImportFeatures(serverId);
                 context.subscriptions.push(sortFeaturesDisposable);
