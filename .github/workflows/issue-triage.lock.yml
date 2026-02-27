@@ -23,7 +23,7 @@
 #
 # When a new issue is opened — or when a maintainer comments `/triage-issue` on an existing issue — analyze its root cause, check whether the same issue could affect other extensions built from the microsoft/vscode-python-tools-extension-template, and look for related open issues on the upstream isort repository (PyCQA/isort). If applicable, suggest an upstream fix and surface relevant isort issues to the reporter.
 #
-# gh-aw-metadata: {"schema_version":"v1","frontmatter_hash":"c0d52aa65884593f62213d1bd67b15f95d300feb9cf81ddb021b1d9d93090b25","compiler_version":"v0.47.5"}
+# gh-aw-metadata: {"schema_version":"v1","frontmatter_hash":"bd19746e8d9154e83c47db9acf214e9edfd967e9a7f79defe44f508e859c6b43","compiler_version":"v0.47.5"}
 
 name: 'Issue Triage'
 'on':
@@ -908,6 +908,7 @@ jobs:
           GH_AW_WORKFLOW_ID: 'issue-triage'
           GH_AW_SECRET_VERIFICATION_RESULT: ${{ needs.agent.outputs.secret_verification_result }}
           GH_AW_CHECKOUT_PR_SUCCESS: ${{ needs.agent.outputs.checkout_pr_success }}
+          GH_AW_SAFE_OUTPUT_MESSAGES: '{"runStarted":"⏳ **Triage Issue Agent**: I will analyze this issue and determine if related issues exist in this repo, the upstream Python tool, or similar extensions. This may take a couple of minutes."}'
           GH_AW_GROUP_REPORTS: 'false'
         with:
           github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
@@ -1068,6 +1069,7 @@ jobs:
     timeout-minutes: 15
     env:
       GH_AW_ENGINE_ID: 'copilot'
+      GH_AW_SAFE_OUTPUT_MESSAGES: '{"runStarted":"⏳ **Triage Issue Agent**: I will analyze this issue and determine if related issues exist in this repo, the upstream Python tool, or similar extensions. This may take a couple of minutes."}'
       GH_AW_WORKFLOW_ID: 'issue-triage'
       GH_AW_WORKFLOW_NAME: 'Issue Triage'
     outputs:
