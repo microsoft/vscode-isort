@@ -78,6 +78,12 @@
         ],
         "configuration": {
             "properties": {
+                "isort.cwd": {
+                    "default": "${workspaceFolder}",
+                    "markdownDescription": "%settings.cwd.description%",
+                    "scope": "resource",
+                    "type": "string"
+                },
                 "isort.args": {
                     "default": [],
                     "markdownDescription": "%settings.args.description%",

@@ -1,6 +1,7 @@
 {
     "extension.description": "Import organization support for Python files using isort.",
     "command.restartServer": "Restart Server",
+    "settings.cwd.description": "Sets the working directory for isort. Supported variables: `${workspaceFolder}` (workspace root) and `${fileDirname}` (directory of the current file).",
     "settings.args.description": "Arguments passed to isort for organizing imports in Python files. Each argument should be provided as a separate string in the array. <br> Example: <br> `\"isort.args\" : [\"--settings-file\", \"<file>\"]`",
     "settings.check.description": "Whether to run `isort --check` on open Python files and report sorting issues as a \"Hint\" in the Problems window. You can update `isort.severity` to show sorting issues with higher severity. ",
     "settings.severity.description": "Mapping of isort's message types to VS Code's diagnostic severity levels as displayed in the Problems window.",
