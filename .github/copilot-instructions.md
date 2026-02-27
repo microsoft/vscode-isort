@@ -53,3 +53,11 @@ npm run vsce-package-pre      # Build .vsix for pre-release
 - **Server info from package.json:** The `serverInfo` field in `package.json` (`{ name, module }`) drives the server ID and module name throughout both the client and server code. Changes there propagate automatically.
 - **Copyright header:** All source files start with `// Copyright (c) Microsoft Corporation. All rights reserved.` (TS) or `# Copyright (c) Microsoft Corporation. All rights reserved.` (Python), followed by the MIT license line.
 - **Dependency management:** `nox -s update_packages` updates both pip and npm dependencies. Some npm packages are pinned (`vscode-languageclient`, `@types/vscode`, `@types/node`).
+
+## Development Guidelines
+
+- When introducing new functionality, add basic tests following the existing repo test structure.
+- Always make sure all tests pass before submitting changes.
+- Always ensure documents and code are linted before submitting.
+- Do multiple rounds of review and refinement.
+- Do not feature creep — keep changes focused on the task at hand.
