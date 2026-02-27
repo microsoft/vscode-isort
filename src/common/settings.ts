@@ -155,7 +155,7 @@ export async function getWorkspaceSettings(
     const path = getPath(namespace, workspace);
     const workspaceSetting = {
         check: config.get<boolean>('check', false),
-        cwd: workspace.uri.fsPath,
+        cwd: getCwd(config, workspace),
         workspace: workspace.uri.toString(),
         args: resolveVariables(args, 'args', workspace),
         path: resolveVariables(path, 'path', workspace, interpreter),
@@ -205,6 +205,7 @@ export function checkIfConfigurationChanged(e: ConfigurationChangeEvent, namespa
     const settings = [
         `${namespace}.check`,
         `${namespace}.args`,
+        `${namespace}.cwd`,
         `${namespace}.severity`,
         `${namespace}.path`,
         `${namespace}.interpreter`,
