@@ -69,6 +69,10 @@ suite('Settings Tests', () => {
                 .setup((c) => c.get('showNotifications', 'off'))
                 .returns(() => 'off')
                 .verifiable(TypeMoq.Times.atLeastOnce());
+            configMock
+                .setup((c) => c.get('cwd', workspace1.uri.fsPath))
+                .returns(() => workspace1.uri.fsPath)
+                .verifiable(TypeMoq.Times.atLeastOnce());
 
             pythonConfigMock
                 .setup((c) => c.get('sortImports.args', []))
@@ -81,6 +85,7 @@ suite('Settings Tests', () => {
 
             const settings: ISettings = await getWorkspaceSettings('isort', workspace1);
             assert.deepStrictEqual(settings.args, []);
+            assert.deepStrictEqual(settings.cwd, workspace1.uri.fsPath);
             assert.deepStrictEqual(settings.importStrategy, 'useBundled');
             assert.deepStrictEqual(settings.interpreter, []);
             assert.deepStrictEqual(settings.path, []);
@@ -90,6 +95,22 @@ suite('Settings Tests', () => {
 
             configMock.verifyAll();
             pythonConfigMock.verifyAll();
+        });
+
+        test('cwd with ${workspaceFolder} is resolved', async () => {
+            getInterpreterDetailsStub.resolves({ path: undefined });
+            configMock.setup((c) => c.get('args', [])).returns(() => []);
+            configMock.setup((c) => c.get('path', [])).returns(() => []);
+            configMock.setup((c) => c.get('check', false)).returns(() => false);
+            configMock.setup((c) => c.get('severity', DEFAULT_SEVERITY)).returns(() => DEFAULT_SEVERITY);
+            configMock.setup((c) => c.get('importStrategy', 'useBundled')).returns(() => 'useBundled');
+            configMock.setup((c) => c.get('showNotifications', 'off')).returns(() => 'off');
+            configMock.setup((c) => c.get('cwd', workspace1.uri.fsPath)).returns(() => '${workspaceFolder}');
+            pythonConfigMock.setup((c) => c.get('sortImports.args', [])).returns(() => []);
+            pythonConfigMock.setup((c) => c.get('sortImports.path', '')).returns(() => '');
+
+            const settings: ISettings = await getWorkspaceSettings('isort', workspace1);
+            assert.deepStrictEqual(settings.cwd, workspace1.uri.fsPath);
         });
     });
 });
