@@ -11,6 +11,23 @@ import * as python from '../../../../common/python';
 import { ISettings, getWorkspaceSettings } from '../../../../common/settings';
 import * as vscodeapi from '../../../../common/vscodeapi';
 
+function setupDefaultConfigMocks(
+    configMock: TypeMoq.IMock<WorkspaceConfiguration>,
+    pythonConfigMock: TypeMoq.IMock<WorkspaceConfiguration>,
+    cwdValue: string,
+    workspace: WorkspaceFolder,
+): void {
+    configMock.setup((c) => c.get('args', [])).returns(() => []);
+    configMock.setup((c) => c.get('path', [])).returns(() => []);
+    configMock.setup((c) => c.get('check', false)).returns(() => false);
+    configMock.setup((c) => c.get('severity', TypeMoq.It.isAny())).returns(() => ({ W: 'Warning', E: 'Hint' }));
+    configMock.setup((c) => c.get('importStrategy', 'useBundled')).returns(() => 'useBundled');
+    configMock.setup((c) => c.get('showNotifications', 'off')).returns(() => 'off');
+    configMock.setup((c) => c.get('cwd', workspace.uri.fsPath)).returns(() => cwdValue);
+    pythonConfigMock.setup((c) => c.get('sortImports.args', [])).returns(() => []);
+    pythonConfigMock.setup((c) => c.get('sortImports.path', '')).returns(() => '');
+}
+
 // eslint-disable-next-line @typescript-eslint/naming-convention
 const DEFAULT_SEVERITY: Record<string, string> = { W: 'Warning', E: 'Hint' };
 
@@ -28,6 +45,8 @@ suite('Settings Tests', () => {
 
         setup(() => {
             getConfigurationStub = sinon.stub(vscodeapi, 'getConfiguration');
+            // resolveVariables() always calls getWorkspaceFolders() for ${workspaceFolder:<name>} substitutions
+            sinon.stub(vscodeapi, 'getWorkspaceFolders').returns([workspace1]);
             getInterpreterDetailsStub = sinon.stub(python, 'getInterpreterDetails');
             configMock = TypeMoq.Mock.ofType<WorkspaceConfiguration>();
             pythonConfigMock = TypeMoq.Mock.ofType<WorkspaceConfiguration>();
@@ -99,18 +118,48 @@ suite('Settings Tests', () => {
 
         test('cwd with ${workspaceFolder} is resolved', async () => {
             getInterpreterDetailsStub.resolves({ path: undefined });
-            configMock.setup((c) => c.get('args', [])).returns(() => []);
-            configMock.setup((c) => c.get('path', [])).returns(() => []);
-            configMock.setup((c) => c.get('check', false)).returns(() => false);
-            configMock.setup((c) => c.get('severity', DEFAULT_SEVERITY)).returns(() => DEFAULT_SEVERITY);
-            configMock.setup((c) => c.get('importStrategy', 'useBundled')).returns(() => 'useBundled');
-            configMock.setup((c) => c.get('showNotifications', 'off')).returns(() => 'off');
-            configMock.setup((c) => c.get('cwd', workspace1.uri.fsPath)).returns(() => '${workspaceFolder}');
-            pythonConfigMock.setup((c) => c.get('sortImports.args', [])).returns(() => []);
-            pythonConfigMock.setup((c) => c.get('sortImports.path', '')).returns(() => '');
+            setupDefaultConfigMocks(configMock, pythonConfigMock, '${workspaceFolder}', workspace1);
 
             const settings: ISettings = await getWorkspaceSettings('isort', workspace1);
-            assert.deepStrictEqual(settings.cwd, workspace1.uri.fsPath);
+            assert.strictEqual(settings.cwd, workspace1.uri.fsPath);
+        });
+
+        test('cwd with ${workspaceFolder:name} is resolved', async () => {
+            getInterpreterDetailsStub.resolves({ path: undefined });
+            setupDefaultConfigMocks(configMock, pythonConfigMock, '${workspaceFolder:workspace1}', workspace1);
+
+            const settings: ISettings = await getWorkspaceSettings('isort', workspace1);
+            assert.strictEqual(settings.cwd, workspace1.uri.fsPath);
+        });
+
+        test('cwd with ${userHome} is resolved', async () => {
+            getInterpreterDetailsStub.resolves({ path: undefined });
+            setupDefaultConfigMocks(configMock, pythonConfigMock, '${userHome}', workspace1);
+
+            const expected = process.env.HOME || process.env.USERPROFILE || '${userHome}';
+            const settings: ISettings = await getWorkspaceSettings('isort', workspace1);
+            assert.strictEqual(settings.cwd, expected);
+        });
+
+        test('cwd with ${cwd} is resolved to process.cwd()', async () => {
+            getInterpreterDetailsStub.resolves({ path: undefined });
+            setupDefaultConfigMocks(configMock, pythonConfigMock, '${cwd}', workspace1);
+
+            const settings: ISettings = await getWorkspaceSettings('isort', workspace1);
+            assert.strictEqual(settings.cwd, process.cwd());
+        });
+
+        test('cwd with ${env:VAR} is resolved', async () => {
+            getInterpreterDetailsStub.resolves({ path: undefined });
+            process.env.ISORT_TEST_CWD = '/test/env/path';
+            try {
+                setupDefaultConfigMocks(configMock, pythonConfigMock, '${env:ISORT_TEST_CWD}', workspace1);
+
+                const settings: ISettings = await getWorkspaceSettings('isort', workspace1);
+                assert.strictEqual(settings.cwd, '/test/env/path');
+            } finally {
+                delete process.env.ISORT_TEST_CWD;
+            }
         });
     });
 });
