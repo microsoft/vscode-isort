@@ -126,14 +126,19 @@ export async function getInterpreterDetails(resource?: Uri): Promise<IInterprete
     // Prefer the Python Environments extension if available.
     const envsApi = await getEnvironmentsExtensionAPI();
     if (envsApi) {
-        const environment = await envsApi.getEnvironment(resource);
-        if (environment) {
-            return {
-                path: [environment.execInfo.run.executable],
-                resource,
-            };
+        try {
+            const environment = await envsApi.getEnvironment(resource);
+            if (environment) {
+                return {
+                    path: [environment.execInfo.run.executable],
+                    resource,
+                };
+            }
+        } catch (error) {
+            traceError('Error resolving interpreter from Python Environments extension: ', error);
         }
-        return { path: undefined, resource };
+        // If the environments API could not provide an interpreter (returned undefined or threw),
+        // fall through to the legacy ms-python.python extension API below.
     }
 
     // Fall back to legacy ms-python.python extension API
