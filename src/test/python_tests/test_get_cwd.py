@@ -5,27 +5,14 @@ import os
 import pathlib
 import sys
 import types
-from unittest.mock import MagicMock
+
 
 # ---------------------------------------------------------------------------
 # Stub out bundled LSP dependencies so lsp_server can be imported without the
 # full VS Code extension environment.
 # ---------------------------------------------------------------------------
 def _setup_mocks():
-    class _DynamicMock:
-        """A simple mock that returns itself for any attribute access or call."""
-        def __getattr__(self, name):
-            return _DynamicMock()
-
-        def __call__(self, *args, **kwargs):
-            return _DynamicMock()
-
-        def __iter__(self):
-            return iter([])
-
     class _MockLS:
-        workspace = MagicMock()
-
         def __init__(self, **kwargs):
             pass
 
@@ -41,23 +28,58 @@ def _setup_mocks():
         def show_message(self, *args, **kwargs):
             pass
 
-    mock_lsp_server_module = types.ModuleType("pygls.lsp.server")
-    mock_lsp_server_module.LanguageServer = _MockLS
+    mock_server = types.ModuleType("pygls.lsp.server")
+    mock_server.LanguageServer = _MockLS
 
-    mock_lsp_module = types.ModuleType("pygls.lsp")
-    mock_lsp_module.server = mock_lsp_server_module
-
-    TextDoc = type("TextDocument", (), {"path": None, "uri": None, "source": ""})
     mock_workspace = types.ModuleType("pygls.workspace")
-    mock_workspace.TextDocument = TextDoc
+    mock_workspace.TextDocument = type("TextDocument", (), {"path": None, "uri": None})
 
-    mock_uris = types.ModuleType("pygls.uris")
-    mock_uris.from_fs_path = lambda p: "file://" + p
-    mock_uris.to_fs_path = lambda u: u.replace("file://", "")
+    mock_pygls = types.ModuleType("pygls")
+    mock_pygls_uris = types.ModuleType("pygls.uris")
+    mock_pygls_uris.from_fs_path = lambda p: "file://" + p
+    mock_pygls_uris.to_fs_path = lambda u: u.replace("file://", "")
 
-    # Use a dynamic mock for lsprotocol.types so all attribute accesses succeed.
-    mock_lsp_types = MagicMock()
-    mock_lsp_types.DiagnosticSeverity.Warning = "Warning"
+    mock_lsp = types.ModuleType("lsprotocol.types")
+    for _name in [
+        "CODE_ACTION_RESOLVE",
+        "EXIT",
+        "INITIALIZE",
+        "SHUTDOWN",
+        "TEXT_DOCUMENT_CODE_ACTION",
+        "TEXT_DOCUMENT_DID_CLOSE",
+        "TEXT_DOCUMENT_DID_OPEN",
+        "TEXT_DOCUMENT_DID_SAVE",
+        "TEXT_DOCUMENT_FORMATTING",
+    ]:
+        setattr(mock_lsp, _name, _name)
+    for _name in [
+        "CodeActionOptions",
+        "CodeActionParams",
+        "Diagnostic",
+        "DiagnosticSeverity",
+        "DidCloseTextDocumentParams",
+        "DidOpenTextDocumentParams",
+        "DidSaveTextDocumentParams",
+        "InitializeParams",
+        "LogMessageParams",
+        "Position",
+        "PublishDiagnosticsParams",
+        "Range",
+        "TextDocumentEdit",
+        "TextEdit",
+        "TraceValue",
+        "VersionedTextDocumentIdentifier",
+        "WorkspaceEdit",
+    ]:
+        setattr(mock_lsp, _name, type(_name, (), {"__init__": lambda self, **kw: None}))
+    mock_lsp.CodeActionKind = type(
+        "CodeActionKind",
+        (),
+        {"SourceOrganizeImports": "source.organizeImports", "QuickFix": "quickfix"},
+    )
+    mock_lsp.MessageType = type(
+        "MessageType", (), {"Log": 4, "Error": 1, "Warning": 2, "Info": 3}
+    )
 
     mock_lsp_jsonrpc = types.ModuleType("lsp_jsonrpc")
     mock_lsp_jsonrpc.shutdown_json_rpc = lambda: None
@@ -73,24 +95,24 @@ def _setup_mocks():
 
     mock_isort = types.ModuleType("isort")
 
-    pygls_mod = types.ModuleType("pygls")
-    pygls_mod.lsp = mock_lsp_module
-    pygls_mod.workspace = mock_workspace
-    pygls_mod.uris = mock_uris
+    mock_pygls.lsp = types.ModuleType("pygls.lsp")
+    mock_pygls.workspace = mock_workspace
+    mock_pygls.uris = mock_pygls_uris
 
     for _mod_name, _mod in [
-        ("pygls", pygls_mod),
-        ("pygls.lsp", mock_lsp_module),
-        ("pygls.lsp.server", mock_lsp_server_module),
+        ("pygls", mock_pygls),
+        ("pygls.lsp", mock_pygls.lsp),
+        ("pygls.lsp.server", mock_server),
         ("pygls.workspace", mock_workspace),
-        ("pygls.uris", mock_uris),
+        ("pygls.uris", mock_pygls_uris),
         ("lsprotocol", types.ModuleType("lsprotocol")),
-        ("lsprotocol.types", mock_lsp_types),
+        ("lsprotocol.types", mock_lsp),
         ("lsp_jsonrpc", mock_lsp_jsonrpc),
         ("lsp_utils", mock_lsp_utils),
         ("isort", mock_isort),
     ]:
-        sys.modules[_mod_name] = _mod
+        if _mod_name not in sys.modules:
+            sys.modules[_mod_name] = _mod
 
     tool_dir = str(pathlib.Path(__file__).parents[3] / "bundled" / "tool")
     if tool_dir not in sys.path:
@@ -112,9 +134,8 @@ def _make_settings(cwd=None):
 
 
 def _make_doc(path):
-    """Create a mock TextDocument where uri starts with 'file:' so _get_document_path returns path."""
-    doc = types.SimpleNamespace(path=path, uri="file://" + path, source="")
-    return doc
+    """Create a mock TextDocument with path and uri attributes."""
+    return types.SimpleNamespace(path=path, uri="file://" + path)
 
 
 # ---------------------------------------------------------------------------
@@ -232,6 +253,6 @@ def test_no_variable_in_cwd_unchanged():
 
 def test_document_with_no_path_falls_back_to_workspace():
     """A document object whose path is falsy triggers the fallback."""
-    doc = types.SimpleNamespace(path="", uri="file://", source="")
+    doc = types.SimpleNamespace(path="", uri="file://")
     settings = _make_settings(cwd="${fileDirname}")
     assert lsp_server.get_cwd(settings, doc) == WORKSPACE
