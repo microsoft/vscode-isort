@@ -3,10 +3,11 @@
 
 /* eslint-disable @typescript-eslint/naming-convention */
 import { PythonExtension, ResolvedEnvironment } from '@vscode/python-extension';
-import { commands, Disposable, Event, EventEmitter, Uri } from 'vscode';
+import { commands, Disposable, Event, EventEmitter, extensions, Uri } from 'vscode';
 import { PYTHON_MAJOR, PYTHON_MINOR, PYTHON_VERSION } from './constants';
 import { traceError, traceLog } from './logging';
 import { getProjectRoot } from './utilities';
+import { PythonEnvironmentsAPI } from '../typings/pythonEnvironments';
 
 export interface IInterpreterDetails {
     path?: string[];
@@ -23,6 +24,24 @@ async function getPythonExtensionAPI(): Promise<PythonExtension | undefined> {
     }
     _api = await PythonExtension.api();
     return _api;
+}
+
+const PYTHON_ENVIRONMENTS_EXTENSION_ID = 'ms-python.vscode-python-envs';
+
+let _envsApi: PythonEnvironmentsAPI | undefined;
+async function getEnvironmentsExtensionAPI(): Promise<PythonEnvironmentsAPI | undefined> {
+    if (_envsApi) {
+        return _envsApi;
+    }
+    const extension = extensions.getExtension(PYTHON_ENVIRONMENTS_EXTENSION_ID);
+    if (!extension) {
+        return undefined;
+    }
+    if (!extension.isActive) {
+        await extension.activate();
+    }
+    _envsApi = extension.exports as PythonEnvironmentsAPI;
+    return _envsApi;
 }
 
 function sameInterpreter(a: string[], b: string[]): boolean {
@@ -64,6 +83,23 @@ async function refreshServerPython(): Promise<void> {
 
 export async function initializePython(disposables: Disposable[]): Promise<void> {
     try {
+        // Prefer the Python Environments extension if available, as it provides more accurate
+        // interpreter resolution (especially for uv-managed and other modern virtual environments).
+        const envsApi = await getEnvironmentsExtensionAPI();
+
+        if (envsApi) {
+            disposables.push(
+                envsApi.onDidChangeEnvironment(async () => {
+                    await refreshServerPython();
+                }),
+            );
+
+            traceLog('Waiting for interpreter from Python environments extension.');
+            await refreshServerPython();
+            return;
+        }
+
+        // Fall back to legacy ms-python.python extension API
         const api = await getPythonExtensionAPI();
 
         if (api) {
@@ -87,6 +123,20 @@ export async function resolveInterpreter(interpreter: string[]): Promise<Resolve
 }
 
 export async function getInterpreterDetails(resource?: Uri): Promise<IInterpreterDetails> {
+    // Prefer the Python Environments extension if available.
+    const envsApi = await getEnvironmentsExtensionAPI();
+    if (envsApi) {
+        const environment = await envsApi.getEnvironment(resource);
+        if (environment) {
+            return {
+                path: [environment.execInfo.run.executable],
+                resource,
+            };
+        }
+        return { path: undefined, resource };
+    }
+
+    // Fall back to legacy ms-python.python extension API
     const api = await getPythonExtensionAPI();
     const environment = await api?.environments.resolveEnvironment(
         api?.environments.getActiveEnvironmentPath(resource),
