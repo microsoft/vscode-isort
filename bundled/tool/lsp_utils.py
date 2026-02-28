@@ -133,9 +133,15 @@ def redirect_io(stream: str, new_stream):
 @contextlib.contextmanager
 def change_cwd(new_cwd):
     """Change working directory before running code."""
-    os.chdir(new_cwd)
-    yield
-    os.chdir(SERVER_CWD)
+    try:
+        os.chdir(new_cwd)
+    except OSError:
+        yield
+        return
+    try:
+        yield
+    finally:
+        os.chdir(SERVER_CWD)
 
 
 def _run_module(
