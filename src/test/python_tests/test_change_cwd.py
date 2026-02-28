@@ -47,8 +47,9 @@ def test_change_cwd_permission_error_does_not_crash(caplog):
     assert body_executed
     # cwd is still the original after the context manager exits.
     assert os.path.normcase(os.getcwd()) == os.path.normcase(original_cwd)
-    # A warning must have been emitted mentioning the inaccessible path.
+    # A warning must have been emitted mentioning the inaccessible path and the error.
     assert any("/restricted/path" in r.message for r in caplog.records)
+    assert any("Access denied" in r.message for r in caplog.records)
 
 
 def test_change_cwd_oserror_does_not_crash(caplog):
@@ -65,3 +66,4 @@ def test_change_cwd_oserror_does_not_crash(caplog):
     assert body_executed
     assert os.path.normcase(os.getcwd()) == os.path.normcase(original_cwd)
     assert any("/inaccessible" in r.message for r in caplog.records)
+    assert any("Some OS error" in r.message for r in caplog.records)
