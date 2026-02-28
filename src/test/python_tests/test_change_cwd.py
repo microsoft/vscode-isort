@@ -2,6 +2,7 @@
 # Licensed under the MIT License.
 """Unit tests for the change_cwd() context manager in lsp_utils."""
 
+import logging
 import os
 import pathlib
 import sys
@@ -31,31 +32,36 @@ def test_change_cwd_happy_path(tmp_path):
     os.chdir(original_cwd)
 
 
-def test_change_cwd_permission_error_does_not_crash():
-    """When os.chdir raises PermissionError the body still runs and the cwd is unchanged."""
+def test_change_cwd_permission_error_does_not_crash(caplog):
+    """When os.chdir raises PermissionError the body still runs, cwd is unchanged, and a warning is logged."""
     original_cwd = os.getcwd()
     body_executed = False
 
     with patch("lsp_utils.os.chdir", side_effect=PermissionError("Access denied")):
-        with lsp_utils.change_cwd("/restricted/path"):
-            body_executed = True
-            # The working directory must not have changed.
-            assert os.path.normcase(os.getcwd()) == os.path.normcase(original_cwd)
+        with caplog.at_level(logging.WARNING):
+            with lsp_utils.change_cwd("/restricted/path"):
+                body_executed = True
+                # The working directory must not have changed.
+                assert os.path.normcase(os.getcwd()) == os.path.normcase(original_cwd)
 
     assert body_executed
     # cwd is still the original after the context manager exits.
     assert os.path.normcase(os.getcwd()) == os.path.normcase(original_cwd)
+    # A warning must have been emitted mentioning the inaccessible path.
+    assert any("/restricted/path" in r.message for r in caplog.records)
 
 
-def test_change_cwd_oserror_does_not_crash():
-    """When os.chdir raises an arbitrary OSError the body still runs."""
+def test_change_cwd_oserror_does_not_crash(caplog):
+    """When os.chdir raises an arbitrary OSError the body still runs and a warning is logged."""
     original_cwd = os.getcwd()
     body_executed = False
 
     with patch("lsp_utils.os.chdir", side_effect=OSError("Some OS error")):
-        with lsp_utils.change_cwd("/inaccessible"):
-            body_executed = True
-            assert os.path.normcase(os.getcwd()) == os.path.normcase(original_cwd)
+        with caplog.at_level(logging.WARNING):
+            with lsp_utils.change_cwd("/inaccessible"):
+                body_executed = True
+                assert os.path.normcase(os.getcwd()) == os.path.normcase(original_cwd)
 
     assert body_executed
     assert os.path.normcase(os.getcwd()) == os.path.normcase(original_cwd)
+    assert any("/inaccessible" in r.message for r in caplog.records)

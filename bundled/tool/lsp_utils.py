@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import contextlib
 import io
+import logging
 import os
 import pathlib
 import runpy
@@ -136,6 +137,11 @@ def change_cwd(new_cwd):
     try:
         os.chdir(new_cwd)
     except OSError:
+        logging.warning(
+            "Failed to change directory to %r, running in %r instead.",
+            new_cwd,
+            SERVER_CWD,
+        )
         yield
         return
     try:
