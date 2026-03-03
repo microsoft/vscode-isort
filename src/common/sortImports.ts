@@ -62,7 +62,7 @@ class SortImportsCodeActionProvider implements CodeActionProvider<CodeAction> {
             return codeActions;
         }
         if (isNotebookCell(document.uri)) {
-            traceWarn('Skipping notebook cell (not supported in server-less mode): ', document.uri.fsPath);
+            traceWarn('Skipping notebook cell (not supported in server-less mode): ', document.uri.toString());
             return codeActions;
         }
 
