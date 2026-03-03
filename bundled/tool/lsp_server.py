@@ -156,9 +156,11 @@ def notebook_did_open(params: lsp.DidOpenNotebookDocumentParams) -> None:
 
 @LSP_SERVER.feature(lsp.NOTEBOOK_DOCUMENT_DID_CHANGE)
 def notebook_did_change(params: lsp.DidChangeNotebookDocumentParams) -> None:
-    """Re-lint only the cells whose text content changed."""
+    """Re-lint cells whose text changed or that were newly added."""
     if params.change is None or params.change.cells is None:
         return
+
+    # Lint cells whose text content changed.
     for cell_content in params.change.cells.text_content or []:
         document = LSP_SERVER.workspace.get_text_document(
             cell_content.document.uri
@@ -167,6 +169,25 @@ def notebook_did_change(params: lsp.DidChangeNotebookDocumentParams) -> None:
         LSP_SERVER.text_document_publish_diagnostics(
             lsp.PublishDiagnosticsParams(uri=document.uri, diagnostics=diagnostics)
         )
+
+    # Lint newly added cells.
+    structure = params.change.cells.structure
+    if structure and structure.did_open:
+        for cell_doc in structure.did_open:
+            document = LSP_SERVER.workspace.get_text_document(cell_doc.uri)
+            diagnostics: list[lsp.Diagnostic] = _linting_helper(document)
+            LSP_SERVER.text_document_publish_diagnostics(
+                lsp.PublishDiagnosticsParams(
+                    uri=document.uri, diagnostics=diagnostics
+                )
+            )
+
+    # Clear diagnostics for removed cells.
+    if structure and structure.did_close:
+        for cell_doc in structure.did_close:
+            LSP_SERVER.text_document_publish_diagnostics(
+                lsp.PublishDiagnosticsParams(uri=cell_doc.uri, diagnostics=[])
+            )
 
 
 @LSP_SERVER.feature(lsp.NOTEBOOK_DOCUMENT_DID_SAVE)
