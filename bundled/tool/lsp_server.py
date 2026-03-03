@@ -142,6 +142,7 @@ def did_close(params: lsp.DidCloseTextDocumentParams) -> None:
         lsp.PublishDiagnosticsParams(uri=document.uri, diagnostics=[])
     )
 
+
 @LSP_SERVER.feature(lsp.NOTEBOOK_DOCUMENT_DID_OPEN)
 def notebook_did_open(params: lsp.DidOpenNotebookDocumentParams) -> None:
     """Run diagnostics on each cell when a notebook is opened."""
@@ -166,6 +167,7 @@ def notebook_did_change(params: lsp.DidChangeNotebookDocumentParams) -> None:
         LSP_SERVER.text_document_publish_diagnostics(
             lsp.PublishDiagnosticsParams(uri=document.uri, diagnostics=diagnostics)
         )
+
 
 @LSP_SERVER.feature(lsp.NOTEBOOK_DOCUMENT_DID_SAVE)
 def notebook_did_save(params: lsp.DidSaveNotebookDocumentParams) -> None:
@@ -192,6 +194,7 @@ def notebook_did_close(params: lsp.DidCloseNotebookDocumentParams) -> None:
         LSP_SERVER.text_document_publish_diagnostics(
             lsp.PublishDiagnosticsParams(uri=cell_doc.uri, diagnostics=[])
         )
+
 
 def _linting_helper(document: workspace.TextDocument) -> list[lsp.Diagnostic]:
     # deep copy here to prevent accidentally updating global settings.

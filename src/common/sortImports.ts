@@ -39,7 +39,7 @@ export function unRegisterSortImportFeatures(): void {
     disposables.forEach((d) => {
         try {
             d.dispose();
-        } catch { }
+        } catch {}
     });
     disposables = [];
 }
@@ -49,7 +49,7 @@ class CodeActionWithData extends CodeAction {
 }
 
 class SortImportsCodeActionProvider implements CodeActionProvider<CodeAction> {
-    constructor(private readonly serverId: string) { }
+    constructor(private readonly serverId: string) {}
     async provideCodeActions(
         document: TextDocument,
         _range: Range | Selection,
@@ -59,6 +59,10 @@ class SortImportsCodeActionProvider implements CodeActionProvider<CodeAction> {
         const codeActions: (CodeAction | Command)[] = [];
         if (document.uri.fsPath.includes('site-packages')) {
             traceWarn('Skipping site-packages file: ', document.uri.fsPath);
+            return codeActions;
+        }
+        if (isNotebookCell(document.uri)) {
+            traceWarn('Skipping notebook cell (not supported in server-less mode): ', document.uri.fsPath);
             return codeActions;
         }
 
@@ -117,8 +121,8 @@ function runDiagnosticsOnStartup(serverId: string, provider: SortImportsDiagnost
                         provider.publishDiagnostics(td.uri, diagnostics);
                     })
                     .then(
-                        () => { },
-                        () => { },
+                        () => {},
+                        () => {},
                     );
             }
         }),
