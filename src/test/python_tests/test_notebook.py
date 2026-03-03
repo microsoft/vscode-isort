@@ -24,7 +24,7 @@ def _make_cell_uri(notebook_path, cell_id="C00001"):
 
 def _make_notebook_uri(notebook_path):
     """Build a notebook URI from a file path."""
-    return utils.as_uri(notebook_path).replace("file:", "vscode-notebook-cell:")
+    return utils.as_uri(notebook_path)
 
 
 def _collect_diagnostics(ls_session, count=1, timeout=TIMEOUT):
