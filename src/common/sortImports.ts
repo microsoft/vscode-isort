@@ -61,10 +61,6 @@ class SortImportsCodeActionProvider implements CodeActionProvider<CodeAction> {
             traceWarn('Skipping site-packages file: ', document.uri.fsPath);
             return codeActions;
         }
-        if (isNotebookCell(document.uri)) {
-            traceWarn('Skipping notebook cell (not supported in server-less mode): ', document.uri.toString());
-            return codeActions;
-        }
 
         const action1 = new CodeActionWithData('isort: Organize Imports', CodeActionKind.SourceOrganizeImports);
         action1.data = document.uri.toString();
