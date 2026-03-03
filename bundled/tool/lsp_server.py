@@ -145,9 +145,16 @@ def did_close(params: lsp.DidCloseTextDocumentParams) -> None:
 
 @LSP_SERVER.feature(lsp.NOTEBOOK_DOCUMENT_DID_OPEN)
 def notebook_did_open(params: lsp.DidOpenNotebookDocumentParams) -> None:
-    """Run diagnostics on each cell when a notebook is opened."""
-    for cell_doc in params.cell_text_documents:
-        document = LSP_SERVER.workspace.get_text_document(cell_doc.uri)
+    """Run diagnostics on each code cell when a notebook is opened."""
+    nb = LSP_SERVER.workspace.get_notebook_document(
+        notebook_uri=params.notebook_document.uri
+    )
+    if nb is None:
+        return
+    for cell in nb.cells:
+        if cell.kind != lsp.NotebookCellKind.Code or cell.document is None:
+            continue
+        document = LSP_SERVER.workspace.get_text_document(cell.document)
         diagnostics: list[lsp.Diagnostic] = _linting_helper(document)
         LSP_SERVER.text_document_publish_diagnostics(
             lsp.PublishDiagnosticsParams(uri=document.uri, diagnostics=diagnostics)
