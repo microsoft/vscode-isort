@@ -85,7 +85,7 @@ def _get_document_path(document: workspace.TextDocument) -> str:
 
     Examples:
         file:///path/to/file.py -> /path/to/file.py
-        vscode-notebook-cell:... -> /path/to/file.py
+        vscode-notebook-cell:/path/to/notebook.ipynb#C00001 -> /path/to/notebook.ipynb
     """
 
     if not document.uri.startswith("file:"):
