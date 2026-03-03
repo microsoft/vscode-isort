@@ -16,7 +16,10 @@ TIMEOUT = 10  # 10 seconds
 
 def _make_cell_uri(notebook_path, cell_id="C00001"):
     """Build a fake notebook cell URI from a file path."""
-    return utils.as_uri(notebook_path).replace("file:", "vscode-notebook-cell:") + f"#{cell_id}"
+    return (
+        utils.as_uri(notebook_path).replace("file:", "vscode-notebook-cell:")
+        + f"#{cell_id}"
+    )
 
 
 def _make_notebook_uri(notebook_path):
@@ -150,7 +153,9 @@ def test_notebook_did_change_text_content():
                                             "range": {
                                                 "start": {"line": 0, "character": 0},
                                                 "end": {
-                                                    "line": len(unsorted_contents.splitlines()),
+                                                    "line": len(
+                                                        unsorted_contents.splitlines()
+                                                    ),
                                                     "character": 0,
                                                 },
                                             },
