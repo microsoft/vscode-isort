@@ -162,9 +162,7 @@ def notebook_did_change(params: lsp.DidChangeNotebookDocumentParams) -> None:
 
     # Lint cells whose text content changed.
     for cell_content in params.change.cells.text_content or []:
-        document = LSP_SERVER.workspace.get_text_document(
-            cell_content.document.uri
-        )
+        document = LSP_SERVER.workspace.get_text_document(cell_content.document.uri)
         diagnostics: list[lsp.Diagnostic] = _linting_helper(document)
         LSP_SERVER.text_document_publish_diagnostics(
             lsp.PublishDiagnosticsParams(uri=document.uri, diagnostics=diagnostics)
@@ -177,9 +175,7 @@ def notebook_did_change(params: lsp.DidChangeNotebookDocumentParams) -> None:
             document = LSP_SERVER.workspace.get_text_document(cell_doc.uri)
             diagnostics: list[lsp.Diagnostic] = _linting_helper(document)
             LSP_SERVER.text_document_publish_diagnostics(
-                lsp.PublishDiagnosticsParams(
-                    uri=document.uri, diagnostics=diagnostics
-                )
+                lsp.PublishDiagnosticsParams(uri=document.uri, diagnostics=diagnostics)
             )
 
     # Clear diagnostics for removed cells.
