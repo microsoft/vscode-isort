@@ -656,3 +656,155 @@ def test_organize_import_cell_with_magic_commands():
             assert len(edits) == 1
             new_text = edits[0]["newText"]
             assert_that(new_text, is_(expected))
+
+
+def test_organize_import_incomplete_code():
+    """Test that isort handles incomplete Python code (no is_python guard)."""
+    init_params = copy.deepcopy(defaults.VSCODE_DEFAULT_INITIALIZE)
+    init_params["initializationOptions"]["settings"][0]["check"] = True
+
+    FORMATTED_TEST_FILE_PATH = (
+        constants.TEST_DATA / "sample_incomplete" / "sample.formatted"
+    )
+    UNFORMATTED_TEST_FILE_PATH = (
+        constants.TEST_DATA / "sample_incomplete" / "sample.unformatted"
+    )
+
+    contents = UNFORMATTED_TEST_FILE_PATH.read_text()
+    expected = FORMATTED_TEST_FILE_PATH.read_text()
+
+    actual_diagnostics = []
+
+    with utils.python_file(contents, UNFORMATTED_TEST_FILE_PATH.parent) as pf:
+        uri = utils.as_uri(str(pf))
+
+        with session.LspSession() as ls_session:
+            ls_session.initialize(init_params)
+
+            done = Event()
+
+            def _handler(params):
+                nonlocal actual_diagnostics
+                actual_diagnostics = params
+                done.set()
+
+            ls_session.set_notification_callback(session.PUBLISH_DIAGNOSTICS, _handler)
+
+            ls_session.notify_did_open(
+                {
+                    "textDocument": {
+                        "uri": uri,
+                        "languageId": "python",
+                        "version": 1,
+                        "text": contents,
+                    }
+                }
+            )
+
+            # wait for some time to receive all notifications
+            done.wait(TIMEOUT)
+
+            # Should detect unsorted imports even in incomplete code
+            assert_that(actual_diagnostics["uri"], is_(uri))
+            assert len(actual_diagnostics["diagnostics"]) > 0
+
+            actual_code_actions = ls_session.text_document_code_action(
+                {
+                    "textDocument": {"uri": uri},
+                    "range": {
+                        "start": {"line": 0, "character": 0},
+                        "end": {"line": 0, "character": 0},
+                    },
+                    "context": {
+                        "diagnostics": actual_diagnostics.get("diagnostics", []),
+                    },
+                }
+            )
+
+            organize_actions = [
+                a
+                for a in actual_code_actions
+                if a.get("kind") == "source.organizeImports"
+            ]
+            assert_that(len(organize_actions), is_(1))
+
+            actual_resolved = ls_session.code_action_resolve(organize_actions[0])
+            edits = actual_resolved["edit"]["documentChanges"][0]["edits"]
+            assert len(edits) == 1
+            assert_that(edits[0]["newText"], is_(expected))
+
+
+def test_organize_import_cell_incomplete_code():
+    """Test that isort handles incomplete Python code in notebook cells."""
+    init_params = copy.deepcopy(defaults.VSCODE_DEFAULT_INITIALIZE)
+    init_params["initializationOptions"]["settings"][0]["check"] = True
+
+    FORMATTED_TEST_FILE_PATH = (
+        constants.TEST_DATA / "sample_incomplete" / "sample.formatted"
+    )
+    UNFORMATTED_TEST_FILE_PATH = (
+        constants.TEST_DATA / "sample_incomplete" / "sample.unformatted"
+    )
+
+    contents = UNFORMATTED_TEST_FILE_PATH.read_text()
+    # Notebook cells may not have a trailing newline
+    expected = FORMATTED_TEST_FILE_PATH.read_text().rstrip("\n")
+
+    actual_diagnostics = []
+    with utils.python_file("", UNFORMATTED_TEST_FILE_PATH.parent, ".ipynb") as pf:
+        # generate a fake cell uri
+        uri = utils.as_uri(pf).replace("file:", "vscode-notebook-cell:") + "#C00001"
+        with session.LspSession() as ls_session:
+            ls_session.initialize(init_params)
+
+            done = Event()
+
+            def _handler(params):
+                nonlocal actual_diagnostics
+                actual_diagnostics = params
+                done.set()
+
+            ls_session.set_notification_callback(session.PUBLISH_DIAGNOSTICS, _handler)
+
+            ls_session.notify_did_open(
+                {
+                    "textDocument": {
+                        "uri": uri,
+                        "languageId": "python",
+                        "version": 1,
+                        "text": contents,
+                    }
+                }
+            )
+
+            # wait for some time to receive all notifications
+            done.wait(TIMEOUT)
+
+            # Should detect unsorted imports even in incomplete code
+            assert_that(actual_diagnostics["uri"], is_(uri))
+            assert len(actual_diagnostics["diagnostics"]) > 0
+
+            actual_code_actions = ls_session.text_document_code_action(
+                {
+                    "textDocument": {"uri": uri},
+                    "range": {
+                        "start": {"line": 0, "character": 0},
+                        "end": {"line": 0, "character": 0},
+                    },
+                    "context": {
+                        "diagnostics": actual_diagnostics.get("diagnostics", []),
+                    },
+                }
+            )
+
+            organize_actions = [
+                a
+                for a in actual_code_actions
+                if a.get("kind") == "source.organizeImports"
+            ]
+            assert_that(len(organize_actions), is_(1))
+
+            actual_resolved = ls_session.code_action_resolve(organize_actions[0])
+            edits = actual_resolved["edit"]["documentChanges"][0]["edits"]
+            assert len(edits) == 1
+            assert_that(edits[0]["newText"], is_(expected))

@@ -10,6 +10,7 @@ import {
     Position,
     Range,
     TextDocument,
+    Uri,
     WorkspaceEdit,
 } from 'vscode';
 import { RUNNER_SCRIPT_PATH } from './constants';
@@ -17,6 +18,17 @@ import { traceError, traceLog } from './logging';
 import { ISettings, getWorkspaceSettings } from './settings';
 import { getProjectRoot } from './utilities';
 import { getWorkspaceFolder } from './vscodeapi';
+
+/**
+ * Returns the filesystem path for a document, handling notebook cell URIs.
+ * For notebook cells, strips the scheme to file: and drops the fragment (cell id).
+ */
+function getDocumentPath(uri: Uri): string {
+    if (uri.scheme !== 'file') {
+        return Uri.from({ ...uri, scheme: 'file', fragment: '' }).fsPath;
+    }
+    return uri.fsPath;
+}
 
 interface Result {
     stdout: string;
@@ -131,7 +143,7 @@ export async function diagnosticRunner(serverId: string, textDocument: TextDocum
 
     if (settings && settings.check) {
         const parts = getExecutablePathWithArgs(settings);
-        const args = parts.slice(1).concat('--check', textDocument.uri.fsPath);
+        const args = parts.slice(1).concat('--check', getDocumentPath(textDocument.uri));
         const newEnv = getUpdatedEnvVariables(settings);
         try {
             const { stderr } = await runScript(parts[0], args, { ignoreError: true, newEnv, cwd: settings.cwd });
@@ -175,10 +187,10 @@ export async function textEditRunner(
 
         if (textDocument.isDirty || textDocument.isUntitled) {
             parts = getExecutablePathWithArgs(settings, ['-']);
-            args = parts.slice(1).concat('--filename', textDocument.uri.fsPath);
+            args = parts.slice(1).concat('--filename', getDocumentPath(textDocument.uri));
         } else {
             parts = getExecutablePathWithArgs(settings);
-            args = parts.slice(1).concat('--stdout', textDocument.uri.fsPath);
+            args = parts.slice(1).concat('--stdout', getDocumentPath(textDocument.uri));
         }
         const newEnv = getUpdatedEnvVariables(settings);
 

@@ -61,13 +61,9 @@ class SortImportsCodeActionProvider implements CodeActionProvider<CodeAction> {
             traceWarn('Skipping site-packages file: ', document.uri.fsPath);
             return codeActions;
         }
-        if (isNotebookCell(document.uri)) {
-            traceWarn('Skipping notebook cell (not supported in server-less mode: ', document.uri.fsPath);
-            return codeActions;
-        }
 
         const action1 = new CodeActionWithData('isort: Organize Imports', CodeActionKind.SourceOrganizeImports);
-        action1.data = document.uri.fsPath;
+        action1.data = document.uri.toString();
         codeActions.push(action1);
 
         const diagnostics = context.diagnostics.filter((d) => d.source === 'isort' && d.code === 'E');
@@ -76,7 +72,7 @@ class SortImportsCodeActionProvider implements CodeActionProvider<CodeAction> {
                 'isort: Fix import sorting and/or formatting',
                 CodeActionKind.QuickFix,
             );
-            action2.data = document.uri.fsPath;
+            action2.data = document.uri.toString();
             codeActions.push(action2);
         }
 
@@ -84,7 +80,7 @@ class SortImportsCodeActionProvider implements CodeActionProvider<CodeAction> {
     }
 
     async resolveCodeAction(codeAction: CodeActionWithData, _token: CancellationToken): Promise<CodeAction> {
-        const docs = workspace.textDocuments.filter((d) => d.uri.fsPath === codeAction.data);
+        const docs = workspace.textDocuments.filter((d) => d.uri.toString() === codeAction.data);
         if (docs.length === 1) {
             codeAction.edit = await textEditRunner(this.serverId, docs[0]);
         }

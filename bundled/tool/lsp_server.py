@@ -4,12 +4,10 @@
 
 from __future__ import annotations
 
-import ast
 import copy
 import json
 import os
 import pathlib
-import re
 import sys
 import traceback
 from typing import Any, Dict, List, Optional, Sequence
@@ -53,8 +51,30 @@ GLOBAL_SETTINGS = {}
 RUNNER = pathlib.Path(__file__).parent / "lsp_runner.py"
 
 MAX_WORKERS = 5
+
+NOTEBOOK_SYNC_OPTIONS = lsp.NotebookDocumentSyncOptions(
+    notebook_selector=[
+        lsp.NotebookDocumentFilterWithNotebook(
+            notebook="jupyter-notebook",
+            cells=[
+                lsp.NotebookCellLanguage(language="python"),
+            ],
+        ),
+        lsp.NotebookDocumentFilterWithNotebook(
+            notebook="interactive",
+            cells=[
+                lsp.NotebookCellLanguage(language="python"),
+            ],
+        ),
+    ],
+    save=True,
+)
+
 LSP_SERVER = LanguageServer(
-    name="isort-server", version="v0.1.0", max_workers=MAX_WORKERS
+    name="isort-server",
+    version="v0.1.0",
+    max_workers=MAX_WORKERS,
+    notebook_document_sync=NOTEBOOK_SYNC_OPTIONS,
 )
 
 
@@ -63,7 +83,7 @@ def _get_document_path(document: workspace.TextDocument) -> str:
 
     Examples:
         file:///path/to/file.py -> /path/to/file.py
-        vscode-notebook-cell:... -> /path/to/file.py
+        vscode-notebook-cell:/path/to/notebook.ipynb#C00001 -> /path/to/notebook.ipynb
     """
 
     if not document.uri.startswith("file:"):
@@ -119,6 +139,83 @@ def did_close(params: lsp.DidCloseTextDocumentParams) -> None:
     LSP_SERVER.text_document_publish_diagnostics(
         lsp.PublishDiagnosticsParams(uri=document.uri, diagnostics=[])
     )
+
+
+@LSP_SERVER.feature(lsp.NOTEBOOK_DOCUMENT_DID_OPEN)
+def notebook_did_open(params: lsp.DidOpenNotebookDocumentParams) -> None:
+    """Run diagnostics on each code cell when a notebook is opened."""
+    nb = LSP_SERVER.workspace.get_notebook_document(
+        notebook_uri=params.notebook_document.uri
+    )
+    if nb is None:
+        return
+    for cell in nb.cells:
+        if cell.kind != lsp.NotebookCellKind.Code or cell.document is None:
+            continue
+        document = LSP_SERVER.workspace.get_text_document(cell.document)
+        diagnostics: list[lsp.Diagnostic] = _linting_helper(document)
+        LSP_SERVER.text_document_publish_diagnostics(
+            lsp.PublishDiagnosticsParams(uri=document.uri, diagnostics=diagnostics)
+        )
+
+
+@LSP_SERVER.feature(lsp.NOTEBOOK_DOCUMENT_DID_CHANGE)
+def notebook_did_change(params: lsp.DidChangeNotebookDocumentParams) -> None:
+    """Re-lint cells whose text changed or that were newly added."""
+    if params.change is None or params.change.cells is None:
+        return
+
+    # Lint cells whose text content changed.
+    for cell_content in params.change.cells.text_content or []:
+        document = LSP_SERVER.workspace.get_text_document(cell_content.document.uri)
+        diagnostics: list[lsp.Diagnostic] = _linting_helper(document)
+        LSP_SERVER.text_document_publish_diagnostics(
+            lsp.PublishDiagnosticsParams(uri=document.uri, diagnostics=diagnostics)
+        )
+
+    # Lint newly added cells.
+    structure = params.change.cells.structure
+    if structure and structure.did_open:
+        for cell_doc in structure.did_open:
+            document = LSP_SERVER.workspace.get_text_document(cell_doc.uri)
+            diagnostics: list[lsp.Diagnostic] = _linting_helper(document)
+            LSP_SERVER.text_document_publish_diagnostics(
+                lsp.PublishDiagnosticsParams(uri=document.uri, diagnostics=diagnostics)
+            )
+
+    # Clear diagnostics for removed cells.
+    if structure and structure.did_close:
+        for cell_doc in structure.did_close:
+            LSP_SERVER.text_document_publish_diagnostics(
+                lsp.PublishDiagnosticsParams(uri=cell_doc.uri, diagnostics=[])
+            )
+
+
+@LSP_SERVER.feature(lsp.NOTEBOOK_DOCUMENT_DID_SAVE)
+def notebook_did_save(params: lsp.DidSaveNotebookDocumentParams) -> None:
+    """Re-lint all cells when a notebook is saved."""
+    nb = LSP_SERVER.workspace.get_notebook_document(
+        notebook_uri=params.notebook_document.uri
+    )
+    if nb is None:
+        return
+    for cell in nb.cells:
+        if cell.kind != lsp.NotebookCellKind.Code or cell.document is None:
+            continue
+        document = LSP_SERVER.workspace.get_text_document(cell.document)
+        diagnostics: list[lsp.Diagnostic] = _linting_helper(document)
+        LSP_SERVER.text_document_publish_diagnostics(
+            lsp.PublishDiagnosticsParams(uri=document.uri, diagnostics=diagnostics)
+        )
+
+
+@LSP_SERVER.feature(lsp.NOTEBOOK_DOCUMENT_DID_CLOSE)
+def notebook_did_close(params: lsp.DidCloseNotebookDocumentParams) -> None:
+    """Clear diagnostics for all cells when the notebook is closed."""
+    for cell_doc in params.cell_text_documents:
+        LSP_SERVER.text_document_publish_diagnostics(
+            lsp.PublishDiagnosticsParams(uri=cell_doc.uri, diagnostics=[])
+        )
 
 
 def _linting_helper(document: workspace.TextDocument) -> list[lsp.Diagnostic]:
@@ -320,31 +417,6 @@ def code_action_resolve(params: lsp.CodeAction):
 
     params.edit = _create_workspace_edits(text_document, results)
     return params
-
-
-# Matches Jupyter/IPython magic commands and shell escapes:
-#   %matplotlib inline   - line magic
-#   %%time               - cell magic
-#   !pip install foo     - shell escape
-MAGIC_COMMAND_REGEX = re.compile(r"^\s*(%{1,2}\w|!)")
-
-
-def strip_magic_commands(source: str) -> str:
-    """Strips magic commands from the source code."""
-    lines = source.splitlines(keepends=True)
-    new_lines = ["\n" if MAGIC_COMMAND_REGEX.match(line) else line for line in lines]
-    return "".join(new_lines)
-
-
-def is_python(code: str) -> bool:
-    """Ensures that the code provided is python."""
-    code = strip_magic_commands(code)
-    try:
-        ast.parse(code)
-    except SyntaxError:
-        log_error(f"Syntax error in code: {traceback.format_exc()}")
-        return False
-    return True
 
 
 def is_interactive(file_path: str) -> bool:
@@ -678,10 +750,6 @@ def _run_tool_on_document(
 
     if is_interactive(doc_path):
         log_warning(f"Skipping interactive window: {doc_path}")
-        return None
-
-    if not is_python(document.source):
-        log_warning(f"Skipping non python code: {doc_path}")
         return None
 
     # deep copy here to prevent accidentally updating global settings.
