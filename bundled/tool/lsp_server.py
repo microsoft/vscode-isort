@@ -4,12 +4,10 @@
 
 from __future__ import annotations
 
-import ast
 import copy
 import json
 import os
 import pathlib
-import re
 import sys
 import traceback
 from typing import Any, Dict, List, Optional, Sequence
@@ -421,31 +419,6 @@ def code_action_resolve(params: lsp.CodeAction):
     return params
 
 
-# Matches Jupyter/IPython magic commands and shell escapes:
-#   %matplotlib inline   - line magic
-#   %%time               - cell magic
-#   !pip install foo     - shell escape
-MAGIC_COMMAND_REGEX = re.compile(r"^\s*(%{1,2}\w|!)")
-
-
-def strip_magic_commands(source: str) -> str:
-    """Strips magic commands from the source code."""
-    lines = source.splitlines(keepends=True)
-    new_lines = ["\n" if MAGIC_COMMAND_REGEX.match(line) else line for line in lines]
-    return "".join(new_lines)
-
-
-def is_python(code: str) -> bool:
-    """Ensures that the code provided is python."""
-    code = strip_magic_commands(code)
-    try:
-        ast.parse(code)
-    except SyntaxError:
-        log_error(f"Syntax error in code: {traceback.format_exc()}")
-        return False
-    return True
-
-
 def is_interactive(file_path: str) -> bool:
     """Checks if the file path represents interactive window."""
     return file_path.endswith(".interactive")
@@ -777,10 +750,6 @@ def _run_tool_on_document(
 
     if is_interactive(doc_path):
         log_warning(f"Skipping interactive window: {doc_path}")
-        return None
-
-    if not is_python(document.source):
-        log_warning(f"Skipping non python code: {doc_path}")
         return None
 
     # deep copy here to prevent accidentally updating global settings.
