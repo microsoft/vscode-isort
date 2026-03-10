@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
- 
 import { PythonEnvironmentApi, PythonEnvironment, PythonEnvironments } from '@vscode/python-environments';
 import { PythonExtension, ResolvedEnvironment } from '@vscode/python-extension';
 import * as semver from 'semver';
