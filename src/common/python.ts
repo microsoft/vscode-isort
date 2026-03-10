@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-/* eslint-disable @typescript-eslint/naming-convention */
+ 
 import { PythonEnvironmentApi, PythonEnvironment, PythonEnvironments } from '@vscode/python-environments';
 import { PythonExtension, ResolvedEnvironment } from '@vscode/python-extension';
 import * as semver from 'semver';
@@ -32,12 +32,12 @@ function convertToResolvedEnvironment(environment: PythonEnvironment): ResolvedE
         },
         version: coerced
             ? {
-                major: coerced.major,
-                minor: coerced.minor,
-                micro: coerced.patch,
-                release: { level: 'final', serial: 0 },
-                sysVersion: environment.version ?? '',
-            }
+                  major: coerced.major,
+                  minor: coerced.minor,
+                  micro: coerced.patch,
+                  release: { level: 'final', serial: 0 },
+                  sysVersion: environment.version ?? '',
+              }
             : undefined,
         environment: undefined,
         tools: [],
@@ -203,7 +203,7 @@ export async function getDebuggerPath(): Promise<string | undefined> {
 }
 
 // TODO: Unused code
-export async function runPythonExtensionCommand(command: string, ...rest: any[]) {
+export async function runPythonExtensionCommand(command: string, ...rest: unknown[]) {
     const envsApi = await getEnvironmentsExtensionAPI();
     if (!envsApi) {
         await getPythonExtensionAPI();
