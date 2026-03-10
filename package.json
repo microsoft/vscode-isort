@@ -47,7 +47,9 @@
     "activationEvents": [
         "onLanguage:python",
         "workspaceContains:pyproject.toml",
-        "workspaceContains:.isort"
+        "workspaceContains:.isort",
+        "onNotebook:jupyter-notebook",
+        "onNotebook:interactive"
     ],
     "main": "./dist/extension.js",
     "l10n": "./l10n",
