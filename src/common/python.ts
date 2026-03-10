@@ -2,13 +2,13 @@
 // Licensed under the MIT License.
 
 /* eslint-disable @typescript-eslint/naming-convention */
+import { PythonEnvironmentApi, PythonEnvironment, PythonEnvironments } from '@vscode/python-environments';
 import { PythonExtension, ResolvedEnvironment } from '@vscode/python-extension';
 import * as semver from 'semver';
-import { commands, Disposable, Event, EventEmitter, extensions, Uri } from 'vscode';
+import { commands, Disposable, Event, EventEmitter, Uri } from 'vscode';
 import { PYTHON_MAJOR, PYTHON_MINOR, PYTHON_VERSION } from './constants';
 import { traceError, traceLog } from './logging';
 import { getProjectRoot } from './utilities';
-import type { PythonEnvironment, PythonEnvironmentsAPI } from '../typings/pythonEnvironments';
 
 export interface IInterpreterDetails {
     path?: string[];
@@ -32,12 +32,12 @@ function convertToResolvedEnvironment(environment: PythonEnvironment): ResolvedE
         },
         version: coerced
             ? {
-                  major: coerced.major,
-                  minor: coerced.minor,
-                  micro: coerced.patch,
-                  release: { level: 'final', serial: 0 },
-                  sysVersion: environment.version ?? '',
-              }
+                major: coerced.major,
+                minor: coerced.minor,
+                micro: coerced.patch,
+                release: { level: 'final', serial: 0 },
+                sysVersion: environment.version ?? '',
+            }
             : undefined,
         environment: undefined,
         tools: [],
@@ -56,32 +56,17 @@ async function getPythonExtensionAPI(): Promise<PythonExtension | undefined> {
     return _api;
 }
 
-const PYTHON_ENVIRONMENTS_EXTENSION_ID = 'ms-python.vscode-python-envs';
-
-let _envsApi: PythonEnvironmentsAPI | undefined;
-async function getEnvironmentsExtensionAPI(): Promise<PythonEnvironmentsAPI | undefined> {
+let _envsApi: PythonEnvironmentApi | undefined;
+async function getEnvironmentsExtensionAPI(): Promise<PythonEnvironmentApi | undefined> {
     if (_envsApi) {
         return _envsApi;
     }
-    const extension = extensions.getExtension(PYTHON_ENVIRONMENTS_EXTENSION_ID);
-    if (!extension) {
-        return undefined;
-    }
     try {
-        if (!extension.isActive) {
-            await extension.activate();
-        }
-        const api = extension.exports;
-        if (!api) {
-            traceError('Python environments extension did not provide any exports.');
-            return undefined;
-        }
-        _envsApi = api as PythonEnvironmentsAPI;
-        return _envsApi;
-    } catch (ex) {
-        traceError('Failed to activate or retrieve API from Python environments extension.', ex as Error);
+        _envsApi = await PythonEnvironments.api();
+    } catch {
         return undefined;
     }
+    return _envsApi;
 }
 
 function sameInterpreter(a: string[], b: string[]): boolean {
