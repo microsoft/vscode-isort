@@ -34,7 +34,7 @@ variables:
   - name: VsixName
     value: isort.vsix
   - name: AZURE_ARTIFACTS_FEED
-    value: 'https://devdiv.pkgs.visualstudio.com/DevDiv/_packaging/Pylance_PublicPackages/npm/registry/'
+    value: 'https://pkgs.dev.azure.com/azure-public/vside/_packaging/python-environments/npm/registry/'
 
 parameters:
   - name: buildSteps
@@ -80,3 +80,4 @@ extends:
               isPreRelease: false
               standardizedVersioning: true
               customNPMRegistry: $(AZURE_ARTIFACTS_FEED)
+
