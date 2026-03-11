@@ -26,7 +26,8 @@ export const notebookCellScheme = 'vscode-notebook-cell';
 export const interactiveInputScheme = 'vscode-interactive-input';
 export const interactiveScheme = 'vscode-interactive';
 
-function isNotebookCell(uri: Uri): boolean {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function _isNotebookCell(uri: Uri): boolean {
     return (
         uri.scheme.includes(notebookCellScheme) ||
         uri.scheme.includes(interactiveInputScheme) ||
@@ -39,7 +40,9 @@ export function unRegisterSortImportFeatures(): void {
     disposables.forEach((d) => {
         try {
             d.dispose();
-        } catch {}
+        } catch {
+            // ignore dispose errors
+        }
     });
     disposables = [];
 }
@@ -54,6 +57,7 @@ class SortImportsCodeActionProvider implements CodeActionProvider<CodeAction> {
         document: TextDocument,
         _range: Range | Selection,
         context: CodeActionContext,
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         _token: CancellationToken,
     ): Promise<(CodeAction | Command)[]> {
         const codeActions: (CodeAction | Command)[] = [];
@@ -79,6 +83,7 @@ class SortImportsCodeActionProvider implements CodeActionProvider<CodeAction> {
         return codeActions;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     async resolveCodeAction(codeAction: CodeActionWithData, _token: CancellationToken): Promise<CodeAction> {
         const docs = workspace.textDocuments.filter((d) => d.uri.toString() === codeAction.data);
         if (docs.length === 1) {

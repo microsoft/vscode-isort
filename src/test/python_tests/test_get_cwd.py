@@ -23,10 +23,10 @@ def _setup_mocks():
         def command(self, *args, **kwargs):
             return lambda f: f
 
-        def show_message_log(self, *args, **kwargs):
+        def window_log_message(self, *args, **kwargs):
             pass
 
-        def show_message(self, *args, **kwargs):
+        def window_show_message(self, *args, **kwargs):
             pass
 
     mock_server = types.ModuleType("pygls.lsp.server")
@@ -71,6 +71,7 @@ def _setup_mocks():
         "DidSaveNotebookDocumentParams",
         "InitializeParams",
         "LogMessageParams",
+        "ShowMessageParams",
         "NotebookCellKind",
         "NotebookCellLanguage",
         "NotebookDocumentFilterWithNotebook",

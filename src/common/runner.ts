@@ -176,7 +176,8 @@ function fixLineEndings(eol: EndOfLine, formatted: string): string {
 export async function textEditRunner(
     serverId: string,
     textDocument: TextDocument,
-    token?: CancellationToken,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _token?: CancellationToken,
 ): Promise<WorkspaceEdit> {
     const settings = await getSettings(serverId, textDocument);
     const content = textDocument.getText();

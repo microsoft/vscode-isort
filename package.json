@@ -47,7 +47,9 @@
     "activationEvents": [
         "onLanguage:python",
         "workspaceContains:pyproject.toml",
-        "workspaceContains:.isort"
+        "workspaceContains:.isort",
+        "onNotebook:jupyter-notebook",
+        "onNotebook:interactive"
     ],
     "main": "./dist/extension.js",
     "l10n": "./l10n",
@@ -197,6 +199,7 @@
         ]
     },
     "dependencies": {
+        "@vscode/python-environments": "^1.0.0",
         "@vscode/python-extension": "^1.0.5",
         "fs-extra": "^11.3.1",
         "semver": "^7.7.4",
