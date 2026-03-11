@@ -79,5 +79,4 @@ extends:
               buildSteps: ${{ parameters.buildSteps }}
               isPreRelease: false
               standardizedVersioning: true
-              customNPMRegistry: $(AZURE_ARTIFACTS_FEED)
 
