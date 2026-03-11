@@ -9,24 +9,13 @@ import pathlib
 import sys
 import traceback
 
-
 # **********************************************************
 # Update sys.path before importing any bundled libraries.
+# Always prioritize bundled LSP infrastructure.
 # **********************************************************
-def update_sys_path(path_to_add: str, strategy: str) -> None:
-    """Add given path to `sys.path`."""
-    if path_to_add not in sys.path and os.path.isdir(path_to_add):
-        if strategy == "useBundled":
-            sys.path.insert(0, path_to_add)
-        else:
-            sys.path.append(path_to_add)
-
-
-# Ensure that we can import LSP libraries, and other bundled libraries.
-update_sys_path(
-    os.fspath(pathlib.Path(__file__).parent.parent / "libs"),
-    os.getenv("LS_IMPORT_STRATEGY", "useBundled"),
-)
+_bundled_libs = os.fspath(pathlib.Path(__file__).parent.parent / "libs")
+if _bundled_libs not in sys.path and os.path.isdir(_bundled_libs):
+    sys.path.insert(0, _bundled_libs)
 
 
 # pylint: disable=wrong-import-position,import-error
