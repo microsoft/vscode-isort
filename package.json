@@ -217,8 +217,8 @@
         "@types/semver": "^7.7.1",
         "@types/sinon": "^17.0.3",
         "@types/vscode": "^1.74.0",
-        "@typescript-eslint/eslint-plugin": "^8.42.0",
-        "@typescript-eslint/parser": "^8.42.0",
+        "@typescript-eslint/eslint-plugin": "8.56.0",
+        "@typescript-eslint/parser": "8.56.0",
         "@vscode/test-electron": "^2.3.9",
         "@vscode/vsce": "^3.7.1-1",
         "chai": "^4.3.10",
@@ -232,7 +232,7 @@
         "ts-loader": "^9.5.1",
         "typemoq": "^2.1.0",
         "typescript": "^5.9.2",
-        "typescript-eslint": "^8.42.0",
+        "typescript-eslint": "8.56.0",
         "webpack": "^5.101.3",
         "webpack-cli": "^5.1.4"
     }
