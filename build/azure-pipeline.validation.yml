@@ -52,6 +52,56 @@ parameters:
       - script: npm ci
         displayName: Install NPM dependencies
 
+      - task: PowerShell@2
+        displayName: Capture npm debug logs on failure
+        condition: failed()
+        continueOnError: true
+        inputs:
+          pwsh: true
+          targetType: inline
+          script: |
+            $artifactDir = "$(Build.ArtifactStagingDirectory)/npm-logs"
+            New-Item -ItemType Directory -Force -Path $artifactDir | Out-Null
+
+            $npmCache = (npm config get cache 2>$null).Trim()
+            if (-not $npmCache) {
+              Write-Host "npm cache path is unavailable."
+              exit 0
+            }
+
+            $logDir = Join-Path $npmCache "_logs"
+            Write-Host "npm cache: $npmCache"
+            Write-Host "npm log dir: $logDir"
+
+            if (-not (Test-Path $logDir)) {
+              Write-Host "npm log directory not found."
+              exit 0
+            }
+
+            $logs = Get-ChildItem -Path $logDir -File -Filter "*-debug-*.log" | Sort-Object LastWriteTime -Descending
+            if (-not $logs) {
+              Write-Host "No npm debug logs found."
+              exit 0
+            }
+
+            $latest = $logs[0]
+            Write-Host "Latest npm debug log: $($latest.FullName)"
+            Write-Host "--- Last 200 lines of npm debug log ---"
+            Get-Content -Path $latest.FullName -Tail 200
+
+            $logs | Select-Object -First 10 | ForEach-Object {
+              Copy-Item -Path $_.FullName -Destination $artifactDir -Force
+            }
+
+      - task: PublishPipelineArtifact@1
+        displayName: Publish npm failure logs
+        condition: failed()
+        continueOnError: true
+        inputs:
+          targetPath: '$(Build.ArtifactStagingDirectory)/npm-logs'
+          artifact: npm-failure-logs
+          publishLocation: pipeline
+
       - script: python -m pip install -U pip
         displayName: Upgrade pip
 
