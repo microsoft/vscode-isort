@@ -93,14 +93,12 @@ parameters:
               Copy-Item -Path $_.FullName -Destination $artifactDir -Force
             }
 
-      - task: PublishPipelineArtifact@1
+      - output: pipelineArtifact
         displayName: Publish npm failure logs
         condition: failed()
         continueOnError: true
-        inputs:
-          targetPath: '$(Build.ArtifactStagingDirectory)/npm-logs'
-          artifact: npm-failure-logs
-          publishLocation: pipeline
+        targetPath: '$(Build.ArtifactStagingDirectory)/npm-logs'
+        artifactName: npm-failure-logs
 
       - script: python -m pip install -U pip
         displayName: Upgrade pip
