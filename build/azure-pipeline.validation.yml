@@ -81,6 +81,10 @@ extends:
               image: 1ESPT-Windows2022
               os: windows
             steps:
+              - checkout: self
+                clean: true
+                displayName: Checkout repository (clean)
+
               - script: |
                   if exist .npmrc (
                     echo Printing .npmrc
@@ -89,6 +93,41 @@ extends:
                     echo .npmrc not found
                   )
                 displayName: Print .npmrc
+
+              - script: |
+                  npm config set registry https://registry.npmjs.org/
+                  npm config set @vscode:registry $(AZURE_ARTIFACTS_FEED)
+                  npm config set always-auth false
+                  echo npm registry: 
+                  npm config get registry
+                  echo @vscode registry:
+                  npm config get @vscode:registry
+                displayName: Configure npm registries for debug
+
+              - script: |
+                  echo ===== npm environment overrides =====
+                  set NPM_CONFIG_
+                  echo NPM_CONFIG_REGISTRY=%NPM_CONFIG_REGISTRY%
+                  echo.
+                  echo ===== npm config files =====
+                  echo userconfig:
+                  npm config get userconfig
+                  echo globalconfig:
+                  npm config get globalconfig
+                  echo.
+                  echo ===== effective npm registry config =====
+                  npm config get registry
+                  npm config get @vscode:registry
+                  npm config get always-auth
+                  npm config list -l | findstr /i "registry userconfig globalconfig always-auth" || echo no registry lines found
+                  echo.
+                  echo ===== package-lock feed references =====
+                  if exist package-lock.json (
+                    findstr /i /c:"pkgs.dev.azure.com/azure-public/vside/_packaging/python-environments/npm/registry/" package-lock.json || echo no azure feed references in package-lock.json
+                  ) else (
+                    echo package-lock.json not found
+                  )
+                displayName: Run npm config checks
 
               - script: npm ci
                 displayName: Debug npm ci
