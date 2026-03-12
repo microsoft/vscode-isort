@@ -95,13 +95,12 @@ extends:
                 displayName: Print .npmrc
 
               - script: |
-                  npm config set registry https://registry.npmjs.org/
-                  npm config set @vscode:registry $(AZURE_ARTIFACTS_FEED)
-                  npm config set always-auth false
                   echo npm registry: 
-                  npm config get registry
+                  npm --userconfig .npmrc config get registry
                   echo @vscode registry:
-                  npm config get @vscode:registry
+                  npm --userconfig .npmrc config get @vscode:registry
+                  echo always-auth:
+                  npm --userconfig .npmrc config get always-auth
                 displayName: Configure npm registries for debug
 
               - script: |
@@ -111,15 +110,15 @@ extends:
                   echo.
                   echo ===== npm config files =====
                   echo userconfig:
-                  npm config get userconfig
+                  npm --userconfig .npmrc config get userconfig
                   echo globalconfig:
-                  npm config get globalconfig
+                  npm --userconfig .npmrc config get globalconfig
                   echo.
                   echo ===== effective npm registry config =====
-                  npm config get registry
-                  npm config get @vscode:registry
-                  npm config get always-auth
-                  npm config list -l | findstr /i "registry userconfig globalconfig always-auth" || echo no registry lines found
+                  npm --userconfig .npmrc config get registry
+                  npm --userconfig .npmrc config get @vscode:registry
+                  npm --userconfig .npmrc config get always-auth
+                  npm --userconfig .npmrc config list -l | findstr /i "registry userconfig globalconfig always-auth" || echo no registry lines found
                   echo.
                   echo ===== package-lock feed references =====
                   if exist package-lock.json (
@@ -129,7 +128,7 @@ extends:
                   )
                 displayName: Run npm config checks
 
-              - script: npm ci
+              - script: npm ci --userconfig .npmrc
                 displayName: Debug npm ci
 
               - task: PowerShell@2
@@ -143,7 +142,7 @@ extends:
                     $artifactDir = "$(Build.ArtifactStagingDirectory)/npm-logs"
                     New-Item -ItemType Directory -Force -Path $artifactDir | Out-Null
 
-                    $npmCache = (npm config get cache 2>$null).Trim()
+                    $npmCache = (npm --userconfig .npmrc config get cache 2>$null).Trim()
                     if (-not $npmCache) {
                       Write-Host "npm cache path is unavailable."
                       exit 0
