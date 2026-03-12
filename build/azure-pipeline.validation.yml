@@ -76,6 +76,8 @@ extends:
         jobs:
           - job: NpmDebug
             displayName: npm Debug Checks
+            pool:
+              vmImage: windows-latest
             steps:
               - script: |
                   if exist .npmrc (
