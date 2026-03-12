@@ -48,7 +48,7 @@ parameters:
           checkLatest: true
         displayName: Install Node $(NodeVersion)
 
-      - script: npm ci
+      - script: npm ci --userconfig .npmrc
         displayName: Install NPM dependencies
 
       - script: python -m pip install -U pip
