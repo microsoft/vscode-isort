@@ -33,6 +33,8 @@ variables:
     value: VSCode-isort
   - name: VsixName
     value: isort.vsix
+  - name: NodeVersion
+    value: '22.21.1'
   - name: AZURE_ARTIFACTS_FEED
     value: 'https://pkgs.dev.azure.com/azure-public/vside/_packaging/python-environments/npm/registry/'
 
@@ -40,6 +42,12 @@ parameters:
   - name: buildSteps
     type: stepList
     default:
+      - task: NodeTool@0
+        inputs:
+          versionSpec: $(NodeVersion)
+          checkLatest: true
+        displayName: Install Node $(NodeVersion)
+
       - script: npm ci
         displayName: Install NPM dependencies
 
@@ -84,6 +92,12 @@ extends:
               - checkout: self
                 clean: true
                 displayName: Checkout repository (clean)
+
+              - task: NodeTool@0
+                inputs:
+                  versionSpec: $(NodeVersion)
+                  checkLatest: true
+                displayName: Install Node $(NodeVersion)
 
               - script: |
                   if exist .npmrc (
