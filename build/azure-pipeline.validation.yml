@@ -40,6 +40,15 @@ parameters:
   - name: buildSteps
     type: stepList
     default:
+      - script: |
+          if exist .npmrc (
+            echo Printing .npmrc
+            type .npmrc
+          ) else (
+            echo .npmrc not found
+          )
+        displayName: Print .npmrc
+
       - script: npm ci
         displayName: Install NPM dependencies
 
