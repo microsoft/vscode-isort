@@ -48,6 +48,11 @@ parameters:
           checkLatest: true
         displayName: Install Node $(NodeVersion)
 
+      - task: npmAuthenticate@0
+        inputs:
+          workingFile: .npmrc
+        displayName: Setup NPM Authentication
+
       - script: npm ci --userconfig .npmrc
         displayName: Install NPM dependencies
 
@@ -107,6 +112,14 @@ extends:
                     echo .npmrc not found
                   )
                 displayName: Print .npmrc
+
+              # - script: npm config set @vscode:registry $(AZURE_ARTIFACTS_FEED) --userconfig ${{ parameters.npmrcPath }}
+              #   displayName: Apply AZURE_ARTIFACTS_FEED to npmrc
+
+              - task: npmAuthenticate@0
+                inputs:
+                  workingFile: .npmrc
+                displayName: Setup NPM Authentication
 
               # - script: |
               #     echo npm registry: 
