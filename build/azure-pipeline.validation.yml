@@ -1,3 +1,13 @@
+# PR and Push validation pipeline
+pr:
+  branches:
+    include:
+      - main
+      - release
+      - release/*
+      - release-*
+
+
 resources:
   repositories:
     - repository: MicroBuildTemplate
