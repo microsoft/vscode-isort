@@ -15,7 +15,7 @@ pr:
       - release
       - release/*
       - release-*
-  drafts: false
+
 
 resources:
   repositories:
