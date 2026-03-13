@@ -1,13 +1,4 @@
 # PR and Push validation pipeline
-
-trigger:
-  branches:
-    include:
-      - main
-      - release
-      - release/*
-      - release-*
-
 pr:
   branches:
     include:
