@@ -108,42 +108,12 @@ extends:
                   )
                 displayName: Print .npmrc
 
-              # - script: |
-              #     echo npm registry: 
-              #     npm --userconfig .npmrc config get registry
-              #     echo @vscode registry:
-              #     npm --userconfig .npmrc config get @vscode:registry
-              #     echo always-auth:
-              #     npm --userconfig .npmrc config get always-auth
-              #   displayName: Configure npm registries for debug
-
-              # - script: |
-              #     echo ===== npm environment overrides =====
-              #     set NPM_CONFIG_
-              #     echo NPM_CONFIG_REGISTRY=%NPM_CONFIG_REGISTRY%
-              #     echo.
-              #     echo ===== npm config files =====
-              #     echo userconfig:
-              #     npm --userconfig .npmrc config get userconfig
-              #     echo globalconfig:
-              #     npm --userconfig .npmrc config get globalconfig
-              #     echo.
-              #     echo ===== effective npm registry config =====
-              #     npm --userconfig .npmrc config get registry
-              #     npm --userconfig .npmrc config get @vscode:registry
-              #     npm --userconfig .npmrc config get always-auth
-              #     npm --userconfig .npmrc config list -l | findstr /i "registry userconfig globalconfig always-auth" || echo no registry lines found
-              #     echo.
-              #     echo ===== package-lock feed references =====
-              #     if exist package-lock.json (
-              #       findstr /i /c:"pkgs.dev.azure.com/azure-public/vside/_packaging/msft_consumption/npm/registry/" package-lock.json || echo no azure feed references in package-lock.json
-              #     ) else (
-              #       echo package-lock.json not found
-              #     )
-              #   displayName: Run npm config checks
-
-              - script: npm ci --userconfig .npmrc
-                displayName: Debug npm ci
+              - task: Npm@1
+                displayName: Test npm install
+                inputs:
+                  command: ci
+                  workingDir: $(Build.SourcesDirectory)
+                  verbose: true
 
               - task: PowerShell@2
                 displayName: Capture npm debug logs on failure
