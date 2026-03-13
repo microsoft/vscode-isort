@@ -7,7 +7,6 @@ pr:
       - release/*
       - release-*
 
-
 resources:
   repositories:
     - repository: MicroBuildTemplate
