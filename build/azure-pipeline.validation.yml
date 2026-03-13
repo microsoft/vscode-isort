@@ -3,18 +3,12 @@
 trigger:
   branches:
     include:
-      - main
-      - release
-      - release/*
-      - release-*
+      - '*'
 
 pr:
   branches:
     include:
-      - main
-      - release
-      - release/*
-      - release-*
+      - '*'
   drafts: false
 
 resources:
