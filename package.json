@@ -205,9 +205,6 @@
         "semver": "^7.7.4",
         "vscode-languageclient": "^9.0.1"
     },
-    "overrides": {
-        "yocto-queue": "1.2.2"
-    },
     "devDependencies": {
         "@eslint/js": "^9.35.0",
         "@types/chai": "^4.3.14",
