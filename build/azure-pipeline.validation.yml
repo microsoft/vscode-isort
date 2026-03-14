@@ -27,8 +27,8 @@ variables:
     value: VSCode-isort
   - name: VsixName
     value: isort.vsix
-  # - name: AZURE_ARTIFACTS_FEED
-  #   value: 'https://pkgs.dev.azure.com/azure-public/vside/_packaging/msft_consumption/npm/registry/'
+  - name: AZURE_ARTIFACTS_FEED
+    value: 'https://devdiv.pkgs.visualstudio.com/DevDiv/_packaging/Pylance_PublicPackages/npm/registry/'
 
 parameters:
   - name: buildSteps
@@ -73,4 +73,4 @@ extends:
               buildSteps: ${{ parameters.buildSteps }}
               isPreRelease: false
               standardizedVersioning: true
-              # customNPMRegistry: $(AZURE_ARTIFACTS_FEED)
+              customNPMRegistry: $(AZURE_ARTIFACTS_FEED)
