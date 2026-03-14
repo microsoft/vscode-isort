@@ -22,6 +22,14 @@ resources:
       name: DevDiv/Pylance-Eng
       ref: refs/heads/main
 
+variables:
+  - name: TeamName
+    value: VSCode-isort
+  - name: VsixName
+    value: isort.vsix
+  - name: AZURE_ARTIFACTS_FEED
+    value: 'https://devdiv.pkgs.visualstudio.com/DevDiv/_packaging/Pylance_PublicPackages/npm/registry/'
+
 parameters:
   - name: buildSteps
     type: stepList
