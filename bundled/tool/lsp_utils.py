@@ -158,7 +158,7 @@ def _run_module(
     str_output = CustomIO("<stdout>", encoding="utf-8")
     str_error = CustomIO("<stderr>", encoding="utf-8")
 
-    with contextlib.suppress(SystemExit):
+    with contextlib.suppress(SystemExit, ImportError):
         with substitute_attr(sys, "argv", argv):
             with redirect_io("stdout", str_output):
                 with redirect_io("stderr", str_error):
