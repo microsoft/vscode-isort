@@ -14,6 +14,7 @@ import {
     WorkspaceEdit,
 } from 'vscode';
 import { RUNNER_SCRIPT_PATH } from './constants';
+import { getEnvFileVars } from './envFile';
 import { traceError, traceLog } from './logging';
 import { ISettings, getWorkspaceSettings } from './settings';
 import { getProjectRoot } from './utilities';
@@ -129,8 +130,13 @@ function getSeverity(sev: string): DiagnosticSeverity {
     return DiagnosticSeverity.Error;
 }
 
-function getUpdatedEnvVariables(settings: ISettings): { [x: string]: string | undefined } {
+async function getUpdatedEnvVariables(settings: ISettings): Promise<{ [x: string]: string | undefined }> {
+    const projectRoot = await getProjectRoot();
+    const envFileVars = await getEnvFileVars(projectRoot);
     const newEnv = { ...process.env };
+    for (const [key, value] of envFileVars) {
+        newEnv[key] = value;
+    }
     if (settings.path.length === 0) {
         newEnv.LS_IMPORT_STRATEGY = settings.importStrategy;
     }
@@ -144,7 +150,7 @@ export async function diagnosticRunner(serverId: string, textDocument: TextDocum
     if (settings && settings.check) {
         const parts = getExecutablePathWithArgs(settings);
         const args = parts.slice(1).concat('--check', getDocumentPath(textDocument.uri));
-        const newEnv = getUpdatedEnvVariables(settings);
+        const newEnv = await getUpdatedEnvVariables(settings);
         try {
             const { stderr } = await runScript(parts[0], args, { ignoreError: true, newEnv, cwd: settings.cwd });
             const lines = stderr.split(/\r?\n|\r|\n/g);
@@ -193,7 +199,7 @@ export async function textEditRunner(
             parts = getExecutablePathWithArgs(settings);
             args = parts.slice(1).concat('--stdout', getDocumentPath(textDocument.uri));
         }
-        const newEnv = getUpdatedEnvVariables(settings);
+        const newEnv = await getUpdatedEnvVariables(settings);
 
         try {
             const { stdout } = await runScript(

@@ -11,11 +11,12 @@ import {
     ServerOptions,
 } from 'vscode-languageclient/node';
 import { DEBUG_SERVER_SCRIPT_PATH, SERVER_SCRIPT_PATH } from './constants';
+import { getEnvFileVars } from './envFile';
 import { traceError, traceInfo, traceVerbose } from './logging';
 import { getDebuggerPath } from './python';
 import { getExtensionSettings, getGlobalSettings, ISettings } from './settings';
 import { updateStatus } from './status';
-import { getDocumentSelector, getLSClientTraceLevel } from './utilities';
+import { getDocumentSelector, getLSClientTraceLevel, getProjectRoot } from './utilities';
 
 export type IInitOptions = { settings: ISettings[]; globalSettings: ISettings };
 
@@ -30,8 +31,15 @@ async function createServer(
     const workspaceUri = Uri.parse(settings.workspace);
     const cwd = settings.cwd === '${fileDirname}' ? workspaceUri.fsPath : settings.cwd;
 
-    // Set debugger path needed for debugging python code.
+    // Load environment variables from .env file (python.envFile setting)
+    const projectRoot = await getProjectRoot();
+    const envFileVars = await getEnvFileVars(projectRoot);
     const newEnv = { ...process.env };
+    for (const [key, value] of envFileVars) {
+        newEnv[key] = value;
+    }
+
+    // Set debugger path needed for debugging python code.
     const debuggerPath = await getDebuggerPath();
     const isDebugScript = await fsapi.pathExists(DEBUG_SERVER_SCRIPT_PATH);
     if (newEnv.USE_DEBUGPY && debuggerPath) {
