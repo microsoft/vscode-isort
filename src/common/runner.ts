@@ -45,6 +45,8 @@ interface Result {
     stderr: string;
 }
 
+const SCRIPT_TIMEOUT_MS = 30000; // 30 second timeout for isort processes
+
 export function runScript(
     runner: string,
     args: string[],
@@ -66,6 +68,7 @@ export function runScript(
                 encoding: 'utf-8',
                 env: options?.newEnv,
                 cwd: options?.cwd,
+                timeout: SCRIPT_TIMEOUT_MS,
             },
             (err, stdout, stderr) => {
                 if (options?.ignoreError) {
@@ -81,8 +84,8 @@ export function runScript(
             scriptProc.stdin?.end(input, 'utf-8');
         }
         token?.onCancellationRequested(() => {
-            //resolve({ stdout: '', stderr: '' });
-            //scriptProc.kill();
+            resolve({ stdout: '', stderr: '' });
+            scriptProc.kill();
         });
     });
 
