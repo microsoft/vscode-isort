@@ -8,7 +8,12 @@ import * as TypeMoq from 'typemoq';
 import { ConfigurationChangeEvent, Uri, WorkspaceConfiguration, WorkspaceFolder } from 'vscode';
 import { EXTENSION_ROOT_DIR } from '../../../../common/constants';
 import * as python from '../../../../common/python';
-import { ISettings, checkIfConfigurationChanged, getServerEnabled, getWorkspaceSettings } from '../../../../common/settings';
+import {
+    ISettings,
+    checkIfConfigurationChanged,
+    getServerEnabled,
+    getWorkspaceSettings,
+} from '../../../../common/settings';
 import * as vscodeapi from '../../../../common/vscodeapi';
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
