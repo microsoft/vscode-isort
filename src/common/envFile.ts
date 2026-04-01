@@ -25,10 +25,7 @@ export function parseEnvFile(content: string): Map<string, string> {
         const key = line.substring(0, eqIndex).trim();
         let value = line.substring(eqIndex + 1).trim();
         // Strip matching surrounding quotes
-        if (
-            (value.startsWith('"') && value.endsWith('"')) ||
-            (value.startsWith("'") && value.endsWith("'"))
-        ) {
+        if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
             value = value.slice(1, -1);
         }
         if (key) {
