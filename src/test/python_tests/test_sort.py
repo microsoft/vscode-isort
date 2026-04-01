@@ -734,6 +734,63 @@ def test_organize_import_incomplete_code():
             assert_that(edits[0]["newText"], is_(expected))
 
 
+def test_code_action_resolve_skip_file():
+    """Test that code_action_resolve does not crash when _run_tool_on_document
+    returns None (e.g., file has isort:skip_file comment)."""
+    init_params = copy.deepcopy(defaults.VSCODE_DEFAULT_INITIALIZE)
+
+    # A file with isort:skip_file causes _run_tool_on_document to return None.
+    contents = "# isort:skip_file\nimport sys;import os\nprint(sys.executable)\n"
+
+    SAMPLE_DIR = constants.TEST_DATA / "sample1"
+
+    with utils.python_file(contents, SAMPLE_DIR) as pf:
+        uri = utils.as_uri(str(pf))
+
+        with session.LspSession() as ls_session:
+            ls_session.initialize(init_params)
+
+            ls_session.notify_did_open(
+                {
+                    "textDocument": {
+                        "uri": uri,
+                        "languageId": "python",
+                        "version": 1,
+                        "text": contents,
+                    }
+                }
+            )
+
+            # Request code actions without diagnostics context
+            actual_code_actions = ls_session.text_document_code_action(
+                {
+                    "textDocument": {"uri": uri},
+                    "range": {
+                        "start": {"line": 0, "character": 0},
+                        "end": {"line": 0, "character": 0},
+                    },
+                    "context": {"diagnostics": []},
+                }
+            )
+
+            organize_actions = [
+                a
+                for a in actual_code_actions
+                if a.get("kind") == "source.organizeImports"
+            ]
+            assert_that(len(organize_actions), is_(1))
+
+            # Resolving the code action should not crash even though
+            # _run_tool_on_document returns None for skip_file files.
+            actual_resolved = ls_session.code_action_resolve(organize_actions[0])
+
+            # When _formatting_helper returns None, code_action_resolve
+            # returns the original content unchanged.
+            edits = actual_resolved["edit"]["documentChanges"][0]["edits"]
+            assert len(edits) == 1
+            assert_that(edits[0]["newText"], is_(contents))
+
+
 def test_organize_import_cell_incomplete_code():
     """Test that isort handles incomplete Python code in notebook cells."""
     init_params = copy.deepcopy(defaults.VSCODE_DEFAULT_INITIALIZE)
