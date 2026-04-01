@@ -152,6 +152,15 @@
                     "scope": "machine",
                     "type": "boolean"
                 },
+                "isort.extraPaths": {
+                    "default": [],
+                    "markdownDescription": "%settings.extraPaths.description%",
+                    "items": {
+                        "type": "string"
+                    },
+                    "scope": "resource",
+                    "type": "array"
+                },
                 "isort.severity": {
                     "default": {
                         "W": "Warning",

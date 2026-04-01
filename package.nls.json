@@ -15,5 +15,6 @@
     "settings.showNotifications.off.description": "Never display a notification. Any errors or warning are still available in the logs.",
     "settings.showNotifications.onError.description": "Show notifications for errors.",
     "settings.showNotifications.onWarning.description": "Show notifications for errors and warnings.",
-    "settings.showNotifications.always.description": "Show all notifications."
+    "settings.showNotifications.always.description": "Show all notifications.",
+    "settings.extraPaths.description": "Additional directories to add to the Python path when running isort. This is useful for monorepo subdirectories or shared libraries outside the workspace root. Falls back to `python.analysis.extraPaths` if not set."
 }

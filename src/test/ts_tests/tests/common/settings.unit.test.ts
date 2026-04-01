@@ -83,6 +83,14 @@ suite('Settings Tests', () => {
                 .setup((c) => c.get('sortImports.path', ''))
                 .returns(() => 'isort')
                 .verifiable(TypeMoq.Times.atLeastOnce());
+            pythonConfigMock
+                .setup((c) => c.get('analysis.extraPaths', []))
+                .returns(() => [])
+                .verifiable(TypeMoq.Times.atLeastOnce());
+            configMock
+                .setup((c) => c.get('extraPaths', []))
+                .returns(() => [])
+                .verifiable(TypeMoq.Times.atLeastOnce());
 
             const settings: ISettings = await getWorkspaceSettings('isort', workspace1);
             assert.deepStrictEqual(settings.args, []);
@@ -92,6 +100,7 @@ suite('Settings Tests', () => {
             assert.deepStrictEqual(settings.path, []);
             assert.deepStrictEqual(settings.severity, DEFAULT_SEVERITY);
             assert.deepStrictEqual(settings.showNotifications, 'off');
+            assert.deepStrictEqual(settings.extraPaths, []);
             assert.deepStrictEqual(settings.workspace, workspace1.uri.toString());
 
             configMock.verifyAll();
@@ -107,8 +116,10 @@ suite('Settings Tests', () => {
             configMock.setup((c) => c.get('importStrategy', 'useBundled')).returns(() => 'useBundled');
             configMock.setup((c) => c.get('showNotifications', 'off')).returns(() => 'off');
             configMock.setup((c) => c.get('cwd', workspace1.uri.fsPath)).returns(() => '${workspaceFolder}');
+            configMock.setup((c) => c.get('extraPaths', [])).returns(() => []);
             pythonConfigMock.setup((c) => c.get('sortImports.args', [])).returns(() => []);
             pythonConfigMock.setup((c) => c.get('sortImports.path', '')).returns(() => '');
+            pythonConfigMock.setup((c) => c.get('analysis.extraPaths', [])).returns(() => []);
 
             const settings: ISettings = await getWorkspaceSettings('isort', workspace1);
             assert.deepStrictEqual(settings.cwd, workspace1.uri.fsPath);

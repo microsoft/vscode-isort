@@ -17,6 +17,7 @@ export interface ISettings {
     interpreter: string[];
     importStrategy: string;
     showNotifications: string;
+    extraPaths: string[];
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -49,6 +50,8 @@ function resolveVariables(
     const home = process.env.HOME || process.env.USERPROFILE;
     if (home) {
         substitutions.set('${userHome}', home);
+        substitutions.set('~/', `${home}/`);
+        substitutions.set('~\\', `${home}\\`);
     }
     if (workspace) {
         substitutions.set('${workspaceFolder}', workspace.uri.fsPath);
@@ -122,6 +125,23 @@ function getCwd(config: WorkspaceConfiguration, workspace: WorkspaceFolder): str
     return resolveVariables([cwd], 'cwd', workspace)[0];
 }
 
+function getExtraPaths(namespace: string, workspace: WorkspaceFolder): string[] {
+    const config = getConfiguration(namespace, workspace.uri);
+    const extraPaths = config.get<string[]>('extraPaths', []);
+
+    if (extraPaths.length > 0) {
+        return extraPaths;
+    }
+
+    // Fall back to python.analysis.extraPaths
+    const legacyConfig = getConfiguration('python', workspace.uri);
+    const legacyExtraPaths = legacyConfig.get<string[]>('analysis.extraPaths', []);
+    if (legacyExtraPaths.length > 0) {
+        traceLog('Using extra paths from `python.analysis.extraPaths`.');
+    }
+    return legacyExtraPaths;
+}
+
 export async function getWorkspaceSettings(
     namespace: string,
     workspace: WorkspaceFolder,
@@ -153,6 +173,7 @@ export async function getWorkspaceSettings(
 
     const args = getArgs(namespace, workspace);
     const path = getPath(namespace, workspace);
+    const extraPaths = getExtraPaths(namespace, workspace);
     const workspaceSetting = {
         check: config.get<boolean>('check', false),
         cwd: getCwd(config, workspace),
@@ -163,6 +184,7 @@ export async function getWorkspaceSettings(
         interpreter: resolveVariables(interpreter, 'interpreter', workspace),
         importStrategy: config.get<string>('importStrategy', 'useBundled'),
         showNotifications: config.get<string>('showNotifications', 'off'),
+        extraPaths: resolveVariables(extraPaths, 'extraPaths', workspace),
     };
     traceInfo(
         `Workspace settings for ${workspace.uri.fsPath} (client side): ${JSON.stringify(workspaceSetting, null, 4)}`,
@@ -196,6 +218,7 @@ export async function getGlobalSettings(namespace: string, includeInterpreter?: 
         interpreter: interpreter ?? [],
         importStrategy: getGlobalValue<string>(config, 'importStrategy', 'fromEnvironment'),
         showNotifications: getGlobalValue<string>(config, 'showNotifications', 'off'),
+        extraPaths: getGlobalValue<string[]>(config, 'extraPaths', []),
     };
     traceInfo(`Global settings (client side): ${JSON.stringify(setting, null, 4)}`);
     return setting;
@@ -212,6 +235,8 @@ export function checkIfConfigurationChanged(e: ConfigurationChangeEvent, namespa
         `${namespace}.importStrategy`,
         `${namespace}.showNotifications`,
         `${namespace}.serverEnabled`,
+        `${namespace}.extraPaths`,
+        'python.analysis.extraPaths',
     ];
     const changed = settings.map((s) => e.affectsConfiguration(s));
     return changed.includes(true);
