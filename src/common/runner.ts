@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+import * as fs from 'fs';
 import * as proc from 'child_process';
 import {
     CancellationToken,
@@ -23,12 +24,20 @@ import { getWorkspaceFolder } from './vscodeapi';
 /**
  * Returns the filesystem path for a document, handling notebook cell URIs.
  * For notebook cells, strips the scheme to file: and drops the fragment (cell id).
+ * Resolves symlinks so that paths passed to isort match real filesystem paths.
  */
 function getDocumentPath(uri: Uri): string {
+    let fsPath: string;
     if (uri.scheme !== 'file') {
-        return Uri.from({ ...uri, scheme: 'file', fragment: '' }).fsPath;
+        fsPath = Uri.from({ ...uri, scheme: 'file', fragment: '' }).fsPath;
+    } else {
+        fsPath = uri.fsPath;
     }
-    return uri.fsPath;
+    try {
+        return fs.realpathSync(fsPath);
+    } catch {
+        return fsPath;
+    }
 }
 
 interface Result {
