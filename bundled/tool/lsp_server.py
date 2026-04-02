@@ -13,27 +13,18 @@ import traceback
 from typing import Any, Dict, List, Optional, Sequence
 from urllib.parse import urlparse, urlunparse
 
-
 # **********************************************************
 # Update sys.path before importing any bundled libraries.
+# Always insert bundled paths first so user-installed packages
+# never shadow LSP infrastructure (pygls, lsprotocol, etc.).
 # **********************************************************
-def update_sys_path(path_to_add: str, strategy: str) -> None:
-    """Add given path to `sys.path`."""
-    if path_to_add not in sys.path and os.path.isdir(path_to_add):
-        if strategy == "useBundled":
-            sys.path.insert(0, path_to_add)
-        elif strategy == "fromEnvironment":
-            sys.path.append(path_to_add)
+_bundled_libs = os.fspath(pathlib.Path(__file__).parent.parent / "libs")
+if _bundled_libs not in sys.path and os.path.isdir(_bundled_libs):
+    sys.path.insert(0, _bundled_libs)
 
-
-# Ensure that we can import LSP libraries, and other bundled libraries.
-update_sys_path(
-    os.fspath(pathlib.Path(__file__).parent.parent / "libs"),
-    os.getenv("LS_IMPORT_STRATEGY", "useBundled"),
-)
-
-# https://github.com/microsoft/vscode-isort/issues/316#issuecomment-2103588949
-update_sys_path(os.fspath(pathlib.Path(__file__).parent.parent / "tool"), "useBundled")
+_bundled_tool = os.fspath(pathlib.Path(__file__).parent)
+if _bundled_tool not in sys.path and os.path.isdir(_bundled_tool):
+    sys.path.insert(0, _bundled_tool)
 
 # **********************************************************
 # Imports needed for the language server goes below this.
