@@ -58,7 +58,7 @@ jobs:
       title: ${{ steps.sanitized.outputs.title }}
     steps:
       - name: Setup Scripts
-        uses: github/gh-aw/actions/setup@a898ed7b8f8238a30d9c9f560813547e695cfb0a # v0.62.4
+        uses: github/gh-aw/actions/setup@296262211b372a13b451ca9400369ac152db75d6 # v0.65.6
         with:
           destination: /opt/gh-aw/actions
       - name: Generate agentic run info
@@ -268,7 +268,7 @@ jobs:
       output_types: ${{ steps.collect_output.outputs.output_types }}
     steps:
       - name: Setup Scripts
-        uses: github/gh-aw/actions/setup@a898ed7b8f8238a30d9c9f560813547e695cfb0a # v0.62.4
+        uses: github/gh-aw/actions/setup@296262211b372a13b451ca9400369ac152db75d6 # v0.65.6
         with:
           destination: /opt/gh-aw/actions
       - name: Create gh-aw temp directory
@@ -905,7 +905,7 @@ jobs:
       total_count: ${{ steps.missing_tool.outputs.total_count }}
     steps:
       - name: Setup Scripts
-        uses: github/gh-aw/actions/setup@a898ed7b8f8238a30d9c9f560813547e695cfb0a # v0.62.4
+        uses: github/gh-aw/actions/setup@296262211b372a13b451ca9400369ac152db75d6 # v0.65.6
         with:
           destination: /opt/gh-aw/actions
       - name: Download agent output artifact
@@ -991,7 +991,7 @@ jobs:
       matched_command: ''
     steps:
       - name: Setup Scripts
-        uses: github/gh-aw/actions/setup@a898ed7b8f8238a30d9c9f560813547e695cfb0a # v0.62.4
+        uses: github/gh-aw/actions/setup@296262211b372a13b451ca9400369ac152db75d6 # v0.65.6
         with:
           destination: /opt/gh-aw/actions
       - name: Check team membership for workflow
@@ -1034,7 +1034,7 @@ jobs:
       process_safe_outputs_temporary_id_map: ${{ steps.process_safe_outputs.outputs.temporary_id_map }}
     steps:
       - name: Setup Scripts
-        uses: github/gh-aw/actions/setup@a898ed7b8f8238a30d9c9f560813547e695cfb0a # v0.62.4
+        uses: github/gh-aw/actions/setup@296262211b372a13b451ca9400369ac152db75d6 # v0.65.6
         with:
           destination: /opt/gh-aw/actions
       - name: Download agent output artifact
