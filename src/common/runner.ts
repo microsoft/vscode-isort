@@ -12,6 +12,7 @@ import {
     Range,
     TextDocument,
     Uri,
+    workspace,
     WorkspaceEdit,
 } from 'vscode';
 import { RUNNER_SCRIPT_PATH } from './constants';
@@ -84,8 +85,8 @@ export function runScript(
             scriptProc.stdin?.end(input, 'utf-8');
         }
         token?.onCancellationRequested(() => {
-            resolve({ stdout: '', stderr: '' });
             scriptProc.kill();
+            reject(new Error('Script execution was cancelled'));
         });
     });
 
@@ -143,11 +144,14 @@ function getSeverity(sev: string): DiagnosticSeverity {
 }
 
 async function getUpdatedEnvVariables(settings: ISettings): Promise<{ [x: string]: string | undefined }> {
-    const projectRoot = await getProjectRoot();
-    const envFileVars = await getEnvFileVars(projectRoot);
     const newEnv = { ...process.env };
-    for (const [key, value] of Object.entries(envFileVars)) {
-        newEnv[key] = value;
+    const workspaceUri = Uri.parse(settings.workspace);
+    const workspaceFolder = workspace.getWorkspaceFolder(workspaceUri);
+    if (workspaceFolder) {
+        const envFileVars = await getEnvFileVars(workspaceFolder);
+        for (const [key, value] of Object.entries(envFileVars)) {
+            newEnv[key] = value;
+        }
     }
     if (settings.path.length === 0) {
         newEnv.LS_IMPORT_STRATEGY = settings.importStrategy;

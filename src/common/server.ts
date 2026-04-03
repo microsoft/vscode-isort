@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 import * as fsapi from 'fs-extra';
-import { Disposable, env, l10n, LanguageStatusSeverity, LogOutputChannel, Uri } from 'vscode';
+import { Disposable, env, l10n, LanguageStatusSeverity, LogOutputChannel, Uri, workspace } from 'vscode';
 import { State } from 'vscode-languageclient';
 import {
     LanguageClient,
@@ -16,7 +16,7 @@ import { traceError, traceInfo, traceVerbose } from './logging';
 import { getDebuggerPath } from './python';
 import { getExtensionSettings, getGlobalSettings, ISettings } from './settings';
 import { updateStatus } from './status';
-import { getDocumentSelector, getLSClientTraceLevel, getProjectRoot } from './utilities';
+import { getDocumentSelector, getLSClientTraceLevel } from './utilities';
 
 export type IInitOptions = { settings: ISettings[]; globalSettings: ISettings };
 
@@ -32,11 +32,13 @@ async function createServer(
     const cwd = settings.cwd === '${fileDirname}' ? workspaceUri.fsPath : settings.cwd;
 
     // Load environment variables from .env file (python.envFile setting)
-    const projectRoot = await getProjectRoot();
-    const envFileVars = await getEnvFileVars(projectRoot);
     const newEnv = { ...process.env };
-    for (const [key, value] of Object.entries(envFileVars)) {
-        newEnv[key] = value;
+    const workspaceFolder = workspace.getWorkspaceFolder(workspaceUri);
+    if (workspaceFolder) {
+        const envFileVars = await getEnvFileVars(workspaceFolder);
+        for (const [key, value] of Object.entries(envFileVars)) {
+            newEnv[key] = value;
+        }
     }
 
     // Set debugger path needed for debugging python code.

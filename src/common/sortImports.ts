@@ -159,9 +159,14 @@ export function registerSortImportFeatures(serverId: string): Disposable & { sta
                 if (diagnosticContentCache.get(key) === content) {
                     return;
                 }
-                const diagnostics = await diagnosticRunner(serverId, td);
-                diagnosticsProvider.publishDiagnostics(td.uri, diagnostics);
-                diagnosticContentCache.set(key, content);
+                diagnosticContentCache.set(key, content); // Set before await to prevent race
+                try {
+                    const diagnostics = await diagnosticRunner(serverId, td);
+                    diagnosticsProvider.publishDiagnostics(td.uri, diagnostics);
+                } catch {
+                    // Cancelled or failed — keep previous diagnostics, clear stale cache
+                    diagnosticContentCache.delete(key);
+                }
             }
         }),
         diagnosticsProvider,

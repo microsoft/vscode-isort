@@ -50,8 +50,6 @@ function resolveVariables(
     const home = process.env.HOME || process.env.USERPROFILE;
     if (home) {
         substitutions.set('${userHome}', home);
-        substitutions.set('~/', `${home}/`);
-        substitutions.set('~\\', `${home}\\`);
     }
     if (workspace) {
         substitutions.set('${workspaceFolder}', workspace.uri.fsPath);
@@ -82,6 +80,11 @@ function resolveVariables(
     return modifiedValue.map((s) => {
         for (const [key, value] of substitutions) {
             s = s.replace(key, value);
+        }
+        if (home && s.startsWith('~/')) {
+            s = home + s.slice(1);
+        } else if (home && s.startsWith('~\\')) {
+            s = home + s.slice(1);
         }
         return s;
     });
