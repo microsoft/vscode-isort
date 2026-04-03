@@ -36,6 +36,8 @@ function _isNotebookCell(uri: Uri): boolean {
 }
 
 let disposables: Disposable[] = [];
+const diagnosticContentCache = new Map<string, string>();
+
 export function unRegisterSortImportFeatures(): void {
     disposables.forEach((d) => {
         try {
@@ -45,6 +47,7 @@ export function unRegisterSortImportFeatures(): void {
         }
     });
     disposables = [];
+    diagnosticContentCache.clear();
 }
 
 class CodeActionWithData extends CodeAction {
@@ -140,17 +143,30 @@ export function registerSortImportFeatures(serverId: string): Disposable & { sta
         }),
         workspace.onDidCloseTextDocument((td: TextDocument) => {
             diagnosticsProvider.publishDiagnostics(td.uri, []);
+            diagnosticContentCache.delete(td.uri.toString());
         }),
         workspace.onDidOpenTextDocument(async (td: TextDocument) => {
             if (td.languageId === 'python') {
                 const diagnostics = await diagnosticRunner(serverId, td);
                 diagnosticsProvider.publishDiagnostics(td.uri, diagnostics);
+                diagnosticContentCache.set(td.uri.toString(), td.getText());
             }
         }),
         workspace.onDidSaveTextDocument(async (td: TextDocument) => {
             if (td.languageId === 'python') {
-                const diagnostics = await diagnosticRunner(serverId, td);
-                diagnosticsProvider.publishDiagnostics(td.uri, diagnostics);
+                const content = td.getText();
+                const key = td.uri.toString();
+                if (diagnosticContentCache.get(key) === content) {
+                    return;
+                }
+                diagnosticContentCache.set(key, content); // Set before await to prevent race
+                try {
+                    const diagnostics = await diagnosticRunner(serverId, td);
+                    diagnosticsProvider.publishDiagnostics(td.uri, diagnostics);
+                } catch {
+                    // Cancelled or failed — keep previous diagnostics, clear stale cache
+                    diagnosticContentCache.delete(key);
+                }
             }
         }),
         diagnosticsProvider,

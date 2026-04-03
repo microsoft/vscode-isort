@@ -28,6 +28,7 @@ suite('textEditRunner Tests', () => {
         cwd: '/workspace',
         workspace: '/workspace',
         showNotifications: 'off',
+        extraPaths: [],
     };
 
     setup(() => {

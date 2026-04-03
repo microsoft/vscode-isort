@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+import * as fs from 'fs';
 import * as proc from 'child_process';
 import {
     CancellationToken,
@@ -11,9 +12,11 @@ import {
     Range,
     TextDocument,
     Uri,
+    workspace,
     WorkspaceEdit,
 } from 'vscode';
 import { RUNNER_SCRIPT_PATH } from './constants';
+import { getEnvFileVars } from './envFile';
 import { traceError, traceLog } from './logging';
 import { ISettings, getWorkspaceSettings } from './settings';
 import { getProjectRoot } from './utilities';
@@ -22,18 +25,28 @@ import { getWorkspaceFolder } from './vscodeapi';
 /**
  * Returns the filesystem path for a document, handling notebook cell URIs.
  * For notebook cells, strips the scheme to file: and drops the fragment (cell id).
+ * Resolves symlinks so that paths passed to isort match real filesystem paths.
  */
 function getDocumentPath(uri: Uri): string {
+    let fsPath: string;
     if (uri.scheme !== 'file') {
-        return Uri.from({ ...uri, scheme: 'file', fragment: '' }).fsPath;
+        fsPath = Uri.from({ ...uri, scheme: 'file', fragment: '' }).fsPath;
+    } else {
+        fsPath = uri.fsPath;
     }
-    return uri.fsPath;
+    try {
+        return fs.realpathSync(fsPath);
+    } catch {
+        return fsPath;
+    }
 }
 
 interface Result {
     stdout: string;
     stderr: string;
 }
+
+const SCRIPT_TIMEOUT_MS = 30000; // 30 second timeout for isort processes
 
 export function runScript(
     runner: string,
@@ -56,6 +69,7 @@ export function runScript(
                 encoding: 'utf-8',
                 env: options?.newEnv,
                 cwd: options?.cwd,
+                timeout: SCRIPT_TIMEOUT_MS,
             },
             (err, stdout, stderr) => {
                 if (options?.ignoreError) {
@@ -71,8 +85,8 @@ export function runScript(
             scriptProc.stdin?.end(input, 'utf-8');
         }
         token?.onCancellationRequested(() => {
-            //resolve({ stdout: '', stderr: '' });
-            //scriptProc.kill();
+            scriptProc.kill();
+            reject(new Error('Script execution was cancelled'));
         });
     });
 
@@ -129,8 +143,16 @@ function getSeverity(sev: string): DiagnosticSeverity {
     return DiagnosticSeverity.Error;
 }
 
-function getUpdatedEnvVariables(settings: ISettings): { [x: string]: string | undefined } {
+async function getUpdatedEnvVariables(settings: ISettings): Promise<{ [x: string]: string | undefined }> {
     const newEnv = { ...process.env };
+    const workspaceUri = Uri.parse(settings.workspace);
+    const workspaceFolder = workspace.getWorkspaceFolder(workspaceUri);
+    if (workspaceFolder) {
+        const envFileVars = await getEnvFileVars(workspaceFolder);
+        for (const [key, value] of Object.entries(envFileVars)) {
+            newEnv[key] = value;
+        }
+    }
     if (settings.path.length === 0) {
         newEnv.LS_IMPORT_STRATEGY = settings.importStrategy;
     }
@@ -144,7 +166,7 @@ export async function diagnosticRunner(serverId: string, textDocument: TextDocum
     if (settings && settings.check) {
         const parts = getExecutablePathWithArgs(settings);
         const args = parts.slice(1).concat('--check', getDocumentPath(textDocument.uri));
-        const newEnv = getUpdatedEnvVariables(settings);
+        const newEnv = await getUpdatedEnvVariables(settings);
         try {
             const { stderr } = await runScript(parts[0], args, { ignoreError: true, newEnv, cwd: settings.cwd });
             const lines = stderr.split(/\r?\n|\r|\n/g);
@@ -193,7 +215,7 @@ export async function textEditRunner(
             parts = getExecutablePathWithArgs(settings);
             args = parts.slice(1).concat('--stdout', getDocumentPath(textDocument.uri));
         }
-        const newEnv = getUpdatedEnvVariables(settings);
+        const newEnv = await getUpdatedEnvVariables(settings);
 
         try {
             const { stdout } = await runScript(
