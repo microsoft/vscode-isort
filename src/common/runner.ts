@@ -146,7 +146,7 @@ async function getUpdatedEnvVariables(settings: ISettings): Promise<{ [x: string
     const projectRoot = await getProjectRoot();
     const envFileVars = await getEnvFileVars(projectRoot);
     const newEnv = { ...process.env };
-    for (const [key, value] of envFileVars) {
+    for (const [key, value] of Object.entries(envFileVars)) {
         newEnv[key] = value;
     }
     if (settings.path.length === 0) {
