@@ -512,7 +512,6 @@ def initialize(params: lsp.InitializeParams) -> None:
     )
 
     # Add extra paths to sys.path (deduplicate on re-initialize)
-    global _extra_sys_paths
     for p in _extra_sys_paths:
         if p in sys.path:
             sys.path.remove(p)
