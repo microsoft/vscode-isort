@@ -522,7 +522,8 @@ def initialize(params: lsp.InitializeParams) -> None:
     for extra in setting.get("extraPaths", []):
         if extra not in sys.path:
             update_sys_path(extra, import_strategy)
-            _extra_sys_paths.append(extra)
+            if extra in sys.path:
+                _extra_sys_paths.append(extra)
 
     paths = "\r\n   ".join(sys.path)
     log_to_output(f"sys.path used to run Server:\r\n   {paths}")
