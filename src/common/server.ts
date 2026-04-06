@@ -31,6 +31,8 @@ async function createServer(
     const workspaceUri = Uri.parse(settings.workspace);
     const cwd = settings.cwd === '${fileDirname}' ? workspaceUri.fsPath : settings.cwd;
 
+    // Environment variables are loaded once at server startup for consistency.
+    // runner.ts loads them fresh per invocation for script-mode execution.
     // Load environment variables from .env file (python.envFile setting)
     const newEnv = { ...process.env };
     const workspaceFolder = workspace.getWorkspaceFolder(workspaceUri);

@@ -179,6 +179,9 @@ export function registerSortImportFeatures(serverId: string): Disposable & { sta
                 if (diagnosticContentCache.get(key) === contentHash(content)) {
                     return;
                 }
+                // Concurrent saves for the same file are intentionally dropped while a
+                // diagnostic run is in-flight. The next save after completion will pick
+                // up any changes.
                 if (pendingRuns.has(key)) {
                     return;
                 }
