@@ -37,6 +37,7 @@ function _isNotebookCell(uri: Uri): boolean {
 
 let disposables: Disposable[] = [];
 const diagnosticContentCache = new Map<string, string>();
+const pendingRuns = new Map<string, Promise<void>>();
 
 export function unRegisterSortImportFeatures(): void {
     disposables.forEach((d) => {
@@ -48,6 +49,7 @@ export function unRegisterSortImportFeatures(): void {
     });
     disposables = [];
     diagnosticContentCache.clear();
+    pendingRuns.clear();
 }
 
 class CodeActionWithData extends CodeAction {
@@ -147,9 +149,22 @@ export function registerSortImportFeatures(serverId: string): Disposable & { sta
         }),
         workspace.onDidOpenTextDocument(async (td: TextDocument) => {
             if (td.languageId === 'python') {
-                const diagnostics = await diagnosticRunner(serverId, td);
-                diagnosticsProvider.publishDiagnostics(td.uri, diagnostics);
-                diagnosticContentCache.set(td.uri.toString(), td.getText());
+                const key = td.uri.toString();
+                if (pendingRuns.has(key)) {
+                    return;
+                }
+                const content = td.getText();
+                const run = (async () => {
+                    try {
+                        const diagnostics = await diagnosticRunner(serverId, td);
+                        diagnosticsProvider.publishDiagnostics(td.uri, diagnostics);
+                        diagnosticContentCache.set(key, content);
+                    } catch {
+                        // Cancelled or failed — keep previous diagnostics
+                    }
+                })();
+                pendingRuns.set(key, run);
+                run.finally(() => pendingRuns.delete(key));
             }
         }),
         workspace.onDidSaveTextDocument(async (td: TextDocument) => {
@@ -159,14 +174,20 @@ export function registerSortImportFeatures(serverId: string): Disposable & { sta
                 if (diagnosticContentCache.get(key) === content) {
                     return;
                 }
-                diagnosticContentCache.set(key, content); // Set before await to prevent race
-                try {
-                    const diagnostics = await diagnosticRunner(serverId, td);
-                    diagnosticsProvider.publishDiagnostics(td.uri, diagnostics);
-                } catch {
-                    // Cancelled or failed — keep previous diagnostics, clear stale cache
-                    diagnosticContentCache.delete(key);
+                if (pendingRuns.has(key)) {
+                    return;
                 }
+                const run = (async () => {
+                    try {
+                        const diagnostics = await diagnosticRunner(serverId, td);
+                        diagnosticsProvider.publishDiagnostics(td.uri, diagnostics);
+                        diagnosticContentCache.set(key, content);
+                    } catch {
+                        // Cancelled or failed — keep previous diagnostics
+                    }
+                })();
+                pendingRuns.set(key, run);
+                run.finally(() => pendingRuns.delete(key));
             }
         }),
         diagnosticsProvider,
