@@ -22,23 +22,35 @@ import { ISettings, getWorkspaceSettings } from './settings';
 import { getProjectRoot } from './utilities';
 import { getWorkspaceFolder } from './vscodeapi';
 
+const realpathCache = new Map<string, string>();
+
+async function cachedRealpath(filePath: string): Promise<string> {
+    const cached = realpathCache.get(filePath);
+    if (cached !== undefined) {
+        return cached;
+    }
+    try {
+        const resolved = await fs.promises.realpath(filePath);
+        realpathCache.set(filePath, resolved);
+        return resolved;
+    } catch {
+        return filePath;
+    }
+}
+
 /**
  * Returns the filesystem path for a document, handling notebook cell URIs.
  * For notebook cells, strips the scheme to file: and drops the fragment (cell id).
  * Resolves symlinks so that paths passed to isort match real filesystem paths.
  */
-function getDocumentPath(uri: Uri): string {
+async function getDocumentPath(uri: Uri): Promise<string> {
     let fsPath: string;
     if (uri.scheme !== 'file') {
         fsPath = Uri.from({ ...uri, scheme: 'file', fragment: '' }).fsPath;
     } else {
         fsPath = uri.fsPath;
     }
-    try {
-        return fs.realpathSync(fsPath);
-    } catch {
-        return fsPath;
-    }
+    return cachedRealpath(fsPath);
 }
 
 interface Result {
@@ -168,7 +180,7 @@ export async function diagnosticRunner(serverId: string, textDocument: TextDocum
 
     if (settings && settings.check) {
         const parts = getExecutablePathWithArgs(settings);
-        const args = parts.slice(1).concat('--check', getDocumentPath(textDocument.uri));
+        const args = parts.slice(1).concat('--check', await getDocumentPath(textDocument.uri));
         const newEnv = await getUpdatedEnvVariables(settings);
         try {
             const { stderr } = await runScript(parts[0], args, { ignoreError: true, newEnv, cwd: settings.cwd });
@@ -213,10 +225,10 @@ export async function textEditRunner(
 
         if (textDocument.isDirty || textDocument.isUntitled) {
             parts = getExecutablePathWithArgs(settings, ['-']);
-            args = parts.slice(1).concat('--filename', getDocumentPath(textDocument.uri));
+            args = parts.slice(1).concat('--filename', await getDocumentPath(textDocument.uri));
         } else {
             parts = getExecutablePathWithArgs(settings);
-            args = parts.slice(1).concat('--stdout', getDocumentPath(textDocument.uri));
+            args = parts.slice(1).concat('--stdout', await getDocumentPath(textDocument.uri));
         }
         const newEnv = await getUpdatedEnvVariables(settings);
 
