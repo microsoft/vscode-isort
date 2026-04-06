@@ -13,10 +13,12 @@ import traceback
 from typing import Any, Dict, List, Optional, Sequence
 from urllib.parse import urlparse, urlunparse
 
-
 # **********************************************************
 # Update sys.path before importing any bundled libraries.
 # **********************************************************
+_extra_sys_paths: list = []
+
+
 def update_sys_path(path_to_add: str, strategy: str) -> None:
     """Add given path to `sys.path`."""
     if path_to_add not in sys.path and os.path.isdir(path_to_add):
@@ -497,9 +499,6 @@ def initialize(params: lsp.InitializeParams) -> None:
     """LSP handler for initialize request."""
     log_to_output(f"CWD Server: {os.getcwd()}")
 
-    paths = "\r\n   ".join(sys.path)
-    log_to_output(f"sys.path used to run Server:\r\n   {paths}")
-
     GLOBAL_SETTINGS.update(**params.initialization_options.get("globalSettings", {}))
 
     settings = params.initialization_options["settings"]
@@ -510,6 +509,23 @@ def initialize(params: lsp.InitializeParams) -> None:
     log_to_output(
         f"Global settings:\r\n{json.dumps(GLOBAL_SETTINGS, indent=4, ensure_ascii=False)}\r\n"
     )
+
+    # Add extra paths to sys.path (deduplicate on re-initialize)
+    for p in _extra_sys_paths:
+        if p in sys.path:
+            sys.path.remove(p)
+    _extra_sys_paths.clear()
+
+    import_strategy = os.getenv("LS_IMPORT_STRATEGY", "useBundled")
+    setting = _get_settings_by_path(pathlib.Path(os.getcwd()))
+    for extra in setting.get("extraPaths", []):
+        if extra not in sys.path:
+            update_sys_path(extra, import_strategy)
+            if extra in sys.path:
+                _extra_sys_paths.append(extra)
+
+    paths = "\r\n   ".join(sys.path)
+    log_to_output(f"sys.path used to run Server:\r\n   {paths}")
 
     # Log version and config
     _log_info()
@@ -596,6 +612,7 @@ def _get_global_defaults():
         "args": GLOBAL_SETTINGS.get("args", []),
         "importStrategy": GLOBAL_SETTINGS.get("importStrategy", "useBundled"),
         "showNotifications": GLOBAL_SETTINGS.get("showNotifications", "off"),
+        "extraPaths": GLOBAL_SETTINGS.get("extraPaths", []),
     }
 
 
@@ -667,6 +684,20 @@ def _get_settings_by_document(document: workspace.TextDocument | None):
 # *****************************************************
 # Internal execution APIs.
 # *****************************************************
+def _get_updated_env(settings: Dict[str, Any]) -> Dict[str, str]:
+    """Returns environment variables to pass to subprocesses, including extraPaths."""
+    extra_paths = settings.get("extraPaths", [])
+    paths = os.environ.get("PYTHONPATH", "").split(os.pathsep) + extra_paths
+    python_paths = os.pathsep.join([p for p in paths if len(p) > 0])
+
+    env: Dict[str, str] = {
+        "LS_IMPORT_STRATEGY": settings["importStrategy"],
+    }
+    if python_paths:
+        env["PYTHONPATH"] = python_paths
+    return env
+
+
 def get_cwd(
     settings: Dict[str, Any], document: Optional[workspace.TextDocument]
 ) -> str:
@@ -814,9 +845,7 @@ def _run_tool_on_document(
             use_stdin=use_stdin,
             cwd=cwd,
             source=source,
-            env={
-                "LS_IMPORT_STRATEGY": settings["importStrategy"],
-            },
+            env=_get_updated_env(settings),
         )
         result = _to_run_result_with_logging(result)
     else:
@@ -891,9 +920,7 @@ def _run_tool(extra_args: Sequence[str], settings: Dict[str, Any]) -> utils.RunR
             argv=argv,
             use_stdin=True,
             cwd=cwd,
-            env={
-                "LS_IMPORT_STRATEGY": settings["importStrategy"],
-            },
+            env=_get_updated_env(settings),
         )
         result = _to_run_result_with_logging(result)
     else:

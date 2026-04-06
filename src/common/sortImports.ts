@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+import { createHash } from 'crypto';
 import {
     CancellationToken,
     CodeAction,
@@ -36,6 +37,13 @@ function _isNotebookCell(uri: Uri): boolean {
 }
 
 let disposables: Disposable[] = [];
+const diagnosticContentCache = new Map<string, string>();
+const pendingRuns = new Map<string, Promise<void>>();
+
+function contentHash(content: string): string {
+    return createHash('sha256').update(content).digest('hex');
+}
+
 export function unRegisterSortImportFeatures(): void {
     disposables.forEach((d) => {
         try {
@@ -45,6 +53,8 @@ export function unRegisterSortImportFeatures(): void {
         }
     });
     disposables = [];
+    diagnosticContentCache.clear();
+    pendingRuns.clear();
 }
 
 class CodeActionWithData extends CodeAction {
@@ -140,17 +150,52 @@ export function registerSortImportFeatures(serverId: string): Disposable & { sta
         }),
         workspace.onDidCloseTextDocument((td: TextDocument) => {
             diagnosticsProvider.publishDiagnostics(td.uri, []);
+            diagnosticContentCache.delete(td.uri.toString());
         }),
         workspace.onDidOpenTextDocument(async (td: TextDocument) => {
             if (td.languageId === 'python') {
-                const diagnostics = await diagnosticRunner(serverId, td);
-                diagnosticsProvider.publishDiagnostics(td.uri, diagnostics);
+                const key = td.uri.toString();
+                if (pendingRuns.has(key)) {
+                    return;
+                }
+                const content = td.getText();
+                const run = (async () => {
+                    try {
+                        const diagnostics = await diagnosticRunner(serverId, td);
+                        diagnosticsProvider.publishDiagnostics(td.uri, diagnostics);
+                        diagnosticContentCache.set(key, contentHash(content));
+                    } catch {
+                        // Cancelled or failed — keep previous diagnostics
+                    }
+                })();
+                pendingRuns.set(key, run);
+                run.finally(() => pendingRuns.delete(key));
             }
         }),
         workspace.onDidSaveTextDocument(async (td: TextDocument) => {
             if (td.languageId === 'python') {
-                const diagnostics = await diagnosticRunner(serverId, td);
-                diagnosticsProvider.publishDiagnostics(td.uri, diagnostics);
+                const content = td.getText();
+                const key = td.uri.toString();
+                if (diagnosticContentCache.get(key) === contentHash(content)) {
+                    return;
+                }
+                // Concurrent saves for the same file are intentionally dropped while a
+                // diagnostic run is in-flight. The next save after completion will pick
+                // up any changes.
+                if (pendingRuns.has(key)) {
+                    return;
+                }
+                const run = (async () => {
+                    try {
+                        const diagnostics = await diagnosticRunner(serverId, td);
+                        diagnosticsProvider.publishDiagnostics(td.uri, diagnostics);
+                        diagnosticContentCache.set(key, contentHash(content));
+                    } catch {
+                        // Cancelled or failed — keep previous diagnostics
+                    }
+                })();
+                pendingRuns.set(key, run);
+                run.finally(() => pendingRuns.delete(key));
             }
         }),
         diagnosticsProvider,
