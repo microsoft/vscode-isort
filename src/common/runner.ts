@@ -99,8 +99,10 @@ export function runScript(
                 }
                 settled = true;
                 cancellationDisposable?.dispose();
-                if (options?.ignoreError) {
+                if (options?.ignoreError && !err?.killed) {
                     resolve({ stdout, stderr });
+                } else if (err?.killed) {
+                    reject(new Error('Script timed out or was killed'));
                 } else if (err && !cancelled) {
                     reject(err);
                 } else if (err && cancelled) {
