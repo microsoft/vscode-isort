@@ -2,42 +2,40 @@
 // Licensed under the MIT License.
 
 import { assert } from 'chai';
-import * as sinon from 'sinon';
+import * as fs from 'fs-extra';
 import * as path from 'path';
+import * as sinon from 'sinon';
 import { Uri, WorkspaceFolder } from 'vscode';
-import * as fsExtra from 'fs-extra';
-import * as vscodeapi from '../../../../common/vscodeapi';
 import { getEnvFileVars } from '../../../../common/envFile';
+import * as vscodeapi from '../../../../common/vscodeapi';
 
+// Use real files instead of stubbing fs-extra (whose exports are non-configurable).
 suite('getEnvFileVars Tests', () => {
-    let sandbox: sinon.SinonSandbox;
     let getConfigurationStub: sinon.SinonStub;
-    let pathExistsStub: sinon.SinonStub;
-    let readFileStub: sinon.SinonStub;
+
+    const fixtureDir = path.join(__dirname, '.envfile-test-fixtures');
 
     const workspaceFolder: WorkspaceFolder = {
-        uri: Uri.file('/test/workspace'),
+        uri: Uri.file(fixtureDir),
         name: 'workspace',
         index: 0,
     };
 
-    setup(() => {
-        sandbox = sinon.createSandbox();
-        getConfigurationStub = sandbox.stub(vscodeapi, 'getConfiguration');
-        pathExistsStub = sandbox.stub(fsExtra, 'pathExists');
-        readFileStub = sandbox.stub(fsExtra, 'readFile');
+    setup(async () => {
+        await fs.ensureDir(fixtureDir);
+        getConfigurationStub = sinon.stub(vscodeapi, 'getConfiguration');
     });
 
-    teardown(() => {
-        sandbox.restore();
+    teardown(async () => {
+        sinon.restore();
+        await fs.remove(fixtureDir);
     });
 
     test('returns parsed variables from existing .env file', async () => {
+        await fs.writeFile(path.join(fixtureDir, '.env'), 'FOO=bar\nBAZ=qux\n');
         getConfigurationStub.returns({
             get: (_key: string, defaultValue: string) => defaultValue,
         });
-        pathExistsStub.resolves(true);
-        readFileStub.resolves('FOO=bar\nBAZ=qux\n');
 
         const vars = await getEnvFileVars(workspaceFolder);
         assert.deepStrictEqual(vars, { FOO: 'bar', BAZ: 'qux' });
@@ -47,38 +45,28 @@ suite('getEnvFileVars Tests', () => {
         getConfigurationStub.returns({
             get: (_key: string, defaultValue: string) => defaultValue,
         });
-        pathExistsStub.resolves(false);
 
         const vars = await getEnvFileVars(workspaceFolder);
         assert.deepStrictEqual(vars, {});
     });
 
     test('resolves ${workspaceFolder} in path', async () => {
+        await fs.writeFile(path.join(fixtureDir, '.env.test'), 'KEY=value\n');
         getConfigurationStub.returns({
             get: (_key: string, _defaultValue: string) => '${workspaceFolder}/.env.test',
         });
-        const expectedPath = path.join(workspaceFolder.uri.fsPath, '.env.test');
-        pathExistsStub.resolves(true);
-        readFileStub.resolves('KEY=value\n');
 
         const vars = await getEnvFileVars(workspaceFolder);
         assert.deepStrictEqual(vars, { KEY: 'value' });
-        assert.isTrue(pathExistsStub.calledOnce, 'pathExists should be called once');
-        const calledPath = pathExistsStub.firstCall.args[0];
-        assert.strictEqual(calledPath, expectedPath);
     });
 
     test('resolves relative paths', async () => {
+        await fs.writeFile(path.join(fixtureDir, '.env.local'), 'RELATIVE=yes\n');
         getConfigurationStub.returns({
             get: (_key: string, _defaultValue: string) => '.env.local',
         });
-        const expectedPath = path.join(workspaceFolder.uri.fsPath, '.env.local');
-        pathExistsStub.resolves(true);
-        readFileStub.resolves('RELATIVE=yes\n');
 
         const vars = await getEnvFileVars(workspaceFolder);
         assert.deepStrictEqual(vars, { RELATIVE: 'yes' });
-        const calledPath = pathExistsStub.firstCall.args[0];
-        assert.strictEqual(calledPath, expectedPath);
     });
 });
