@@ -81,13 +81,16 @@ function resolveVariables(
         for (const [key, value] of substitutions) {
             s = s.replace(key, value);
         }
-        if (home && s.startsWith('~/')) {
-            s = home + s.slice(1);
-        } else if (home && s.startsWith('~\\')) {
-            s = home + s.slice(1);
-        }
         return s;
     });
+}
+
+function expandTilde(value: string): string {
+    const home = process.env.HOME || process.env.USERPROFILE;
+    if (home && (value.startsWith('~/') || value.startsWith('~\\'))) {
+        return home + value.slice(1);
+    }
+    return value;
 }
 
 function getArgs(namespace: string, workspace: WorkspaceFolder): string[] {
@@ -179,15 +182,15 @@ export async function getWorkspaceSettings(
     const extraPaths = getExtraPaths(namespace, workspace);
     const workspaceSetting = {
         check: config.get<boolean>('check', false),
-        cwd: getCwd(config, workspace),
+        cwd: expandTilde(getCwd(config, workspace)),
         workspace: workspace.uri.toString(),
         args: resolveVariables(args, 'args', workspace),
-        path: resolveVariables(path, 'path', workspace, interpreter),
+        path: resolveVariables(path, 'path', workspace, interpreter).map(expandTilde),
         severity: config.get<Record<string, string>>('severity', DEFAULT_SEVERITY),
         interpreter: resolveVariables(interpreter, 'interpreter', workspace),
         importStrategy: config.get<string>('importStrategy', 'useBundled'),
         showNotifications: config.get<string>('showNotifications', 'off'),
-        extraPaths: resolveVariables(extraPaths, 'extraPaths', workspace),
+        extraPaths: resolveVariables(extraPaths, 'extraPaths', workspace).map(expandTilde),
     };
     traceInfo(
         `Workspace settings for ${workspace.uri.fsPath} (client side): ${JSON.stringify(workspaceSetting, null, 4)}`,
