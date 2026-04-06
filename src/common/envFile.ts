@@ -6,6 +6,7 @@ import * as fs from 'fs-extra';
 import * as path from 'path';
 import { WorkspaceFolder } from 'vscode';
 import { traceLog, traceWarn } from './logging';
+import { expandTilde } from './settings';
 import { getConfiguration } from './vscodeapi';
 
 /**
@@ -19,6 +20,8 @@ export async function getEnvFileVars(workspace: WorkspaceFolder): Promise<Record
 
     // Resolve ${workspaceFolder}
     envFilePath = envFilePath.replace(/\$\{workspaceFolder\}/g, workspace.uri.fsPath);
+
+    envFilePath = expandTilde(envFilePath);
 
     if (!path.isAbsolute(envFilePath)) {
         envFilePath = path.join(workspace.uri.fsPath, envFilePath);

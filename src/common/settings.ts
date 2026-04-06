@@ -85,10 +85,13 @@ function resolveVariables(
     });
 }
 
-function expandTilde(value: string): string {
+export function expandTilde(value: string): string {
     const home = process.env.HOME || process.env.USERPROFILE;
-    if (home && (value.startsWith('~/') || value.startsWith('~\\'))) {
-        return home + value.slice(1);
+    if (home) {
+        if (value === '~') return home;
+        if (value.startsWith('~/') || value.startsWith('~\\')) {
+            return home + value.slice(1);
+        }
     }
     return value;
 }
