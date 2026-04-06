@@ -38,6 +38,7 @@ suite('getEnvFileVars Tests', () => {
         });
 
         const vars = await getEnvFileVars(workspaceFolder);
+        // eslint-disable-next-line @typescript-eslint/naming-convention
         assert.deepStrictEqual(vars, { FOO: 'bar', BAZ: 'qux' });
     });
 
@@ -53,20 +54,24 @@ suite('getEnvFileVars Tests', () => {
     test('resolves ${workspaceFolder} in path', async () => {
         await fs.writeFile(path.join(fixtureDir, '.env.test'), 'KEY=value\n');
         getConfigurationStub.returns({
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             get: (_key: string, _defaultValue: string) => '${workspaceFolder}/.env.test',
         });
 
         const vars = await getEnvFileVars(workspaceFolder);
+        // eslint-disable-next-line @typescript-eslint/naming-convention
         assert.deepStrictEqual(vars, { KEY: 'value' });
     });
 
     test('resolves relative paths', async () => {
         await fs.writeFile(path.join(fixtureDir, '.env.local'), 'RELATIVE=yes\n');
         getConfigurationStub.returns({
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             get: (_key: string, _defaultValue: string) => '.env.local',
         });
 
         const vars = await getEnvFileVars(workspaceFolder);
+        // eslint-disable-next-line @typescript-eslint/naming-convention
         assert.deepStrictEqual(vars, { RELATIVE: 'yes' });
     });
 });
