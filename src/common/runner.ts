@@ -74,6 +74,7 @@ export function runScript(
     traceLog(runner, args.join(' '));
     traceLog(`CWD: ${options?.cwd}`);
     const promise = new Promise<Result>((resolve, reject) => {
+        let settled = false;
         let cancelled = false;
         const scriptProc = proc.execFile(
             runner,
@@ -85,11 +86,14 @@ export function runScript(
                 timeout: SCRIPT_TIMEOUT_MS,
             },
             (err, stdout, stderr) => {
+                if (settled) return;
+                settled = true;
+                cancellationDisposable?.dispose();
                 if (options?.ignoreError) {
                     resolve({ stdout, stderr });
                 } else if (err && !cancelled) {
                     reject(err);
-                } else if (cancelled) {
+                } else if (err && cancelled) {
                     reject(new Error('Script execution was cancelled'));
                 } else {
                     resolve({ stdout: stdout ?? '', stderr: stderr ?? '' });
@@ -99,9 +103,14 @@ export function runScript(
         if (input) {
             scriptProc.stdin?.end(input, 'utf-8');
         }
-        token?.onCancellationRequested(() => {
+        const cancellationDisposable = token?.onCancellationRequested(() => {
             cancelled = true;
-            scriptProc.kill();
+            if (!settled) {
+                settled = true;
+                // Note: on Windows, kill() uses TerminateProcess which may not terminate child processes
+                scriptProc.kill();
+                reject(new Error('Script execution was cancelled'));
+            }
         });
     });
 
