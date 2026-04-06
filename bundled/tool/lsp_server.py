@@ -17,6 +17,9 @@ from urllib.parse import urlparse, urlunparse
 # **********************************************************
 # Update sys.path before importing any bundled libraries.
 # **********************************************************
+_extra_sys_paths: list = []
+
+
 def update_sys_path(path_to_add: str, strategy: str) -> None:
     """Add given path to `sys.path`."""
     if path_to_add not in sys.path and os.path.isdir(path_to_add):
@@ -508,11 +511,19 @@ def initialize(params: lsp.InitializeParams) -> None:
         f"Global settings:\r\n{json.dumps(GLOBAL_SETTINGS, indent=4, ensure_ascii=False)}\r\n"
     )
 
-    # Add extra paths to sys.path
+    # Add extra paths to sys.path (deduplicate on re-initialize)
+    global _extra_sys_paths
+    for p in _extra_sys_paths:
+        if p in sys.path:
+            sys.path.remove(p)
+    _extra_sys_paths.clear()
+
     import_strategy = os.getenv("LS_IMPORT_STRATEGY", "useBundled")
     setting = _get_settings_by_path(pathlib.Path(os.getcwd()))
     for extra in setting.get("extraPaths", []):
-        update_sys_path(extra, import_strategy)
+        if extra not in sys.path:
+            update_sys_path(extra, import_strategy)
+            _extra_sys_paths.append(extra)
 
     paths = "\r\n   ".join(sys.path)
     log_to_output(f"sys.path used to run Server:\r\n   {paths}")
