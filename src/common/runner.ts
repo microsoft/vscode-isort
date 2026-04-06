@@ -22,6 +22,7 @@ import { ISettings, getWorkspaceSettings } from './settings';
 import { getProjectRoot } from './utilities';
 import { getWorkspaceFolder } from './vscodeapi';
 
+const REALPATH_CACHE_MAX = 1000;
 const realpathCache = new Map<string, string>();
 
 async function cachedRealpath(filePath: string): Promise<string> {
@@ -31,6 +32,13 @@ async function cachedRealpath(filePath: string): Promise<string> {
     }
     try {
         const resolved = await fs.promises.realpath(filePath);
+        if (realpathCache.size >= REALPATH_CACHE_MAX) {
+            // Evict oldest entry
+            const firstKey = realpathCache.keys().next().value;
+            if (firstKey !== undefined) {
+                realpathCache.delete(firstKey);
+            }
+        }
         realpathCache.set(filePath, resolved);
         return resolved;
     } catch {
