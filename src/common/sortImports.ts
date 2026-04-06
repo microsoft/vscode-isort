@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+import { createHash } from 'crypto';
 import {
     CancellationToken,
     CodeAction,
@@ -38,6 +39,10 @@ function _isNotebookCell(uri: Uri): boolean {
 let disposables: Disposable[] = [];
 const diagnosticContentCache = new Map<string, string>();
 const pendingRuns = new Map<string, Promise<void>>();
+
+function contentHash(content: string): string {
+    return createHash('sha256').update(content).digest('hex');
+}
 
 export function unRegisterSortImportFeatures(): void {
     disposables.forEach((d) => {
@@ -158,7 +163,7 @@ export function registerSortImportFeatures(serverId: string): Disposable & { sta
                     try {
                         const diagnostics = await diagnosticRunner(serverId, td);
                         diagnosticsProvider.publishDiagnostics(td.uri, diagnostics);
-                        diagnosticContentCache.set(key, content);
+                        diagnosticContentCache.set(key, contentHash(content));
                     } catch {
                         // Cancelled or failed — keep previous diagnostics
                     }
@@ -171,7 +176,7 @@ export function registerSortImportFeatures(serverId: string): Disposable & { sta
             if (td.languageId === 'python') {
                 const content = td.getText();
                 const key = td.uri.toString();
-                if (diagnosticContentCache.get(key) === content) {
+                if (diagnosticContentCache.get(key) === contentHash(content)) {
                     return;
                 }
                 if (pendingRuns.has(key)) {
@@ -181,7 +186,7 @@ export function registerSortImportFeatures(serverId: string): Disposable & { sta
                     try {
                         const diagnostics = await diagnosticRunner(serverId, td);
                         diagnosticsProvider.publishDiagnostics(td.uri, diagnostics);
-                        diagnosticContentCache.set(key, content);
+                        diagnosticContentCache.set(key, contentHash(content));
                     } catch {
                         // Cancelled or failed — keep previous diagnostics
                     }
