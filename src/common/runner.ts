@@ -62,6 +62,7 @@ export function runScript(
     traceLog(runner, args.join(' '));
     traceLog(`CWD: ${options?.cwd}`);
     const promise = new Promise<Result>((resolve, reject) => {
+        let cancelled = false;
         const scriptProc = proc.execFile(
             runner,
             args,
@@ -74,10 +75,12 @@ export function runScript(
             (err, stdout, stderr) => {
                 if (options?.ignoreError) {
                     resolve({ stdout, stderr });
-                } else if (err) {
+                } else if (err && !cancelled) {
                     reject(err);
+                } else if (cancelled) {
+                    reject(new Error('Script execution was cancelled'));
                 } else {
-                    resolve({ stdout, stderr });
+                    resolve({ stdout: stdout ?? '', stderr: stderr ?? '' });
                 }
             },
         );
@@ -85,8 +88,8 @@ export function runScript(
             scriptProc.stdin?.end(input, 'utf-8');
         }
         token?.onCancellationRequested(() => {
+            cancelled = true;
             scriptProc.kill();
-            reject(new Error('Script execution was cancelled'));
         });
     });
 
