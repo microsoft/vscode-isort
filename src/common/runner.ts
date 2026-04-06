@@ -94,7 +94,9 @@ export function runScript(
                 timeout: SCRIPT_TIMEOUT_MS,
             },
             (err, stdout, stderr) => {
-                if (settled) {return;}
+                if (settled) {
+                    return;
+                }
                 settled = true;
                 cancellationDisposable?.dispose();
                 if (options?.ignoreError) {

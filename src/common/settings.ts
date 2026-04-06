@@ -88,7 +88,9 @@ function resolveVariables(
 export function expandTilde(value: string): string {
     const home = process.env.HOME || process.env.USERPROFILE;
     if (home) {
-        if (value === '~') {return home;}
+        if (value === '~') {
+            return home;
+        }
         if (value.startsWith('~/') || value.startsWith('~\\')) {
             return home + value.slice(1);
         }
