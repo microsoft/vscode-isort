@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 import { ConfigurationChangeEvent, WorkspaceConfiguration, WorkspaceFolder } from 'vscode';
+import { expandTilde } from './envFile';
 import { traceError, traceInfo, traceLog } from './logging';
 import { getInterpreterDetails } from './python';
 import { getInterpreterFromSetting } from './utilities';
@@ -85,18 +86,7 @@ function resolveVariables(
     });
 }
 
-export function expandTilde(value: string): string {
-    const home = process.env.HOME || process.env.USERPROFILE;
-    if (home) {
-        if (value === '~') {
-            return home;
-        }
-        if (value.startsWith('~/') || value.startsWith('~\\')) {
-            return home + value.slice(1);
-        }
-    }
-    return value;
-}
+export { expandTilde };
 
 function getArgs(namespace: string, workspace: WorkspaceFolder): string[] {
     const config = getConfiguration(namespace, workspace.uri);
