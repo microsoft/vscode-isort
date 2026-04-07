@@ -86,8 +86,6 @@ function resolveVariables(
     });
 }
 
-export { expandTilde };
-
 function getArgs(namespace: string, workspace: WorkspaceFolder): string[] {
     const config = getConfiguration(namespace, workspace.uri);
     const args = config.get<string[]>('args', []);
