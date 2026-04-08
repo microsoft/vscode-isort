@@ -6,8 +6,18 @@ import * as fs from 'fs-extra';
 import * as path from 'path';
 import { WorkspaceFolder } from 'vscode';
 import { traceLog, traceWarn } from './logging';
-import { expandTilde } from './settings';
 import { getConfiguration } from './vscodeapi';
+
+export function expandTilde(filePath: string): string {
+    const home = process.env.HOME || process.env.USERPROFILE || '';
+    if (filePath === '~') {
+        return home;
+    }
+    if (filePath.startsWith('~/') || filePath.startsWith('~\\')) {
+        return path.join(home, filePath.slice(2));
+    }
+    return filePath;
+}
 
 /**
  * Reads the env file configured via `python.envFile` (defaults to `${workspaceFolder}/.env`),
