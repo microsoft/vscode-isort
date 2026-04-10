@@ -1,23 +1,16 @@
-"""
-Test for path and interpreter settings.
+"""Test for path and interpreter settings.
+
+Mock LSP dependencies and sys.path setup are provided by conftest.py.
 """
 
 import copy
-import os
 import pathlib
-import sys
 from unittest.mock import MagicMock
 
 from hamcrest import assert_that, is_
+from lsp_server import _get_document_path
 
 from .lsp_test_client import constants, defaults, session, utils
-
-# Add bundled paths so lsp_server and its deps can be imported
-_PROJECT_ROOT = pathlib.Path(__file__).parent.parent.parent.parent
-sys.path.insert(0, os.fsdecode(_PROJECT_ROOT / "bundled" / "libs"))
-sys.path.insert(0, os.fsdecode(_PROJECT_ROOT / "bundled" / "tool"))
-
-from lsp_server import _get_document_path
 
 TEST_FILE = constants.TEST_DATA / "sample1" / "sample.py"
 
