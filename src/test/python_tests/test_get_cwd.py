@@ -1,141 +1,15 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
-"""Unit tests for the get_cwd() helper in lsp_server."""
+"""Unit tests for the get_cwd() helper in lsp_server.
+
+Mock LSP dependencies (pygls, lsprotocol) and sys.path setup are provided
+by conftest.py.
+"""
 
 import os
-import pathlib
-import sys
 import types
 
-
-# ---------------------------------------------------------------------------
-# Stub out bundled LSP dependencies so lsp_server can be imported without the
-# full VS Code extension environment.
-# ---------------------------------------------------------------------------
-def _setup_mocks():
-    class _MockLS:
-        def __init__(self, **kwargs):
-            pass
-
-        def feature(self, *args, **kwargs):
-            return lambda f: f
-
-        def command(self, *args, **kwargs):
-            return lambda f: f
-
-        def window_log_message(self, *args, **kwargs):
-            pass
-
-        def window_show_message(self, *args, **kwargs):
-            pass
-
-    mock_server = types.ModuleType("pygls.lsp.server")
-    mock_server.LanguageServer = _MockLS
-
-    mock_workspace = types.ModuleType("pygls.workspace")
-    mock_workspace.TextDocument = type("TextDocument", (), {"path": None, "uri": None})
-
-    mock_pygls = types.ModuleType("pygls")
-    mock_pygls_uris = types.ModuleType("pygls.uris")
-    mock_pygls_uris.from_fs_path = lambda p: "file://" + p
-    mock_pygls_uris.to_fs_path = lambda u: u.replace("file://", "")
-
-    mock_lsp = types.ModuleType("lsprotocol.types")
-    for _name in [
-        "CODE_ACTION_RESOLVE",
-        "EXIT",
-        "INITIALIZE",
-        "SHUTDOWN",
-        "TEXT_DOCUMENT_CODE_ACTION",
-        "TEXT_DOCUMENT_DID_CLOSE",
-        "TEXT_DOCUMENT_DID_OPEN",
-        "TEXT_DOCUMENT_DID_SAVE",
-        "TEXT_DOCUMENT_FORMATTING",
-        "NOTEBOOK_DOCUMENT_DID_OPEN",
-        "NOTEBOOK_DOCUMENT_DID_CHANGE",
-        "NOTEBOOK_DOCUMENT_DID_SAVE",
-        "NOTEBOOK_DOCUMENT_DID_CLOSE",
-    ]:
-        setattr(mock_lsp, _name, _name)
-    for _name in [
-        "CodeActionOptions",
-        "CodeActionParams",
-        "Diagnostic",
-        "DiagnosticSeverity",
-        "DidCloseTextDocumentParams",
-        "DidOpenTextDocumentParams",
-        "DidSaveTextDocumentParams",
-        "DidChangeNotebookDocumentParams",
-        "DidCloseNotebookDocumentParams",
-        "DidOpenNotebookDocumentParams",
-        "DidSaveNotebookDocumentParams",
-        "InitializeParams",
-        "LogMessageParams",
-        "ShowMessageParams",
-        "NotebookCellKind",
-        "NotebookCellLanguage",
-        "NotebookDocumentFilterWithNotebook",
-        "NotebookDocumentSyncOptions",
-        "Position",
-        "PublishDiagnosticsParams",
-        "Range",
-        "TextDocumentEdit",
-        "TextEdit",
-        "TraceValue",
-        "VersionedTextDocumentIdentifier",
-        "WorkspaceEdit",
-    ]:
-        setattr(mock_lsp, _name, type(_name, (), {"__init__": lambda self, **kw: None}))
-    mock_lsp.CodeActionKind = type(
-        "CodeActionKind",
-        (),
-        {"SourceOrganizeImports": "source.organizeImports", "QuickFix": "quickfix"},
-    )
-    mock_lsp.MessageType = type(
-        "MessageType", (), {"Log": 4, "Error": 1, "Warning": 2, "Info": 3}
-    )
-
-    mock_lsp_jsonrpc = types.ModuleType("lsp_jsonrpc")
-    mock_lsp_jsonrpc.shutdown_json_rpc = lambda: None
-    mock_lsp_jsonrpc.start_json_rpc = lambda *a, **kw: None
-    mock_lsp_jsonrpc.send_response = lambda *a, **kw: None
-    mock_lsp_jsonrpc.send_notification = lambda *a, **kw: None
-    mock_lsp_jsonrpc.JsonRPCException = Exception
-
-    mock_lsp_utils = types.ModuleType("lsp_utils")
-    mock_lsp_utils.is_stdlib_file = lambda *a, **kw: False
-    mock_lsp_utils.normalize_path = lambda p: str(p)
-    mock_lsp_utils.RunResult = type("RunResult", (), {})
-
-    mock_isort = types.ModuleType("isort")
-
-    mock_pygls.lsp = types.ModuleType("pygls.lsp")
-    mock_pygls.workspace = mock_workspace
-    mock_pygls.uris = mock_pygls_uris
-
-    for _mod_name, _mod in [
-        ("pygls", mock_pygls),
-        ("pygls.lsp", mock_pygls.lsp),
-        ("pygls.lsp.server", mock_server),
-        ("pygls.workspace", mock_workspace),
-        ("pygls.uris", mock_pygls_uris),
-        ("lsprotocol", types.ModuleType("lsprotocol")),
-        ("lsprotocol.types", mock_lsp),
-        ("lsp_jsonrpc", mock_lsp_jsonrpc),
-        ("lsp_utils", mock_lsp_utils),
-        ("isort", mock_isort),
-    ]:
-        if _mod_name not in sys.modules:
-            sys.modules[_mod_name] = _mod
-
-    tool_dir = str(pathlib.Path(__file__).parents[3] / "bundled" / "tool")
-    if tool_dir not in sys.path:
-        sys.path.insert(0, tool_dir)
-
-
-_setup_mocks()
-
-import lsp_server  # noqa: E402
+import lsp_server
 
 WORKSPACE = "/home/user/myproject"
 
