@@ -9,6 +9,7 @@ Mock setup is provided by conftest.py (setup_lsp_mocks).
 """
 
 import lsp_server
+import pytest
 
 
 def _with_global_settings(overrides, fn):
@@ -23,79 +24,44 @@ def _with_global_settings(overrides, fn):
         lsp_server.GLOBAL_SETTINGS.update(original)
 
 
-def test_check_read_from_global_settings():
-    """_get_global_defaults() returns check from GLOBAL_SETTINGS."""
-    result = _with_global_settings(
-        {"check": True},
-        lsp_server._get_global_defaults,
-    )
-    assert result["check"] is True
-
-
-def test_check_defaults_to_false():
-    """_get_global_defaults() returns False when GLOBAL_SETTINGS has no check."""
-    result = _with_global_settings({}, lsp_server._get_global_defaults)
-    assert result["check"] is False
-
-
-def test_path_read_from_global_settings():
-    """_get_global_defaults() returns path from GLOBAL_SETTINGS."""
-    result = _with_global_settings(
-        {"path": ["/usr/bin/isort"]},
-        lsp_server._get_global_defaults,
-    )
-    assert result["path"] == ["/usr/bin/isort"]
-
-
-def test_path_defaults_to_empty_list():
-    """_get_global_defaults() returns [] when GLOBAL_SETTINGS has no path."""
-    result = _with_global_settings({}, lsp_server._get_global_defaults)
-    assert result["path"] == []
-
-
-def test_show_notifications_read_from_global_settings():
-    """_get_global_defaults() returns showNotifications from GLOBAL_SETTINGS."""
-    result = _with_global_settings(
-        {"showNotifications": "always"},
-        lsp_server._get_global_defaults,
-    )
-    assert result["showNotifications"] == "always"
-
-
-def test_import_strategy_read_from_global_settings():
-    """_get_global_defaults() returns importStrategy from GLOBAL_SETTINGS."""
-    result = _with_global_settings(
-        {"importStrategy": "fromEnvironment"},
-        lsp_server._get_global_defaults,
-    )
-    assert result["importStrategy"] == "fromEnvironment"
-
-
-def test_args_read_from_global_settings():
-    """_get_global_defaults() returns args from GLOBAL_SETTINGS."""
-    result = _with_global_settings(
-        {"args": ["--profile", "black"]},
-        lsp_server._get_global_defaults,
-    )
-    assert result["args"] == ["--profile", "black"]
-
-
-def test_args_defaults_to_empty_list():
-    """_get_global_defaults() returns [] when GLOBAL_SETTINGS has no args."""
-    result = _with_global_settings({}, lsp_server._get_global_defaults)
-    assert result["args"] == []
-
-
-def test_extra_paths_read_from_global_settings():
-    """_get_global_defaults() returns extraPaths from GLOBAL_SETTINGS."""
-    result = _with_global_settings(
-        {"extraPaths": ["/custom/lib"]},
-        lsp_server._get_global_defaults,
-    )
-    assert result["extraPaths"] == ["/custom/lib"]
-
-
-def test_extra_paths_defaults_to_empty_list():
-    """_get_global_defaults() returns [] when GLOBAL_SETTINGS has no extraPaths."""
-    result = _with_global_settings({}, lsp_server._get_global_defaults)
-    assert result["extraPaths"] == []
+@pytest.mark.parametrize(
+    "overrides, key, expected",
+    [
+        pytest.param({"check": True}, "check", True, id="check-set"),
+        pytest.param({}, "check", False, id="check-default"),
+        pytest.param(
+            {"path": ["/usr/bin/isort"]}, "path", ["/usr/bin/isort"], id="path-set"
+        ),
+        pytest.param({}, "path", [], id="path-default"),
+        pytest.param(
+            {"showNotifications": "always"},
+            "showNotifications",
+            "always",
+            id="showNotifications-set",
+        ),
+        pytest.param(
+            {"importStrategy": "fromEnvironment"},
+            "importStrategy",
+            "fromEnvironment",
+            id="importStrategy-set",
+        ),
+        pytest.param(
+            {"args": ["--profile", "black"]},
+            "args",
+            ["--profile", "black"],
+            id="args-set",
+        ),
+        pytest.param({}, "args", [], id="args-default"),
+        pytest.param(
+            {"extraPaths": ["/custom/lib"]},
+            "extraPaths",
+            ["/custom/lib"],
+            id="extraPaths-set",
+        ),
+        pytest.param({}, "extraPaths", [], id="extraPaths-default"),
+    ],
+)
+def test_global_defaults_setting(overrides, key, expected):
+    """Each global setting is correctly read or defaults when absent."""
+    result = _with_global_settings(overrides, lsp_server._get_global_defaults)
+    assert result[key] == expected
