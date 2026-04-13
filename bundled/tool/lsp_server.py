@@ -66,8 +66,9 @@ import isort
 import lsp_jsonrpc as jsonrpc
 import lsp_utils as utils
 import lsprotocol.types as lsp
-from pygls import uris, workspace
+from pygls import uris
 from pygls.lsp.server import LanguageServer
+from pygls.workspace import TextDocument
 
 WORKSPACE_SETTINGS = {}
 GLOBAL_SETTINGS = {}
@@ -101,7 +102,7 @@ LSP_SERVER = LanguageServer(
 )
 
 
-def _get_document_path(document: workspace.TextDocument) -> str:
+def _get_document_path(document: TextDocument) -> str:
     """Returns the filesystem path for a document.
 
     Examples:
@@ -241,7 +242,7 @@ def notebook_did_close(params: lsp.DidCloseNotebookDocumentParams) -> None:
         )
 
 
-def _linting_helper(document: workspace.TextDocument) -> list[lsp.Diagnostic]:
+def _linting_helper(document: TextDocument) -> list[lsp.Diagnostic]:
     # deep copy here to prevent accidentally updating global settings.
     settings = copy.deepcopy(_get_settings_by_document(document))
 
@@ -284,7 +285,7 @@ def _is_sorting_error(line: str) -> bool:
 
 
 def _parse_output(
-    document: workspace.TextDocument,
+    document: TextDocument,
     output: str,
     severity: Dict[str, str],
 ) -> Sequence[lsp.Diagnostic]:
@@ -447,7 +448,7 @@ def is_interactive(file_path: str) -> bool:
     return file_path.endswith(".interactive")
 
 
-def _formatting_helper(document: workspace.TextDocument) -> list[lsp.TextEdit] | None:
+def _formatting_helper(document: TextDocument) -> list[lsp.TextEdit] | None:
     result = _run_tool_on_document(document, use_stdin=True)
     if result and result.stdout:
         new_source = _match_line_endings(document, result.stdout)
@@ -473,7 +474,7 @@ def _formatting_helper(document: workspace.TextDocument) -> list[lsp.TextEdit] |
 
 
 def _create_workspace_edits(
-    document: workspace.TextDocument, results: Optional[List[lsp.TextEdit]]
+    document: TextDocument, results: Optional[List[lsp.TextEdit]]
 ):
     return lsp.WorkspaceEdit(
         document_changes=[
@@ -498,7 +499,7 @@ def _get_line_endings(lines: list[str]) -> str:
         return None
 
 
-def _match_line_endings(document: workspace.TextDocument, text: str) -> str:
+def _match_line_endings(document: TextDocument, text: str) -> str:
     """Ensures that the edited text line endings matches the document line endings."""
     expected = _get_line_endings(document.source.splitlines(keepends=True))
     actual = _get_line_endings(text.splitlines(keepends=True))
@@ -669,7 +670,7 @@ def _get_settings_by_path(file_path: pathlib.Path):
     return setting_values[0]
 
 
-def _get_document_key(document: workspace.TextDocument):
+def _get_document_key(document: TextDocument):
     if WORKSPACE_SETTINGS:
         document_workspace = pathlib.Path(_get_document_path(document))
         workspaces = {s["workspaceFS"] for s in WORKSPACE_SETTINGS.values()}
@@ -684,7 +685,7 @@ def _get_document_key(document: workspace.TextDocument):
     return None
 
 
-def _get_settings_by_document(document: workspace.TextDocument | None):
+def _get_settings_by_document(document: TextDocument | None):
     if document is None or document.path is None:
         return list(WORKSPACE_SETTINGS.values())[0]
 
@@ -719,9 +720,7 @@ def _get_updated_env(settings: Dict[str, Any]) -> Dict[str, str]:
     return env
 
 
-def get_cwd(
-    settings: Dict[str, Any], document: Optional[workspace.TextDocument]
-) -> str:
+def get_cwd(settings: Dict[str, Any], document: Optional[TextDocument]) -> str:
     """Returns the working directory for running the tool.
 
     Resolves the following VS Code file-related variable substitutions when
@@ -786,7 +785,7 @@ def get_cwd(
 
 # pylint: disable=too-many-branches
 def _run_tool_on_document(
-    document: workspace.TextDocument,
+    document: TextDocument,
     use_stdin: bool = False,
     extra_args: Sequence[str] = [],
 ) -> utils.RunResult | None:
