@@ -8,6 +8,7 @@ on:
   schedule:
     - cron: daily
   workflow_dispatch:
+if: github.repository == 'microsoft/vscode-isort'
 permissions:
   contents: read
   pull-requests: read
