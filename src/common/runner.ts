@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+import * as fs from 'fs';
 import * as proc from 'child_process';
 import {
     CancellationToken,
@@ -11,29 +12,61 @@ import {
     Range,
     TextDocument,
     Uri,
+    workspace,
     WorkspaceEdit,
 } from 'vscode';
 import { RUNNER_SCRIPT_PATH } from './constants';
+import { getEnvFileVars } from './envFile';
 import { traceError, traceLog } from './logging';
 import { ISettings, getWorkspaceSettings } from './settings';
 import { getProjectRoot } from './utilities';
 import { getWorkspaceFolder } from './vscodeapi';
 
+const REALPATH_CACHE_MAX = 1000;
+const realpathCache = new Map<string, string>();
+
+async function cachedRealpath(filePath: string): Promise<string> {
+    const cached = realpathCache.get(filePath);
+    if (cached !== undefined) {
+        return cached;
+    }
+    try {
+        const resolved = await fs.promises.realpath(filePath);
+        if (realpathCache.size >= REALPATH_CACHE_MAX) {
+            // Evict oldest entry
+            const firstKey = realpathCache.keys().next().value;
+            if (firstKey !== undefined) {
+                realpathCache.delete(firstKey);
+            }
+        }
+        realpathCache.set(filePath, resolved);
+        return resolved;
+    } catch {
+        return filePath;
+    }
+}
+
 /**
  * Returns the filesystem path for a document, handling notebook cell URIs.
  * For notebook cells, strips the scheme to file: and drops the fragment (cell id).
+ * Resolves symlinks so that paths passed to isort match real filesystem paths.
  */
-function getDocumentPath(uri: Uri): string {
+async function getDocumentPath(uri: Uri): Promise<string> {
+    let fsPath: string;
     if (uri.scheme !== 'file') {
-        return Uri.from({ ...uri, scheme: 'file', fragment: '' }).fsPath;
+        fsPath = Uri.from({ ...uri, scheme: 'file', fragment: '' }).fsPath;
+    } else {
+        fsPath = uri.fsPath;
     }
-    return uri.fsPath;
+    return cachedRealpath(fsPath);
 }
 
 interface Result {
     stdout: string;
     stderr: string;
 }
+
+const SCRIPT_TIMEOUT_MS = 30000; // 30 second timeout for isort processes
 
 export function runScript(
     runner: string,
@@ -49,6 +82,8 @@ export function runScript(
     traceLog(runner, args.join(' '));
     traceLog(`CWD: ${options?.cwd}`);
     const promise = new Promise<Result>((resolve, reject) => {
+        let settled = false;
+        let cancelled = false;
         const scriptProc = proc.execFile(
             runner,
             args,
@@ -56,23 +91,38 @@ export function runScript(
                 encoding: 'utf-8',
                 env: options?.newEnv,
                 cwd: options?.cwd,
+                timeout: SCRIPT_TIMEOUT_MS,
             },
             (err, stdout, stderr) => {
-                if (options?.ignoreError) {
+                if (settled) {
+                    return;
+                }
+                settled = true;
+                cancellationDisposable?.dispose();
+                if (options?.ignoreError && !err?.killed) {
                     resolve({ stdout, stderr });
-                } else if (err) {
+                } else if (err?.killed) {
+                    reject(new Error('Script timed out or was killed'));
+                } else if (err && !cancelled) {
                     reject(err);
+                } else if (err && cancelled) {
+                    reject(new Error('Script execution was cancelled'));
                 } else {
-                    resolve({ stdout, stderr });
+                    resolve({ stdout: stdout ?? '', stderr: stderr ?? '' });
                 }
             },
         );
         if (input) {
             scriptProc.stdin?.end(input, 'utf-8');
         }
-        token?.onCancellationRequested(() => {
-            //resolve({ stdout: '', stderr: '' });
-            //scriptProc.kill();
+        const cancellationDisposable = token?.onCancellationRequested(() => {
+            cancelled = true;
+            if (!settled) {
+                settled = true;
+                // Note: on Windows, kill() uses TerminateProcess which may not terminate child processes
+                scriptProc.kill();
+                reject(new Error('Script execution was cancelled'));
+            }
         });
     });
 
@@ -129,8 +179,16 @@ function getSeverity(sev: string): DiagnosticSeverity {
     return DiagnosticSeverity.Error;
 }
 
-function getUpdatedEnvVariables(settings: ISettings): { [x: string]: string | undefined } {
+async function getUpdatedEnvVariables(settings: ISettings): Promise<{ [x: string]: string | undefined }> {
     const newEnv = { ...process.env };
+    const workspaceUri = Uri.parse(settings.workspace);
+    const workspaceFolder = workspace.getWorkspaceFolder(workspaceUri);
+    if (workspaceFolder) {
+        const envFileVars = await getEnvFileVars(workspaceFolder);
+        for (const [key, value] of Object.entries(envFileVars)) {
+            newEnv[key] = value;
+        }
+    }
     if (settings.path.length === 0) {
         newEnv.LS_IMPORT_STRATEGY = settings.importStrategy;
     }
@@ -143,8 +201,8 @@ export async function diagnosticRunner(serverId: string, textDocument: TextDocum
 
     if (settings && settings.check) {
         const parts = getExecutablePathWithArgs(settings);
-        const args = parts.slice(1).concat('--check', getDocumentPath(textDocument.uri));
-        const newEnv = getUpdatedEnvVariables(settings);
+        const args = parts.slice(1).concat('--check', await getDocumentPath(textDocument.uri));
+        const newEnv = await getUpdatedEnvVariables(settings);
         try {
             const { stderr } = await runScript(parts[0], args, { ignoreError: true, newEnv, cwd: settings.cwd });
             const lines = stderr.split(/\r?\n|\r|\n/g);
@@ -188,12 +246,12 @@ export async function textEditRunner(
 
         if (textDocument.isDirty || textDocument.isUntitled) {
             parts = getExecutablePathWithArgs(settings, ['-']);
-            args = parts.slice(1).concat('--filename', getDocumentPath(textDocument.uri));
+            args = parts.slice(1).concat('--filename', await getDocumentPath(textDocument.uri));
         } else {
             parts = getExecutablePathWithArgs(settings);
-            args = parts.slice(1).concat('--stdout', getDocumentPath(textDocument.uri));
+            args = parts.slice(1).concat('--stdout', await getDocumentPath(textDocument.uri));
         }
-        const newEnv = getUpdatedEnvVariables(settings);
+        const newEnv = await getUpdatedEnvVariables(settings);
 
         try {
             const { stdout } = await runScript(

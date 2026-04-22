@@ -5,10 +5,15 @@ import { assert } from 'chai';
 import * as path from 'path';
 import * as sinon from 'sinon';
 import * as TypeMoq from 'typemoq';
-import { Uri, WorkspaceConfiguration, WorkspaceFolder } from 'vscode';
+import { ConfigurationChangeEvent, Uri, WorkspaceConfiguration, WorkspaceFolder } from 'vscode';
 import { EXTENSION_ROOT_DIR } from '../../../../common/constants';
 import * as python from '../../../../common/python';
-import { ISettings, getWorkspaceSettings } from '../../../../common/settings';
+import {
+    ISettings,
+    checkIfConfigurationChanged,
+    getServerEnabled,
+    getWorkspaceSettings,
+} from '../../../../common/settings';
 import * as vscodeapi from '../../../../common/vscodeapi';
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -83,6 +88,14 @@ suite('Settings Tests', () => {
                 .setup((c) => c.get('sortImports.path', ''))
                 .returns(() => 'isort')
                 .verifiable(TypeMoq.Times.atLeastOnce());
+            pythonConfigMock
+                .setup((c) => c.get('analysis.extraPaths', []))
+                .returns(() => [])
+                .verifiable(TypeMoq.Times.atLeastOnce());
+            configMock
+                .setup((c) => c.get('extraPaths', []))
+                .returns(() => [])
+                .verifiable(TypeMoq.Times.atLeastOnce());
 
             const settings: ISettings = await getWorkspaceSettings('isort', workspace1);
             assert.deepStrictEqual(settings.args, []);
@@ -92,6 +105,7 @@ suite('Settings Tests', () => {
             assert.deepStrictEqual(settings.path, []);
             assert.deepStrictEqual(settings.severity, DEFAULT_SEVERITY);
             assert.deepStrictEqual(settings.showNotifications, 'off');
+            assert.deepStrictEqual(settings.extraPaths, []);
             assert.deepStrictEqual(settings.workspace, workspace1.uri.toString());
 
             configMock.verifyAll();
@@ -107,11 +121,79 @@ suite('Settings Tests', () => {
             configMock.setup((c) => c.get('importStrategy', 'useBundled')).returns(() => 'useBundled');
             configMock.setup((c) => c.get('showNotifications', 'off')).returns(() => 'off');
             configMock.setup((c) => c.get('cwd', workspace1.uri.fsPath)).returns(() => '${workspaceFolder}');
+            configMock.setup((c) => c.get('extraPaths', [])).returns(() => []);
             pythonConfigMock.setup((c) => c.get('sortImports.args', [])).returns(() => []);
             pythonConfigMock.setup((c) => c.get('sortImports.path', '')).returns(() => '');
+            pythonConfigMock.setup((c) => c.get('analysis.extraPaths', [])).returns(() => []);
 
             const settings: ISettings = await getWorkspaceSettings('isort', workspace1);
             assert.deepStrictEqual(settings.cwd, workspace1.uri.fsPath);
+        });
+    });
+
+    suite('getServerEnabled tests', () => {
+        let getConfigurationStub: sinon.SinonStub;
+
+        setup(() => {
+            getConfigurationStub = sinon.stub(vscodeapi, 'getConfiguration');
+        });
+
+        teardown(() => {
+            sinon.restore();
+        });
+
+        test('Returns true when serverEnabled is true', () => {
+            const configMock = TypeMoq.Mock.ofType<WorkspaceConfiguration>();
+            configMock.setup((c) => c.get('serverEnabled', true)).returns(() => true);
+            getConfigurationStub.returns(configMock.object);
+
+            assert.isTrue(getServerEnabled('isort'));
+        });
+
+        test('Returns false when serverEnabled is false', () => {
+            const configMock = TypeMoq.Mock.ofType<WorkspaceConfiguration>();
+            configMock.setup((c) => c.get('serverEnabled', true)).returns(() => false);
+            getConfigurationStub.returns(configMock.object);
+
+            assert.isFalse(getServerEnabled('isort'));
+        });
+
+        test('Defaults to true when serverEnabled is not set', () => {
+            const configMock = TypeMoq.Mock.ofType<WorkspaceConfiguration>();
+            configMock.setup((c) => c.get('serverEnabled', true)).returns(() => true);
+            getConfigurationStub.returns(configMock.object);
+
+            assert.isTrue(getServerEnabled('isort'));
+        });
+    });
+
+    suite('checkIfConfigurationChanged tests', () => {
+        test('Detects serverEnabled change', () => {
+            const event: ConfigurationChangeEvent = {
+                affectsConfiguration: (section: string) => section === 'isort.serverEnabled',
+            };
+            assert.isTrue(checkIfConfigurationChanged(event, 'isort'));
+        });
+
+        test('Detects interpreter change', () => {
+            const event: ConfigurationChangeEvent = {
+                affectsConfiguration: (section: string) => section === 'isort.interpreter',
+            };
+            assert.isTrue(checkIfConfigurationChanged(event, 'isort'));
+        });
+
+        test('Detects importStrategy change', () => {
+            const event: ConfigurationChangeEvent = {
+                affectsConfiguration: (section: string) => section === 'isort.importStrategy',
+            };
+            assert.isTrue(checkIfConfigurationChanged(event, 'isort'));
+        });
+
+        test('Returns false for unrelated configuration change', () => {
+            const event: ConfigurationChangeEvent = {
+                affectsConfiguration: () => false,
+            };
+            assert.isFalse(checkIfConfigurationChanged(event, 'isort'));
         });
     });
 });

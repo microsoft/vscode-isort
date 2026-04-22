@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import contextlib
+import fnmatch
 import io
 import logging
 import os
@@ -15,7 +16,7 @@ import subprocess
 import sys
 import sysconfig
 import threading
-from typing import Any, Callable, List, Sequence, Tuple, Union
+from typing import Any, Callable, List, Optional, Sequence, Tuple, Union
 
 # Save the working directory used when loading this module
 SERVER_CWD = os.getcwd()
@@ -64,16 +65,19 @@ _stdlib_paths = set(
 
 
 def is_same_path(file_path1: str, file_path2: str) -> bool:
-    """Returns true if two paths are the same."""
-    return pathlib.Path(file_path1) == pathlib.Path(file_path2)
+    """Returns true if two paths are the same, resolving symlinks."""
+    return pathlib.Path(file_path1).resolve() == pathlib.Path(file_path2).resolve()
 
 
-def normalize_path(file_path: str) -> str:
+def normalize_path(file_path: str, resolve_symlinks: bool = True) -> str:
     """Returns normalized path."""
-    return str(pathlib.Path(file_path).resolve())
+    path = pathlib.Path(file_path)
+    if resolve_symlinks:
+        path = path.resolve()
+    return str(path)
 
 
-def is_current_interpreter(executable) -> bool:
+def is_current_interpreter(executable: str) -> bool:
     """Returns true if the executable path is same as the current interpreter."""
     return is_same_path(executable, sys.executable)
 
@@ -84,13 +88,45 @@ def is_stdlib_file(file_path: str) -> bool:
     return any(normalized_path.startswith(path) for path in _stdlib_paths)
 
 
+def _get_relative_path(file_path: str, workspace_root: str) -> str:
+    """Returns the file path relative to the workspace root.
+
+    Falls back to the original path if the workspace root is empty or
+    the paths are on different drives (Windows).
+    """
+    if not workspace_root:
+        return pathlib.Path(file_path).as_posix()
+    try:
+        return pathlib.Path(file_path).relative_to(workspace_root).as_posix()
+    except ValueError:
+        return pathlib.Path(file_path).as_posix()
+
+
+def is_match(patterns: List[str], file_path: str, workspace_root: str = None) -> bool:
+    """Returns true if the file matches one of the fnmatch patterns."""
+    if not patterns:
+        return False
+    relative_path = (
+        _get_relative_path(file_path, workspace_root) if workspace_root else file_path
+    )
+    file_name = pathlib.Path(file_path).name
+    return any(
+        fnmatch.fnmatch(relative_path, pattern)
+        or (not pattern.startswith("/") and fnmatch.fnmatch(file_name, pattern))
+        for pattern in patterns
+    )
+
+
 # pylint: disable-next=too-few-public-methods
 class RunResult:
     """Object to hold result from running tool."""
 
-    def __init__(self, stdout, stderr):
-        self.stdout = stdout
-        self.stderr = stderr
+    def __init__(
+        self, stdout: str, stderr: str, exit_code: Optional[Union[int, str]] = None
+    ):
+        self.stdout: str = stdout
+        self.stderr: str = stderr
+        self.exit_code: Optional[Union[int, str]] = exit_code
 
 
 class CustomIO(io.TextIOWrapper):
@@ -157,8 +193,9 @@ def _run_module(
     """Runs as a module."""
     str_output = CustomIO("<stdout>", encoding="utf-8")
     str_error = CustomIO("<stderr>", encoding="utf-8")
+    exit_code = None
 
-    with contextlib.suppress(SystemExit):
+    try:
         with substitute_attr(sys, "argv", argv):
             with redirect_io("stdout", str_output):
                 with redirect_io("stderr", str_error):
@@ -170,8 +207,10 @@ def _run_module(
                             runpy.run_module(module, run_name="__main__")
                     else:
                         runpy.run_module(module, run_name="__main__")
+    except SystemExit as ex:
+        exit_code = ex.code
 
-    return RunResult(str_output.get_value(), str_error.get_value())
+    return RunResult(str_output.get_value(), str_error.get_value(), exit_code)
 
 
 def run_module(

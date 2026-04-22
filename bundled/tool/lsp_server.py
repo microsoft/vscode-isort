@@ -9,14 +9,17 @@ import json
 import os
 import pathlib
 import sys
+import sysconfig
 import traceback
 from typing import Any, Dict, List, Optional, Sequence
 from urllib.parse import urlparse, urlunparse
 
-
 # **********************************************************
 # Update sys.path before importing any bundled libraries.
 # **********************************************************
+_extra_sys_paths: list = []
+
+
 def update_sys_path(path_to_add: str, strategy: str) -> None:
     """Add given path to `sys.path`."""
     if path_to_add not in sys.path and os.path.isdir(path_to_add):
@@ -35,16 +38,38 @@ update_sys_path(
 # https://github.com/microsoft/vscode-isort/issues/316#issuecomment-2103588949
 update_sys_path(os.fspath(pathlib.Path(__file__).parent.parent / "tool"), "useBundled")
 
+
+def update_environ_path() -> None:
+    """Update PATH environment variable with the 'scripts' directory.
+    Windows: .venv/Scripts
+    Linux/MacOS: .venv/bin
+    """
+    scripts = sysconfig.get_path("scripts")
+    paths_variants = ["Path", "PATH"]
+
+    for var_name in paths_variants:
+        if var_name in os.environ:
+            paths = os.environ[var_name].split(os.pathsep)
+            if scripts not in paths:
+                paths.insert(0, scripts)
+                os.environ[var_name] = os.pathsep.join(paths)
+                break
+
+
+update_environ_path()
+
 # **********************************************************
 # Imports needed for the language server goes below this.
 # **********************************************************
 # pylint: disable=wrong-import-position,import-error
 import isort
 import lsp_jsonrpc as jsonrpc
+import lsp_notebook as notebook
 import lsp_utils as utils
 import lsprotocol.types as lsp
-from pygls import uris, workspace
+from pygls import uris
 from pygls.lsp.server import LanguageServer
+from pygls.workspace import TextDocument
 
 WORKSPACE_SETTINGS = {}
 GLOBAL_SETTINGS = {}
@@ -52,33 +77,15 @@ RUNNER = pathlib.Path(__file__).parent / "lsp_runner.py"
 
 MAX_WORKERS = 5
 
-NOTEBOOK_SYNC_OPTIONS = lsp.NotebookDocumentSyncOptions(
-    notebook_selector=[
-        lsp.NotebookDocumentFilterWithNotebook(
-            notebook="jupyter-notebook",
-            cells=[
-                lsp.NotebookCellLanguage(language="python"),
-            ],
-        ),
-        lsp.NotebookDocumentFilterWithNotebook(
-            notebook="interactive",
-            cells=[
-                lsp.NotebookCellLanguage(language="python"),
-            ],
-        ),
-    ],
-    save=True,
-)
-
 LSP_SERVER = LanguageServer(
     name="isort-server",
     version="v0.1.0",
     max_workers=MAX_WORKERS,
-    notebook_document_sync=NOTEBOOK_SYNC_OPTIONS,
+    notebook_document_sync=notebook.NOTEBOOK_SYNC_OPTIONS,
 )
 
 
-def _get_document_path(document: workspace.TextDocument) -> str:
+def _get_document_path(document: TextDocument) -> str:
     """Returns the filesystem path for a document.
 
     Examples:
@@ -218,7 +225,7 @@ def notebook_did_close(params: lsp.DidCloseNotebookDocumentParams) -> None:
         )
 
 
-def _linting_helper(document: workspace.TextDocument) -> list[lsp.Diagnostic]:
+def _linting_helper(document: TextDocument) -> list[lsp.Diagnostic]:
     # deep copy here to prevent accidentally updating global settings.
     settings = copy.deepcopy(_get_settings_by_document(document))
 
@@ -261,7 +268,7 @@ def _is_sorting_error(line: str) -> bool:
 
 
 def _parse_output(
-    document: workspace.TextDocument,
+    document: TextDocument,
     output: str,
     severity: Dict[str, str],
 ) -> Sequence[lsp.Diagnostic]:
@@ -424,7 +431,7 @@ def is_interactive(file_path: str) -> bool:
     return file_path.endswith(".interactive")
 
 
-def _formatting_helper(document: workspace.TextDocument) -> list[lsp.TextEdit] | None:
+def _formatting_helper(document: TextDocument) -> list[lsp.TextEdit] | None:
     result = _run_tool_on_document(document, use_stdin=True)
     if result and result.stdout:
         new_source = _match_line_endings(document, result.stdout)
@@ -450,7 +457,7 @@ def _formatting_helper(document: workspace.TextDocument) -> list[lsp.TextEdit] |
 
 
 def _create_workspace_edits(
-    document: workspace.TextDocument, results: Optional[List[lsp.TextEdit]]
+    document: TextDocument, results: Optional[List[lsp.TextEdit]]
 ):
     return lsp.WorkspaceEdit(
         document_changes=[
@@ -475,7 +482,7 @@ def _get_line_endings(lines: list[str]) -> str:
         return None
 
 
-def _match_line_endings(document: workspace.TextDocument, text: str) -> str:
+def _match_line_endings(document: TextDocument, text: str) -> str:
     """Ensures that the edited text line endings matches the document line endings."""
     expected = _get_line_endings(document.source.splitlines(keepends=True))
     actual = _get_line_endings(text.splitlines(keepends=True))
@@ -497,9 +504,6 @@ def initialize(params: lsp.InitializeParams) -> None:
     """LSP handler for initialize request."""
     log_to_output(f"CWD Server: {os.getcwd()}")
 
-    paths = "\r\n   ".join(sys.path)
-    log_to_output(f"sys.path used to run Server:\r\n   {paths}")
-
     GLOBAL_SETTINGS.update(**params.initialization_options.get("globalSettings", {}))
 
     settings = params.initialization_options["settings"]
@@ -510,6 +514,23 @@ def initialize(params: lsp.InitializeParams) -> None:
     log_to_output(
         f"Global settings:\r\n{json.dumps(GLOBAL_SETTINGS, indent=4, ensure_ascii=False)}\r\n"
     )
+
+    # Add extra paths to sys.path (deduplicate on re-initialize)
+    for p in _extra_sys_paths:
+        if p in sys.path:
+            sys.path.remove(p)
+    _extra_sys_paths.clear()
+
+    import_strategy = os.getenv("LS_IMPORT_STRATEGY", "useBundled")
+    setting = _get_settings_by_path(pathlib.Path(os.getcwd()))
+    for extra in setting.get("extraPaths", []):
+        if extra not in sys.path:
+            update_sys_path(extra, import_strategy)
+            if extra in sys.path:
+                _extra_sys_paths.append(extra)
+
+    paths = "\r\n   ".join(sys.path)
+    log_to_output(f"sys.path used to run Server:\r\n   {paths}")
 
     # Log version and config
     _log_info()
@@ -596,6 +617,7 @@ def _get_global_defaults():
         "args": GLOBAL_SETTINGS.get("args", []),
         "importStrategy": GLOBAL_SETTINGS.get("importStrategy", "useBundled"),
         "showNotifications": GLOBAL_SETTINGS.get("showNotifications", "off"),
+        "extraPaths": GLOBAL_SETTINGS.get("extraPaths", []),
     }
 
 
@@ -631,7 +653,7 @@ def _get_settings_by_path(file_path: pathlib.Path):
     return setting_values[0]
 
 
-def _get_document_key(document: workspace.TextDocument):
+def _get_document_key(document: TextDocument):
     if WORKSPACE_SETTINGS:
         document_workspace = pathlib.Path(_get_document_path(document))
         workspaces = {s["workspaceFS"] for s in WORKSPACE_SETTINGS.values()}
@@ -646,7 +668,7 @@ def _get_document_key(document: workspace.TextDocument):
     return None
 
 
-def _get_settings_by_document(document: workspace.TextDocument | None):
+def _get_settings_by_document(document: TextDocument | None):
     if document is None or document.path is None:
         return list(WORKSPACE_SETTINGS.values())[0]
 
@@ -667,9 +689,21 @@ def _get_settings_by_document(document: workspace.TextDocument | None):
 # *****************************************************
 # Internal execution APIs.
 # *****************************************************
-def get_cwd(
-    settings: Dict[str, Any], document: Optional[workspace.TextDocument]
-) -> str:
+def _get_updated_env(settings: Dict[str, Any]) -> Dict[str, str]:
+    """Returns environment variables to pass to subprocesses, including extraPaths."""
+    extra_paths = settings.get("extraPaths", [])
+    paths = os.environ.get("PYTHONPATH", "").split(os.pathsep) + extra_paths
+    python_paths = os.pathsep.join([p for p in paths if len(p) > 0])
+
+    env: Dict[str, str] = {
+        "LS_IMPORT_STRATEGY": settings["importStrategy"],
+    }
+    if python_paths:
+        env["PYTHONPATH"] = python_paths
+    return env
+
+
+def get_cwd(settings: Dict[str, Any], document: Optional[TextDocument]) -> str:
     """Returns the working directory for running the tool.
 
     Resolves the following VS Code file-related variable substitutions when
@@ -734,7 +768,7 @@ def get_cwd(
 
 # pylint: disable=too-many-branches
 def _run_tool_on_document(
-    document: workspace.TextDocument,
+    document: TextDocument,
     use_stdin: bool = False,
     extra_args: Sequence[str] = [],
 ) -> utils.RunResult | None:
@@ -814,9 +848,7 @@ def _run_tool_on_document(
             use_stdin=use_stdin,
             cwd=cwd,
             source=source,
-            env={
-                "LS_IMPORT_STRATEGY": settings["importStrategy"],
-            },
+            env=_get_updated_env(settings),
         )
         result = _to_run_result_with_logging(result)
     else:
@@ -891,9 +923,7 @@ def _run_tool(extra_args: Sequence[str], settings: Dict[str, Any]) -> utils.RunR
             argv=argv,
             use_stdin=True,
             cwd=cwd,
-            env={
-                "LS_IMPORT_STRATEGY": settings["importStrategy"],
-            },
+            env=_get_updated_env(settings),
         )
         result = _to_run_result_with_logging(result)
     else:
