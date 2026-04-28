@@ -5,6 +5,7 @@ import { assert } from 'chai';
 import * as path from 'path';
 import * as sinon from 'sinon';
 import * as TypeMoq from 'typemoq';
+import * as vscode from 'vscode';
 import { ConfigurationChangeEvent, Uri, WorkspaceConfiguration, WorkspaceFolder } from 'vscode';
 import { EXTENSION_ROOT_DIR } from '../../../../common/constants';
 import * as python from '../../../../common/python';
@@ -32,13 +33,15 @@ suite('Settings Tests', () => {
         };
 
         setup(() => {
-            getConfigurationStub = sinon.stub(vscodeapi, 'getConfiguration');
+            // Stub at the vscode.workspace level so the shared package's
+            // internal getConfiguration wrapper is also intercepted.
+            getConfigurationStub = sinon.stub(vscode.workspace, 'getConfiguration');
             getInterpreterDetailsStub = sinon.stub(python, 'getInterpreterDetails');
             configMock = TypeMoq.Mock.ofType<WorkspaceConfiguration>();
             pythonConfigMock = TypeMoq.Mock.ofType<WorkspaceConfiguration>();
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            getConfigurationStub.callsFake((namespace: string, _uri: Uri) => {
-                if (namespace.startsWith('isort')) {
+            getConfigurationStub.callsFake((namespace: string, _scope?: vscode.ConfigurationScope) => {
+                if (namespace === 'isort') {
                     return configMock.object;
                 }
                 return pythonConfigMock.object;
@@ -51,6 +54,8 @@ suite('Settings Tests', () => {
 
         test('Default Settings test', async () => {
             getInterpreterDetailsStub.resolves({ path: undefined });
+            // The shared package also calls config.get('interpreter') without a default
+            configMock.setup((c) => c.get('interpreter')).returns(() => undefined);
             configMock
                 .setup((c) => c.get('args', []))
                 .returns(() => [])
@@ -81,14 +86,6 @@ suite('Settings Tests', () => {
                 .verifiable(TypeMoq.Times.atLeastOnce());
 
             pythonConfigMock
-                .setup((c) => c.get('sortImports.args', []))
-                .returns(() => [])
-                .verifiable(TypeMoq.Times.atLeastOnce());
-            pythonConfigMock
-                .setup((c) => c.get('sortImports.path', ''))
-                .returns(() => 'isort')
-                .verifiable(TypeMoq.Times.atLeastOnce());
-            pythonConfigMock
                 .setup((c) => c.get('analysis.extraPaths', []))
                 .returns(() => [])
                 .verifiable(TypeMoq.Times.atLeastOnce());
@@ -114,6 +111,7 @@ suite('Settings Tests', () => {
 
         test('cwd with ${workspaceFolder} is resolved', async () => {
             getInterpreterDetailsStub.resolves({ path: undefined });
+            configMock.setup((c) => c.get('interpreter')).returns(() => undefined);
             configMock.setup((c) => c.get('args', [])).returns(() => []);
             configMock.setup((c) => c.get('path', [])).returns(() => []);
             configMock.setup((c) => c.get('check', false)).returns(() => false);
@@ -122,8 +120,6 @@ suite('Settings Tests', () => {
             configMock.setup((c) => c.get('showNotifications', 'off')).returns(() => 'off');
             configMock.setup((c) => c.get('cwd', workspace1.uri.fsPath)).returns(() => '${workspaceFolder}');
             configMock.setup((c) => c.get('extraPaths', [])).returns(() => []);
-            pythonConfigMock.setup((c) => c.get('sortImports.args', [])).returns(() => []);
-            pythonConfigMock.setup((c) => c.get('sortImports.path', '')).returns(() => '');
             pythonConfigMock.setup((c) => c.get('analysis.extraPaths', [])).returns(() => []);
 
             const settings: ISettings = await getWorkspaceSettings('isort', workspace1);
