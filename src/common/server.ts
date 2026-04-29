@@ -7,7 +7,11 @@
 
 import { Disposable, LogOutputChannel } from 'vscode';
 import { LanguageClient } from 'vscode-languageclient/node';
-import { getServerCwd as _getServerCwd, restartServer as _restartServer } from '@vscode/common-python-lsp';
+import {
+    IBaseSettings,
+    getServerCwd as _getServerCwd,
+    restartServer as _restartServer,
+} from '@vscode/common-python-lsp';
 import { ISORT_TOOL_CONFIG } from './constants';
 import { traceError } from './logging';
 import { getPythonProvider } from './python';
@@ -16,7 +20,7 @@ import { ISettings } from './settings';
 export type { IInitOptions } from '@vscode/common-python-lsp';
 
 export function getServerCwd(settings: ISettings): string {
-    return _getServerCwd(settings);
+    return _getServerCwd(settings as unknown as IBaseSettings);
 }
 
 let _disposables: Disposable[] = [];
@@ -39,7 +43,7 @@ export async function restartServer(
 
     const result = await _restartServer(
         {
-            settings: workspaceSetting,
+            settings: workspaceSetting as unknown as IBaseSettings,
             serverId,
             serverName,
             outputChannel,
