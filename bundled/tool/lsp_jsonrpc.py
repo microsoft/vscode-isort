@@ -50,8 +50,8 @@ def run_over_json_rpc(
     argv: Sequence[str],
     use_stdin: bool,
     cwd: str,
-    source: str = None,
-    env: dict = None,
+    source: str | None = None,
+    env: dict | None = None,
 ) -> RpcRunResult:
     """Uses JSON-RPC to execute a command."""
     return _run_over_json_rpc(
