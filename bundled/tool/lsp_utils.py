@@ -67,5 +67,9 @@ def is_system_site_packages_file(file_path: str) -> bool:
 
 
 def is_stdlib_file(file_path: str) -> bool:
-    """Return True if the file belongs to the standard library."""
-    return classify_python_file(file_path) == PythonFileKind.STDLIB
+    """Return True if the file belongs to a non-user Python path.
+
+    The original implementation included stdlib, system site-packages,
+    user site-packages, and extensions dir. Matching that broad semantics.
+    """
+    return classify_python_file(file_path) is not None
