@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 import * as path from 'path';
+import { ToolConfig } from '@vscode/common-python-lsp';
 
 const folderName = path.basename(__dirname);
 export const EXTENSION_ROOT_DIR =
@@ -15,3 +16,36 @@ export const PYTHON_MINOR = 10;
 export const PYTHON_VERSION = `${PYTHON_MAJOR}.${PYTHON_MINOR}`;
 export const LS_SERVER_RESTART_DELAY = 1000;
 export const ISORT_CONFIG_FILES = ['.isort.cfg', 'pyproject.toml', 'setup.cfg', 'tox.ini', '.editorconfig'];
+
+/* eslint-disable @typescript-eslint/naming-convention */
+const DEFAULT_SEVERITY: Record<string, string> = {
+    W: 'Warning',
+    E: 'Hint',
+};
+
+export const ISORT_TOOL_CONFIG: ToolConfig = {
+    toolId: 'isort',
+    toolDisplayName: 'isort',
+    toolModule: 'isort',
+    minimumPythonVersion: { major: PYTHON_MAJOR, minor: PYTHON_MINOR },
+    configFiles: ISORT_CONFIG_FILES,
+    serverScript: SERVER_SCRIPT_PATH,
+    debugServerScript: DEBUG_SERVER_SCRIPT_PATH,
+    settingsDefaults: {
+        check: false,
+        severity: DEFAULT_SEVERITY,
+        extraPaths: [],
+    },
+    trackedSettings: [
+        'check',
+        'args',
+        'cwd',
+        'severity',
+        'path',
+        'interpreter',
+        'importStrategy',
+        'showNotifications',
+        'serverEnabled',
+        'extraPaths',
+    ],
+};
