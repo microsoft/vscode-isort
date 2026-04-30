@@ -63,26 +63,47 @@ update_environ_path()
 # **********************************************************
 # pylint: disable=wrong-import-position,import-error
 import isort
-import lsp_jsonrpc as jsonrpc
 import lsp_notebook as notebook
 import lsp_utils as utils
 import lsprotocol.types as lsp
 from pygls import uris
 from pygls.lsp.server import LanguageServer
 from pygls.workspace import TextDocument
+from vscode_common_python_lsp.server import ToolServer, ToolServerConfig
 
-WORKSPACE_SETTINGS = {}
-GLOBAL_SETTINGS = {}
 RUNNER = pathlib.Path(__file__).parent / "lsp_runner.py"
 
 MAX_WORKERS = 5
 
+# Create the LSP server with notebook sync, then wrap in ToolServer for
+# shared logging, CWD resolution, tool execution, and settings management.
 LSP_SERVER = LanguageServer(
     name="isort-server",
     version="v0.1.0",
     max_workers=MAX_WORKERS,
     notebook_document_sync=notebook.NOTEBOOK_SYNC_OPTIONS,
 )
+
+ISORT_CONFIG = ToolServerConfig(
+    tool_module="isort",
+    tool_display="Linter",
+    tool_args=[],
+    min_version="7.0.0",
+    runner_script=str(RUNNER),
+    default_notification_level="off",
+    default_settings={
+        "check": False,
+        "severity": {"E": "Hint", "W": "Warning"},
+        "extraPaths": [],
+    },
+)
+
+tool_server = ToolServer(ISORT_CONFIG, server=LSP_SERVER)
+
+# Backward-compatible module-level aliases — tests and other code reference
+# these directly.  They are the *same* dict objects owned by tool_server.
+WORKSPACE_SETTINGS = tool_server.workspace_settings
+GLOBAL_SETTINGS = tool_server.global_settings
 
 
 def _get_document_path(document: TextDocument) -> str:
@@ -104,14 +125,8 @@ def _get_document_path(document: TextDocument) -> str:
 # **********************************************************
 # Tool specific code goes below this.
 # **********************************************************
-TOOL_MODULE = "isort"
-TOOL_DISPLAY = "isort"
-
-# Default arguments always passed to isort.
-TOOL_ARGS = []
-
-# Minimum version of isort supported.
-MIN_VERSION = "7.0.0"
+TOOL_MODULE = ISORT_CONFIG.tool_module
+MIN_VERSION = ISORT_CONFIG.min_version
 
 # **********************************************************
 # Linting features start here
@@ -504,25 +519,21 @@ def initialize(params: lsp.InitializeParams) -> None:
     """LSP handler for initialize request."""
     log_to_output(f"CWD Server: {os.getcwd()}")
 
-    GLOBAL_SETTINGS.update(**params.initialization_options.get("globalSettings", {}))
+    tool_server.global_settings.update(
+        **params.initialization_options.get("globalSettings", {})
+    )
 
     settings = params.initialization_options["settings"]
-    _update_workspace_settings(settings)
-    log_to_output(
-        f"Settings used to run Server:\r\n{json.dumps(settings, indent=4, ensure_ascii=False)}\r\n"
-    )
-    log_to_output(
-        f"Global settings:\r\n{json.dumps(GLOBAL_SETTINGS, indent=4, ensure_ascii=False)}\r\n"
-    )
+    tool_server.update_workspace_settings(settings)
 
-    # Add extra paths to sys.path (deduplicate on re-initialize)
+    # Add extra paths to sys.path for in-process module execution
     for p in _extra_sys_paths:
         if p in sys.path:
             sys.path.remove(p)
     _extra_sys_paths.clear()
 
     import_strategy = os.getenv("LS_IMPORT_STRATEGY", "useBundled")
-    setting = _get_settings_by_path(pathlib.Path(os.getcwd()))
+    setting = tool_server.get_settings_by_path(pathlib.Path(os.getcwd()))
     for extra in setting.get("extraPaths", []):
         if extra not in sys.path:
             update_sys_path(extra, import_strategy)
@@ -532,6 +543,13 @@ def initialize(params: lsp.InitializeParams) -> None:
     paths = "\r\n   ".join(sys.path)
     log_to_output(f"sys.path used to run Server:\r\n   {paths}")
 
+    log_to_output(
+        f"Settings used to run Server:\r\n{json.dumps(settings, indent=4, ensure_ascii=False)}\r\n"
+    )
+    log_to_output(
+        f"Global settings:\r\n{json.dumps(tool_server.global_settings, indent=4, ensure_ascii=False)}\r\n"
+    )
+
     # Log version and config
     _log_info()
 
@@ -539,17 +557,17 @@ def initialize(params: lsp.InitializeParams) -> None:
 @LSP_SERVER.feature(lsp.EXIT)
 def on_exit(_params: Optional[Any] = None):
     """Handle clean up on exit."""
-    jsonrpc.shutdown_json_rpc()
+    tool_server.handle_exit()
 
 
 @LSP_SERVER.feature(lsp.SHUTDOWN)
 def on_shutdown(_params: Optional[Any] = None):
-    """Handle clean up on exit."""
-    jsonrpc.shutdown_json_rpc()
+    """Handle clean up on shutdown."""
+    tool_server.handle_shutdown()
 
 
 def _log_info() -> None:
-    for settings in WORKSPACE_SETTINGS.values():
+    for settings in tool_server.workspace_settings.values():
         _log_version_info(settings)
         _log_verbose_config(settings)
 
@@ -606,84 +624,15 @@ def _log_verbose_config(settings: Dict[str, str]) -> None:
 
 
 # *****************************************************
-# Internal functional and settings management APIs.
+# Internal settings management APIs.
+# Thin wrappers delegating to ToolServer for backward compatibility.
 # *****************************************************
 def _get_global_defaults():
-    return {
-        "check": GLOBAL_SETTINGS.get("check", False),
-        "path": GLOBAL_SETTINGS.get("path", []),
-        "severity": GLOBAL_SETTINGS.get("severity", {"E": "Hint", "W": "Warning"}),
-        "interpreter": GLOBAL_SETTINGS.get("interpreter", [sys.executable]),
-        "args": GLOBAL_SETTINGS.get("args", []),
-        "importStrategy": GLOBAL_SETTINGS.get("importStrategy", "useBundled"),
-        "showNotifications": GLOBAL_SETTINGS.get("showNotifications", "off"),
-        "extraPaths": GLOBAL_SETTINGS.get("extraPaths", []),
-    }
-
-
-def _update_workspace_settings(settings):
-    if not settings:
-        key = utils.normalize_path(os.getcwd())
-        WORKSPACE_SETTINGS[key] = {
-            "cwd": key,
-            "workspaceFS": key,
-            "workspace": uris.from_fs_path(key),
-            **_get_global_defaults(),
-        }
-        return
-
-    for setting in settings:
-        key = utils.normalize_path(uris.to_fs_path(setting["workspace"]))
-        WORKSPACE_SETTINGS[key] = {
-            **setting,
-            "workspaceFS": key,
-        }
-
-
-def _get_settings_by_path(file_path: pathlib.Path):
-    workspaces = {s["workspaceFS"] for s in WORKSPACE_SETTINGS.values()}
-
-    while file_path != file_path.parent:
-        str_file_path = utils.normalize_path(file_path)
-        if str_file_path in workspaces:
-            return WORKSPACE_SETTINGS[str_file_path]
-        file_path = file_path.parent
-
-    setting_values = list(WORKSPACE_SETTINGS.values())
-    return setting_values[0]
-
-
-def _get_document_key(document: TextDocument):
-    if WORKSPACE_SETTINGS:
-        document_workspace = pathlib.Path(_get_document_path(document))
-        workspaces = {s["workspaceFS"] for s in WORKSPACE_SETTINGS.values()}
-
-        # Find workspace settings for the given file.
-        while document_workspace != document_workspace.parent:
-            norm_path = utils.normalize_path(document_workspace)
-            if norm_path in workspaces:
-                return norm_path
-            document_workspace = document_workspace.parent
-
-    return None
+    return tool_server.get_global_defaults()
 
 
 def _get_settings_by_document(document: TextDocument | None):
-    if document is None or document.path is None:
-        return list(WORKSPACE_SETTINGS.values())[0]
-
-    key = _get_document_key(document)
-    if key is None:
-        # This is either a non-workspace file or there is no workspace.
-        key = utils.normalize_path(pathlib.Path(_get_document_path(document)).parent)
-        return {
-            "cwd": key,
-            "workspaceFS": key,
-            "workspace": uris.from_fs_path(key),
-            **_get_global_defaults(),
-        }
-
-    return WORKSPACE_SETTINGS[str(key)]
+    return tool_server.get_settings_by_document(document)
 
 
 # *****************************************************
@@ -704,66 +653,8 @@ def _get_updated_env(settings: Dict[str, Any]) -> Dict[str, str]:
 
 
 def get_cwd(settings: Dict[str, Any], document: Optional[TextDocument]) -> str:
-    """Returns the working directory for running the tool.
-
-    Resolves the following VS Code file-related variable substitutions when
-    a document is available:
-
-    - ``${file}`` – absolute path of the current document.
-    - ``${fileBasename}`` – file name with extension (e.g. ``foo.py``).
-    - ``${fileBasenameNoExtension}`` – file name without extension (e.g. ``foo``).
-    - ``${fileExtname}`` – file extension including the dot (e.g. ``.py``).
-    - ``${fileDirname}`` – directory containing the current document.
-    - ``${fileDirnameBasename}`` – name of the directory containing the document.
-    - ``${relativeFile}`` – document path relative to the workspace root.
-    - ``${relativeFileDirname}`` – document directory relative to the workspace root.
-    - ``${fileWorkspaceFolder}`` – workspace root folder for the document.
-
-    Variables that do not depend on the document (``${workspaceFolder}``,
-    ``${userHome}``, ``${cwd}``) are pre-resolved by the TypeScript client.
-
-    If no document is available and the value contains any unresolvable
-    file-variable, the workspace root is returned as a fallback.
-
-    See https://code.visualstudio.com/docs/reference/variables-reference
-    """
-    cwd = settings.get("cwd", settings["workspaceFS"])
-
-    workspace_fs = settings["workspaceFS"]
-
-    if document is not None:
-        file_path = _get_document_path(document)
-        if file_path:
-            file_dir = os.path.dirname(file_path)
-            file_basename = os.path.basename(file_path)
-            file_stem, file_ext = os.path.splitext(file_basename)
-
-            substitutions = {
-                "${file}": file_path,
-                "${fileBasename}": file_basename,
-                "${fileBasenameNoExtension}": file_stem,
-                "${fileExtname}": file_ext,
-                "${fileDirname}": file_dir,
-                "${fileDirnameBasename}": os.path.basename(file_dir),
-                "${relativeFile}": os.path.relpath(file_path, workspace_fs),
-                "${relativeFileDirname}": os.path.relpath(file_dir, workspace_fs),
-                "${fileWorkspaceFolder}": workspace_fs,
-            }
-
-            for token, value in substitutions.items():
-                cwd = cwd.replace(token, value)
-        else:
-            # Without a resolvable document path we cannot resolve file-related variables.
-            # Fall back to workspace root if any remain.
-            if "${file" in cwd or "${relativeFile" in cwd:
-                cwd = workspace_fs
-    else:
-        # Without a document we cannot resolve file-related variables.
-        # Fall back to workspace root if any remain.
-        if "${file" in cwd or "${relativeFile" in cwd:
-            cwd = workspace_fs
-
-    return cwd
+    """Returns the working directory for running the tool."""
+    return tool_server.get_cwd(settings, document)
 
 
 # pylint: disable=too-many-branches
@@ -792,76 +683,47 @@ def _run_tool_on_document(
     code_workspace = settings["workspaceFS"]
     cwd = get_cwd(settings, document)
 
-    use_path = False
-    use_rpc = False
+    # Determine execution mode and build argv.
     if settings["path"]:
         # 'path' setting takes priority over everything.
-        use_path = True
+        mode = "path"
         argv = settings["path"]
     elif settings["interpreter"] and not utils.is_current_interpreter(
         settings["interpreter"][0]
     ):
         # If there is a different interpreter set use JSON-RPC to the subprocess
         # running under that interpreter.
+        mode = "rpc"
         argv = [TOOL_MODULE]
-        use_rpc = True
     else:
         # if the interpreter is same as the interpreter running this
         # process then run as module.
+        mode = "module"
         argv = [TOOL_MODULE]
 
     if use_stdin:
         # `isort` requires the first argument to be "-" when using stdin.
-        argv += ["-"] + TOOL_ARGS + settings["args"] + extra_args
+        argv += ["-"] + ISORT_CONFIG.tool_args + settings["args"] + extra_args
         argv += ["--filename", doc_path]
     else:
-        argv += TOOL_ARGS + settings["args"] + extra_args
+        argv += ISORT_CONFIG.tool_args + settings["args"] + extra_args
         argv += [doc_path]
 
     source = document.source.replace("\r\n", "\n")
 
     argv = [os.path.dirname(doc_path) if a == "${fileDirname}" else a for a in argv]
 
-    if use_path:
-        # This mode is used when running executables.
-        log_to_output(" ".join(argv))
-        log_to_output(f"CWD Server: {cwd}")
-        result = utils.run_path(
-            argv=argv,
-            use_stdin=use_stdin,
-            cwd=cwd,
-            source=source,
-        )
-        if result.stderr:
-            log_to_output(result.stderr)
-    elif use_rpc:
-        # This mode is used if the interpreter running this server is different from
-        # the interpreter used for running this server.
-        log_to_output(" ".join(settings["interpreter"] + ["-m"] + argv))
-        log_to_output(f"CWD Linter: {cwd}")
-
-        result = jsonrpc.run_over_json_rpc(
-            workspace=code_workspace,
-            interpreter=settings["interpreter"],
-            module=TOOL_MODULE,
-            argv=argv,
-            use_stdin=use_stdin,
-            cwd=cwd,
-            source=source,
-            env=_get_updated_env(settings),
-        )
-        result = _to_run_result_with_logging(result)
-    else:
-        # In this mode the tool is run as a module in the same process as the language server.
-        log_to_output(" ".join([sys.executable, "-m"] + argv))
-        log_to_output(f"CWD Linter: {cwd}")
-
+    if mode == "module":
+        # isort-specific: handle FileSkipComment/FileSkipped exceptions that
+        # are raised when isort encounters skip directives.
         try:
-            result = utils.run_module(
-                module=TOOL_MODULE,
+            return tool_server.execute_tool(
                 argv=argv,
+                mode=mode,
+                settings=settings,
                 use_stdin=use_stdin,
                 cwd=cwd,
+                workspace=code_workspace,
                 source=source,
             )
         except isort.exceptions.FileSkipComment:
@@ -870,134 +732,81 @@ def _run_tool_on_document(
         except isort.exceptions.FileSkipped:
             log_warning(traceback.format_exc(chain=True))
             return None
-        except Exception:
-            log_error(traceback.format_exc(chain=True))
-            raise
-        if result.stderr:
-            log_to_output(result.stderr)
 
-    return result
+    return tool_server.execute_tool(
+        argv=argv,
+        mode=mode,
+        settings=settings,
+        use_stdin=use_stdin,
+        cwd=cwd,
+        workspace=code_workspace,
+        source=source,
+        env=_get_updated_env(settings),
+    )
 
 
 def _run_tool(extra_args: Sequence[str], settings: Dict[str, Any]) -> utils.RunResult:
-    """Runs tool."""
+    """Runs tool (e.g. ``--version``).  Delegates to :meth:`ToolServer.execute_tool`."""
     code_workspace = settings["workspaceFS"]
     cwd = get_cwd(settings, None)
 
-    use_path = False
-    use_rpc = False
     if len(settings["path"]) > 0:
         # 'path' setting takes priority over everything.
-        use_path = True
+        mode = "path"
         argv = settings["path"]
     elif len(settings["interpreter"]) > 0 and not utils.is_current_interpreter(
         settings["interpreter"][0]
     ):
         # If there is a different interpreter set use JSON-RPC to the subprocess
         # running under that interpreter.
+        mode = "rpc"
         argv = [TOOL_MODULE]
-        use_rpc = True
     else:
         # if the interpreter is same as the interpreter running this
         # process then run as module.
+        mode = "module"
         argv = [TOOL_MODULE]
 
     argv += extra_args
 
-    if use_path:
-        # This mode is used when running executables.
-        log_to_output(" ".join(argv))
-        log_to_output(f"CWD Server: {cwd}")
-        result = utils.run_path(argv=argv, use_stdin=True, cwd=cwd)
-        if result.stderr:
-            log_to_output(result.stderr)
-    elif use_rpc:
-        # This mode is used if the interpreter running this server is different from
-        # the interpreter used for running this server.
-        log_to_output(" ".join(settings["interpreter"] + ["-m"] + argv))
-        log_to_output(f"CWD Linter: {cwd}")
-        result = jsonrpc.run_over_json_rpc(
-            workspace=code_workspace,
-            interpreter=settings["interpreter"],
-            module=TOOL_MODULE,
-            argv=argv,
-            use_stdin=True,
-            cwd=cwd,
-            env=_get_updated_env(settings),
-        )
-        result = _to_run_result_with_logging(result)
-    else:
-        # In this mode the tool is run as a module in the same process as the language server.
-        log_to_output(" ".join([sys.executable, "-m"] + argv))
-        log_to_output(f"CWD Linter: {cwd}")
-        # This is needed to preserve sys.path, in cases where the tool modifies
-        # sys.path and that might not work for this scenario next time around.
-        with utils.substitute_attr(sys, "path", [""] + sys.path[:]):
-            try:
-                result = utils.run_module(
-                    module=TOOL_MODULE, argv=argv, use_stdin=True, cwd=cwd
-                )
-            except Exception:
-                log_error(traceback.format_exc(chain=True))
-                raise
-        if result.stderr:
-            log_to_output(result.stderr)
+    result = tool_server.execute_tool(
+        argv=argv,
+        mode=mode,
+        settings=settings,
+        use_stdin=True,
+        cwd=cwd,
+        workspace=code_workspace,
+        env=_get_updated_env(settings),
+    )
 
+    log_to_output(f"\r\n{result.stdout}\r\n")
     return result
-
-
-def _to_run_result_with_logging(rpc_result: jsonrpc.RpcRunResult) -> utils.RunResult:
-    error = ""
-    if rpc_result.exception:
-        log_error(rpc_result.exception)
-        error = rpc_result.exception
-    elif rpc_result.stderr:
-        log_to_output(rpc_result.stderr)
-        error = rpc_result.stderr
-    return utils.RunResult(rpc_result.stdout, error)
 
 
 # *****************************************************
 # Logging and notification.
+# Thin wrappers delegating to ToolServer for backward compatibility.
 # *****************************************************
 def log_to_output(
     message: str, msg_type: lsp.MessageType = lsp.MessageType.Log
 ) -> None:
-    """Logs messages to Output > Pylint channel only."""
-    LSP_SERVER.window_log_message(lsp.LogMessageParams(type=msg_type, message=message))
+    """Logs messages to Output > isort channel only."""
+    tool_server.log_to_output(message, msg_type)
 
 
 def log_error(message: str) -> None:
     """Logs messages with notification on error."""
-    LSP_SERVER.window_log_message(
-        lsp.LogMessageParams(type=lsp.MessageType.Error, message=message)
-    )
-    if os.getenv("LS_SHOW_NOTIFICATION", "off") in ["onError", "onWarning", "always"]:
-        LSP_SERVER.window_show_message(
-            lsp.ShowMessageParams(type=lsp.MessageType.Error, message=message)
-        )
+    tool_server.log_error(message)
 
 
 def log_warning(message: str) -> None:
     """Logs messages with notification on warning."""
-    LSP_SERVER.window_log_message(
-        lsp.LogMessageParams(type=lsp.MessageType.Warning, message=message)
-    )
-    if os.getenv("LS_SHOW_NOTIFICATION", "off") in ["onWarning", "always"]:
-        LSP_SERVER.window_show_message(
-            lsp.ShowMessageParams(type=lsp.MessageType.Warning, message=message)
-        )
+    tool_server.log_warning(message)
 
 
 def log_always(message: str) -> None:
     """Logs messages with notification."""
-    LSP_SERVER.window_log_message(
-        lsp.LogMessageParams(type=lsp.MessageType.Info, message=message)
-    )
-    if os.getenv("LS_SHOW_NOTIFICATION", "off") in ["always"]:
-        LSP_SERVER.window_show_message(
-            lsp.ShowMessageParams(type=lsp.MessageType.Info, message=message)
-        )
+    tool_server.log_always(message)
 
 
 # *****************************************************
