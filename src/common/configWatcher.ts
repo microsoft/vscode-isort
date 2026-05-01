@@ -9,18 +9,12 @@ export function createConfigFileWatchers(onConfigChanged: () => Promise<void>): 
     return ISORT_CONFIG_FILES.map((pattern) => {
         const watcher = workspace.createFileSystemWatcher(`**/${pattern}`);
         let disposed = false;
-        let pending: Promise<void> | undefined;
-
         const handleEvent = (event: string) => {
             if (disposed) {
                 return;
             }
             traceLog(`isort config file ${event}: ${pattern}`);
-            pending = onConfigChanged()
-                .catch((e) => traceError(`Config file ${event} handler failed`, e))
-                .finally(() => {
-                    pending = undefined;
-                });
+            onConfigChanged().catch((e) => traceError(`Config file ${event} handler failed`, e));
         };
 
         const changeDisposable = watcher.onDidChange(() => handleEvent('changed'));
