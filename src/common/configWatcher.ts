@@ -24,7 +24,6 @@ export function createConfigFileWatchers(onConfigChanged: () => Promise<void>): 
         return {
             dispose(): void {
                 disposed = true;
-                pending = undefined;
                 changeDisposable.dispose();
                 createDisposable.dispose();
                 deleteDisposable.dispose();

@@ -6,7 +6,7 @@ import * as sinon from 'sinon';
 import { EndOfLine, TextDocument, Uri, WorkspaceEdit, WorkspaceFolder } from 'vscode';
 import * as runner from '../../../../common/runner';
 import * as settings from '../../../../common/settings';
-import * as utilities from '../../../../common/utilities';
+import * as commonPythonLsp from '@vscode/common-python-lsp';
 import * as vscodeapi from '../../../../common/vscodeapi';
 
 suite('textEditRunner Tests', () => {
@@ -55,7 +55,7 @@ suite('textEditRunner Tests', () => {
     test('Returns empty WorkspaceEdit when content is unchanged (stdout empty)', async () => {
         sandbox.stub(settings, 'getWorkspaceSettings').resolves(mockSettings);
         sandbox.stub(vscodeapi, 'getWorkspaceFolder').returns(mockWorkspaceFolder);
-        sandbox.stub(utilities, 'getProjectRoot').resolves(mockWorkspaceFolder);
+        sandbox.stub(commonPythonLsp, 'getProjectRoot').resolves(mockWorkspaceFolder);
         sandbox.stub(runner, 'runScript').resolves({ stdout: '', stderr: '' });
 
         const content = 'import os\nimport sys\n';
@@ -70,7 +70,7 @@ suite('textEditRunner Tests', () => {
         const content = 'import os\nimport sys\n';
         sandbox.stub(settings, 'getWorkspaceSettings').resolves(mockSettings);
         sandbox.stub(vscodeapi, 'getWorkspaceFolder').returns(mockWorkspaceFolder);
-        sandbox.stub(utilities, 'getProjectRoot').resolves(mockWorkspaceFolder);
+        sandbox.stub(commonPythonLsp, 'getProjectRoot').resolves(mockWorkspaceFolder);
         sandbox.stub(runner, 'runScript').resolves({ stdout: content, stderr: '' });
 
         const doc = createMockTextDocument(content);
@@ -83,7 +83,7 @@ suite('textEditRunner Tests', () => {
     test('Returns empty WorkspaceEdit when settings are unavailable', async () => {
         sandbox.stub(settings, 'getWorkspaceSettings').resolves({ ...mockSettings, interpreter: [] });
         sandbox.stub(vscodeapi, 'getWorkspaceFolder').returns(mockWorkspaceFolder);
-        sandbox.stub(utilities, 'getProjectRoot').resolves(mockWorkspaceFolder);
+        sandbox.stub(commonPythonLsp, 'getProjectRoot').resolves(mockWorkspaceFolder);
 
         const doc = createMockTextDocument('import os\nimport sys\n');
         const result = await runner.textEditRunner('isort', doc);
@@ -95,7 +95,7 @@ suite('textEditRunner Tests', () => {
     test('Returns empty WorkspaceEdit when runScript throws error', async () => {
         sandbox.stub(settings, 'getWorkspaceSettings').resolves(mockSettings);
         sandbox.stub(vscodeapi, 'getWorkspaceFolder').returns(mockWorkspaceFolder);
-        sandbox.stub(utilities, 'getProjectRoot').resolves(mockWorkspaceFolder);
+        sandbox.stub(commonPythonLsp, 'getProjectRoot').resolves(mockWorkspaceFolder);
         sandbox.stub(runner, 'runScript').rejects(new Error('Command failed'));
 
         const doc = createMockTextDocument('import os\nimport sys\n');
