@@ -9,7 +9,6 @@ import json
 import os
 import pathlib
 import sys
-import sysconfig
 import traceback
 from typing import Any, Dict, List, Optional, Sequence
 from urllib.parse import urlparse, urlunparse
@@ -39,25 +38,6 @@ update_sys_path(
 update_sys_path(os.fspath(pathlib.Path(__file__).parent.parent / "tool"), "useBundled")
 
 
-def update_environ_path() -> None:
-    """Update PATH environment variable with the 'scripts' directory.
-    Windows: .venv/Scripts
-    Linux/MacOS: .venv/bin
-    """
-    scripts = sysconfig.get_path("scripts")
-    paths_variants = ["Path", "PATH"]
-
-    for var_name in paths_variants:
-        if var_name in os.environ:
-            paths = os.environ[var_name].split(os.pathsep)
-            if scripts not in paths:
-                paths.insert(0, scripts)
-                os.environ[var_name] = os.pathsep.join(paths)
-                break
-
-
-update_environ_path()
-
 # **********************************************************
 # Imports needed for the language server goes below this.
 # **********************************************************
@@ -72,7 +52,11 @@ from pygls.workspace import TextDocument
 from vscode_common_python_lsp import (
     RunResult,
     is_current_interpreter,
+    update_environ_path,
 )
+
+update_environ_path()
+
 from vscode_common_python_lsp.server import ToolServer, ToolServerConfig
 
 RUNNER = pathlib.Path(__file__).parent / "lsp_runner.py"
