@@ -5,7 +5,7 @@ import { ConfigurationChangeEvent, WorkspaceConfiguration, WorkspaceFolder } fro
 import { expandTilde } from './envFile';
 import { traceError, traceInfo, traceLog } from './logging';
 import { getInterpreterDetails } from './python';
-import { getInterpreterFromSetting } from './utilities';
+import { getInterpreterFromSetting } from '@vscode/common-python-lsp';
 import { getConfiguration, getWorkspaceFolders } from './vscodeapi';
 
 export interface ISettings {

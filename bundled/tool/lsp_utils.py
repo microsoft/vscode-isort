@@ -13,19 +13,15 @@ from vscode_common_python_lsp import (
     CWD_LOCK,
     SERVER_CWD,
     PythonFileKind,
-    RunResult,
     change_cwd,
     classify_python_file,
-    is_current_interpreter,
 )
 
 __all__ = [
     "SERVER_CWD",
     "CWD_LOCK",
     "change_cwd",
-    "is_current_interpreter",
     "is_stdlib_file",
-    "RunResult",
 ]
 
 

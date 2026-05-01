@@ -69,6 +69,10 @@ import lsprotocol.types as lsp
 from pygls import uris
 from pygls.lsp.server import LanguageServer
 from pygls.workspace import TextDocument
+from vscode_common_python_lsp import (
+    RunResult,
+    is_current_interpreter,
+)
 from vscode_common_python_lsp.server import ToolServer, ToolServerConfig
 
 RUNNER = pathlib.Path(__file__).parent / "lsp_runner.py"
@@ -662,7 +666,7 @@ def _run_tool_on_document(
     document: TextDocument,
     use_stdin: bool = False,
     extra_args: Sequence[str] = [],
-) -> utils.RunResult | None:
+) -> RunResult | None:
     """Runs tool on the given document.
 
     if use_stdin is true then contents of the document is passed to the
@@ -688,7 +692,7 @@ def _run_tool_on_document(
         # 'path' setting takes priority over everything.
         mode = "path"
         argv = settings["path"]
-    elif settings["interpreter"] and not utils.is_current_interpreter(
+    elif settings["interpreter"] and not is_current_interpreter(
         settings["interpreter"][0]
     ):
         # If there is a different interpreter set use JSON-RPC to the subprocess
@@ -745,7 +749,7 @@ def _run_tool_on_document(
     )
 
 
-def _run_tool(extra_args: Sequence[str], settings: Dict[str, Any]) -> utils.RunResult:
+def _run_tool(extra_args: Sequence[str], settings: Dict[str, Any]) -> RunResult:
     """Runs tool (e.g. ``--version``).  Delegates to :meth:`ToolServer.execute_tool`."""
     code_workspace = settings["workspaceFS"]
     cwd = get_cwd(settings, None)
@@ -754,7 +758,7 @@ def _run_tool(extra_args: Sequence[str], settings: Dict[str, Any]) -> utils.RunR
         # 'path' setting takes priority over everything.
         mode = "path"
         argv = settings["path"]
-    elif len(settings["interpreter"]) > 0 and not utils.is_current_interpreter(
+    elif len(settings["interpreter"]) > 0 and not is_current_interpreter(
         settings["interpreter"][0]
     ):
         # If there is a different interpreter set use JSON-RPC to the subprocess

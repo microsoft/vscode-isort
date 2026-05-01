@@ -7,7 +7,7 @@
 import { DocumentSelector } from 'vscode-languageclient';
 import { isVirtualWorkspace } from './vscodeapi';
 
-export { getLSClientTraceLevel, getInterpreterFromSetting, getProjectRoot } from '@vscode/common-python-lsp';
+export { getProjectRoot } from '@vscode/common-python-lsp';
 
 export function getDocumentSelector(): DocumentSelector {
     return isVirtualWorkspace()
