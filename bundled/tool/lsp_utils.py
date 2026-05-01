@@ -9,18 +9,9 @@ the original broad semantics (any classified Python file, not just stdlib).
 
 from __future__ import annotations
 
-from vscode_common_python_lsp import (
-    CWD_LOCK,
-    SERVER_CWD,
-    PythonFileKind,
-    change_cwd,
-    classify_python_file,
-)
+from vscode_common_python_lsp import PythonFileKind, classify_python_file
 
 __all__ = [
-    "SERVER_CWD",
-    "CWD_LOCK",
-    "change_cwd",
     "is_stdlib_file",
 ]
 

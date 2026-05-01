@@ -12,8 +12,7 @@ import { checkIfConfigurationChanged, getServerEnabled, getWorkspaceSettings } f
 import { loadServerDefaults } from './common/setup';
 import { registerSortImportFeatures, unRegisterSortImportFeatures } from './common/sortImports';
 import { registerLanguageStatusItem, updateStatus } from './common/status';
-import { getInterpreterFromSetting } from '@vscode/common-python-lsp';
-import { getProjectRoot } from './common/utilities';
+import { getInterpreterFromSetting, getProjectRoot } from '@vscode/common-python-lsp';
 import { createOutputChannel, onDidChangeConfiguration, registerCommand } from './common/vscodeapi';
 
 let lsClient: LanguageClient | undefined;
