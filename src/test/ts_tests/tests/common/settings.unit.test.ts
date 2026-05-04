@@ -1,136 +1,18 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+// NOTE: Variable resolution and getWorkspaceSettings tests live in the shared
+// package (@vscode/common-python-lsp) test suite. Extension-level tests focus
+// on extension-specific wrapper behavior.
+
 import { assert } from 'chai';
-import * as path from 'path';
 import * as sinon from 'sinon';
 import * as TypeMoq from 'typemoq';
-import { ConfigurationChangeEvent, Uri, WorkspaceConfiguration, WorkspaceFolder } from 'vscode';
-import { EXTENSION_ROOT_DIR } from '../../../../common/constants';
-import * as python from '../../../../common/python';
-import {
-    ISettings,
-    checkIfConfigurationChanged,
-    getServerEnabled,
-    getWorkspaceSettings,
-} from '../../../../common/settings';
+import { ConfigurationChangeEvent, WorkspaceConfiguration } from 'vscode';
+import { checkIfConfigurationChanged, getServerEnabled } from '../../../../common/settings';
 import * as vscodeapi from '../../../../common/vscodeapi';
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
-const DEFAULT_SEVERITY: Record<string, string> = { W: 'Warning', E: 'Hint' };
-
 suite('Settings Tests', () => {
-    suite('getWorkspaceSettings tests', () => {
-        let getConfigurationStub: sinon.SinonStub;
-        let getInterpreterDetailsStub: sinon.SinonStub;
-        let configMock: TypeMoq.IMock<WorkspaceConfiguration>;
-        let pythonConfigMock: TypeMoq.IMock<WorkspaceConfiguration>;
-        const workspace1: WorkspaceFolder = {
-            uri: Uri.file(path.join(EXTENSION_ROOT_DIR, 'src', 'test', 'testWorkspace', 'workspace1')),
-            name: 'workspace1',
-            index: 0,
-        };
-
-        setup(() => {
-            getConfigurationStub = sinon.stub(vscodeapi, 'getConfiguration');
-            getInterpreterDetailsStub = sinon.stub(python, 'getInterpreterDetails');
-            configMock = TypeMoq.Mock.ofType<WorkspaceConfiguration>();
-            pythonConfigMock = TypeMoq.Mock.ofType<WorkspaceConfiguration>();
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            getConfigurationStub.callsFake((namespace: string, _uri: Uri) => {
-                if (namespace.startsWith('isort')) {
-                    return configMock.object;
-                }
-                return pythonConfigMock.object;
-            });
-        });
-
-        teardown(() => {
-            sinon.restore();
-        });
-
-        test('Default Settings test', async () => {
-            getInterpreterDetailsStub.resolves({ path: undefined });
-            configMock
-                .setup((c) => c.get('args', []))
-                .returns(() => [])
-                .verifiable(TypeMoq.Times.atLeastOnce());
-            configMock
-                .setup((c) => c.get('path', []))
-                .returns(() => [])
-                .verifiable(TypeMoq.Times.atLeastOnce());
-            configMock
-                .setup((c) => c.get('check', false))
-                .returns(() => false)
-                .verifiable(TypeMoq.Times.atLeastOnce());
-            configMock
-                .setup((c) => c.get('severity', DEFAULT_SEVERITY))
-                .returns(() => DEFAULT_SEVERITY)
-                .verifiable(TypeMoq.Times.atLeastOnce());
-            configMock
-                .setup((c) => c.get('importStrategy', 'useBundled'))
-                .returns(() => 'useBundled')
-                .verifiable(TypeMoq.Times.atLeastOnce());
-            configMock
-                .setup((c) => c.get('showNotifications', 'off'))
-                .returns(() => 'off')
-                .verifiable(TypeMoq.Times.atLeastOnce());
-            configMock
-                .setup((c) => c.get('cwd', workspace1.uri.fsPath))
-                .returns(() => workspace1.uri.fsPath)
-                .verifiable(TypeMoq.Times.atLeastOnce());
-
-            pythonConfigMock
-                .setup((c) => c.get('sortImports.args', []))
-                .returns(() => [])
-                .verifiable(TypeMoq.Times.atLeastOnce());
-            pythonConfigMock
-                .setup((c) => c.get('sortImports.path', ''))
-                .returns(() => 'isort')
-                .verifiable(TypeMoq.Times.atLeastOnce());
-            pythonConfigMock
-                .setup((c) => c.get('analysis.extraPaths', []))
-                .returns(() => [])
-                .verifiable(TypeMoq.Times.atLeastOnce());
-            configMock
-                .setup((c) => c.get('extraPaths', []))
-                .returns(() => [])
-                .verifiable(TypeMoq.Times.atLeastOnce());
-
-            const settings: ISettings = await getWorkspaceSettings('isort', workspace1);
-            assert.deepStrictEqual(settings.args, []);
-            assert.deepStrictEqual(settings.cwd, workspace1.uri.fsPath);
-            assert.deepStrictEqual(settings.importStrategy, 'useBundled');
-            assert.deepStrictEqual(settings.interpreter, []);
-            assert.deepStrictEqual(settings.path, []);
-            assert.deepStrictEqual(settings.severity, DEFAULT_SEVERITY);
-            assert.deepStrictEqual(settings.showNotifications, 'off');
-            assert.deepStrictEqual(settings.extraPaths, []);
-            assert.deepStrictEqual(settings.workspace, workspace1.uri.toString());
-
-            configMock.verifyAll();
-            pythonConfigMock.verifyAll();
-        });
-
-        test('cwd with ${workspaceFolder} is resolved', async () => {
-            getInterpreterDetailsStub.resolves({ path: undefined });
-            configMock.setup((c) => c.get('args', [])).returns(() => []);
-            configMock.setup((c) => c.get('path', [])).returns(() => []);
-            configMock.setup((c) => c.get('check', false)).returns(() => false);
-            configMock.setup((c) => c.get('severity', DEFAULT_SEVERITY)).returns(() => DEFAULT_SEVERITY);
-            configMock.setup((c) => c.get('importStrategy', 'useBundled')).returns(() => 'useBundled');
-            configMock.setup((c) => c.get('showNotifications', 'off')).returns(() => 'off');
-            configMock.setup((c) => c.get('cwd', workspace1.uri.fsPath)).returns(() => '${workspaceFolder}');
-            configMock.setup((c) => c.get('extraPaths', [])).returns(() => []);
-            pythonConfigMock.setup((c) => c.get('sortImports.args', [])).returns(() => []);
-            pythonConfigMock.setup((c) => c.get('sortImports.path', '')).returns(() => '');
-            pythonConfigMock.setup((c) => c.get('analysis.extraPaths', [])).returns(() => []);
-
-            const settings: ISettings = await getWorkspaceSettings('isort', workspace1);
-            assert.deepStrictEqual(settings.cwd, workspace1.uri.fsPath);
-        });
-    });
-
     suite('getServerEnabled tests', () => {
         let getConfigurationStub: sinon.SinonStub;
 
