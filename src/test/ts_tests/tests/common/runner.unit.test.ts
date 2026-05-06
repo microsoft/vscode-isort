@@ -3,11 +3,9 @@
 
 import { assert } from 'chai';
 import * as sinon from 'sinon';
-import { EndOfLine, TextDocument, Uri, WorkspaceEdit, WorkspaceFolder } from 'vscode';
+import { EndOfLine, TextDocument, Uri, workspace, WorkspaceEdit, WorkspaceFolder } from 'vscode';
 import * as runner from '../../../../common/runner';
 import * as settings from '../../../../common/settings';
-import * as utilities from '../../../../common/utilities';
-import * as vscodeapi from '../../../../common/vscodeapi';
 
 suite('textEditRunner Tests', () => {
     let sandbox: sinon.SinonSandbox;
@@ -52,10 +50,18 @@ suite('textEditRunner Tests', () => {
         } as unknown as TextDocument;
     }
 
+    function stubDependencies(settingsOverride?: Partial<settings.ISettings>) {
+        sandbox.stub(settings, 'getWorkspaceSettings').resolves({ ...mockSettings, ...settingsOverride });
+        // Stub VS Code workspace APIs directly (shared package wrappers use these)
+        sandbox.stub(workspace, 'getWorkspaceFolder').returns(mockWorkspaceFolder);
+        Object.defineProperty(workspace, 'workspaceFolders', {
+            value: [mockWorkspaceFolder],
+            configurable: true,
+        });
+    }
+
     test('Returns empty WorkspaceEdit when content is unchanged (stdout empty)', async () => {
-        sandbox.stub(settings, 'getWorkspaceSettings').resolves(mockSettings);
-        sandbox.stub(vscodeapi, 'getWorkspaceFolder').returns(mockWorkspaceFolder);
-        sandbox.stub(utilities, 'getProjectRoot').resolves(mockWorkspaceFolder);
+        stubDependencies();
         sandbox.stub(runner, 'runScript').resolves({ stdout: '', stderr: '' });
 
         const content = 'import os\nimport sys\n';
@@ -68,9 +74,7 @@ suite('textEditRunner Tests', () => {
 
     test('Returns empty WorkspaceEdit when content is unchanged (stdout equals content)', async () => {
         const content = 'import os\nimport sys\n';
-        sandbox.stub(settings, 'getWorkspaceSettings').resolves(mockSettings);
-        sandbox.stub(vscodeapi, 'getWorkspaceFolder').returns(mockWorkspaceFolder);
-        sandbox.stub(utilities, 'getProjectRoot').resolves(mockWorkspaceFolder);
+        stubDependencies();
         sandbox.stub(runner, 'runScript').resolves({ stdout: content, stderr: '' });
 
         const doc = createMockTextDocument(content);
@@ -81,9 +85,7 @@ suite('textEditRunner Tests', () => {
     });
 
     test('Returns empty WorkspaceEdit when settings are unavailable', async () => {
-        sandbox.stub(settings, 'getWorkspaceSettings').resolves({ ...mockSettings, interpreter: [] });
-        sandbox.stub(vscodeapi, 'getWorkspaceFolder').returns(mockWorkspaceFolder);
-        sandbox.stub(utilities, 'getProjectRoot').resolves(mockWorkspaceFolder);
+        stubDependencies({ interpreter: [] });
 
         const doc = createMockTextDocument('import os\nimport sys\n');
         const result = await runner.textEditRunner('isort', doc);
@@ -93,9 +95,7 @@ suite('textEditRunner Tests', () => {
     });
 
     test('Returns empty WorkspaceEdit when runScript throws error', async () => {
-        sandbox.stub(settings, 'getWorkspaceSettings').resolves(mockSettings);
-        sandbox.stub(vscodeapi, 'getWorkspaceFolder').returns(mockWorkspaceFolder);
-        sandbox.stub(utilities, 'getProjectRoot').resolves(mockWorkspaceFolder);
+        stubDependencies();
         sandbox.stub(runner, 'runScript').rejects(new Error('Command failed'));
 
         const doc = createMockTextDocument('import os\nimport sys\n');

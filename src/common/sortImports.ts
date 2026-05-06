@@ -19,9 +19,9 @@ import {
     Uri,
     workspace,
 } from 'vscode';
-import { traceWarn } from './logging';
+import { traceWarn } from '@vscode/common-python-lsp';
 import { diagnosticRunner, textEditRunner } from './runner';
-import { getDocumentSelector } from './utilities';
+import { getDocumentSelector } from '@vscode/common-python-lsp';
 
 export const notebookCellScheme = 'vscode-notebook-cell';
 export const interactiveInputScheme = 'vscode-interactive-input';
