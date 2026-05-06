@@ -2,9 +2,11 @@
 // Licensed under the MIT License.
 
 import * as path from 'path';
-import { resolveExtensionRoot, ToolConfig } from '@vscode/common-python-lsp';
+import type { ToolConfig } from '@vscode/common-python-lsp';
 
-export const EXTENSION_ROOT_DIR = resolveExtensionRoot(__dirname);
+const folderName = path.basename(__dirname);
+export const EXTENSION_ROOT_DIR =
+    folderName === 'common' ? path.dirname(path.dirname(__dirname)) : path.dirname(__dirname);
 
 export const RUNNER_SCRIPT_PATH = path.join(EXTENSION_ROOT_DIR, 'bundled', 'tool', 'script_runner.py');
 
