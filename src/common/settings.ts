@@ -63,17 +63,8 @@ function getLegacyPath(namespace: string, workspace: WorkspaceFolder): string[] 
  * Get workspace settings with isort-specific legacy fallbacks.
  * Used by runner.ts for local sort-import mode (when server is disabled).
  */
-export async function getWorkspaceSettings(
-    namespace: string,
-    workspace: WorkspaceFolder,
-    includeInterpreter?: boolean,
-): Promise<ISettings> {
-    const settings = (await _getWorkspaceSettings(
-        namespace,
-        workspace,
-        ISORT_TOOL_CONFIG,
-        includeInterpreter ? undefined : undefined,
-    )) as ISettings;
+export async function getWorkspaceSettings(namespace: string, workspace: WorkspaceFolder): Promise<ISettings> {
+    const settings = (await _getWorkspaceSettings(namespace, workspace, ISORT_TOOL_CONFIG)) as ISettings;
 
     // Legacy fallbacks for python.sortImports.args / python.sortImports.path
     const legacyArgs = getLegacyArgs(namespace, workspace);

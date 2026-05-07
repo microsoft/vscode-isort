@@ -33,10 +33,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const cleanupSortFeatures = () => {
         unRegisterSortImportFeatures();
         if (sortFeaturesDisposable) {
-            const idx = context.subscriptions.indexOf(sortFeaturesDisposable);
-            if (idx >= 0) {
-                context.subscriptions.splice(idx, 1);
-            }
+            sortFeaturesDisposable.dispose();
             sortFeaturesDisposable = undefined;
         }
     };
@@ -47,18 +44,20 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // so rapid calls from config/interpreter changes are safe.
     const originalRunServer = toolContext.runServer.bind(toolContext);
     toolContext.runServer = async () => {
+        if (!toolContext) {
+            return;
+        }
         if (!getServerEnabled(ISORT_TOOL_CONFIG.toolId)) {
-            if (toolContext!.lsClient) {
+            if (toolContext.lsClient) {
                 try {
-                    await toolContext!.lsClient.stop();
+                    await toolContext.lsClient.stop();
                 } catch (ex) {
                     traceError(`Server: Stop failed: ${ex}`);
                 }
-                toolContext!.lsClient = undefined;
+                toolContext.lsClient = undefined;
             }
             cleanupSortFeatures();
             sortFeaturesDisposable = registerSortImportFeatures(ISORT_TOOL_CONFIG.toolId);
-            context.subscriptions.push(sortFeaturesDisposable);
             await sortFeaturesDisposable.startup();
         } else {
             cleanupSortFeatures();

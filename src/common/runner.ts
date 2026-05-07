@@ -128,7 +128,7 @@ export function runScript(
 
 async function getSettings(serverId: string, textDocument: TextDocument): Promise<ISettings | undefined> {
     const workspaceFolder = getWorkspaceFolder(textDocument.uri) || (await getProjectRoot());
-    const workspaceSetting = await getWorkspaceSettings(serverId, workspaceFolder, true);
+    const workspaceSetting = await getWorkspaceSettings(serverId, workspaceFolder);
     if (workspaceSetting.interpreter.length === 0) {
         traceError(
             'Python interpreter missing:\r\n' +
