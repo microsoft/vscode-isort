@@ -19,6 +19,14 @@ import { registerSortImportFeatures, unRegisterSortImportFeatures } from './comm
 let toolContext: ToolExtensionContext | undefined;
 let sortFeaturesDisposable: (vscode.Disposable & { startup: () => Promise<void> }) | undefined;
 
+function cleanupSortFeatures(): void {
+    unRegisterSortImportFeatures();
+    if (sortFeaturesDisposable) {
+        sortFeaturesDisposable.dispose();
+        sortFeaturesDisposable = undefined;
+    }
+}
+
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
     const serverInfo = loadServerDefaults(EXTENSION_ROOT_DIR);
     const outputChannel = vscode.window.createOutputChannel(serverInfo.name, { log: true });
@@ -29,14 +37,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     toolContext = createToolContext({ serverInfo, outputChannel, toolConfig: ISORT_TOOL_CONFIG, pythonProvider });
     context.subscriptions.push({ dispose: () => toolContext?.dispose() });
-
-    const cleanupSortFeatures = () => {
-        unRegisterSortImportFeatures();
-        if (sortFeaturesDisposable) {
-            sortFeaturesDisposable.dispose();
-            sortFeaturesDisposable = undefined;
-        }
-    };
 
     // Override runServer to handle the serverEnabled toggle.
     // When disabled, stop the LSP server and switch to local code actions.
@@ -79,5 +79,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 }
 
 export async function deactivate(): Promise<void> {
+    cleanupSortFeatures();
     await deactivateServer(toolContext);
 }
