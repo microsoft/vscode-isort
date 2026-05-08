@@ -25,14 +25,15 @@ pipelines:
     retail:
       binary:
         binskim:
-          lastModifiedDate: 2026-02-18
+          lastModifiedDate: 2026-05-08
       source:
         eslint:
-          lastModifiedDate: 2026-02-18
+          lastModifiedDate: 2026-05-08
         armory:
-          lastModifiedDate: 2026-02-18
+          lastModifiedDate: 2026-05-08
         accessibilityinsights:
           lastModifiedDate: 2026-02-18
+    usedNonDefaultBranch: true
   27670:
     retail:
       source:
