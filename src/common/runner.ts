@@ -15,12 +15,9 @@ import {
     workspace,
     WorkspaceEdit,
 } from 'vscode';
+import { getEnvFileVars, getProjectRoot, getWorkspaceFolder, traceError, traceLog } from '@vscode/common-python-lsp';
 import { RUNNER_SCRIPT_PATH } from './constants';
-import { getEnvFileVars } from './envFile';
-import { traceError, traceLog } from './logging';
 import { ISettings, getWorkspaceSettings } from './settings';
-import { getProjectRoot } from './utilities';
-import { getWorkspaceFolder } from './vscodeapi';
 
 const REALPATH_CACHE_MAX = 1000;
 const realpathCache = new Map<string, string>();
@@ -131,7 +128,7 @@ export function runScript(
 
 async function getSettings(serverId: string, textDocument: TextDocument): Promise<ISettings | undefined> {
     const workspaceFolder = getWorkspaceFolder(textDocument.uri) || (await getProjectRoot());
-    const workspaceSetting = await getWorkspaceSettings(serverId, workspaceFolder, true);
+    const workspaceSetting = await getWorkspaceSettings(serverId, workspaceFolder);
     if (workspaceSetting.interpreter.length === 0) {
         traceError(
             'Python interpreter missing:\r\n' +

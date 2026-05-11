@@ -1,20 +1,20 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-// Thin wrapper: delegates to vscode-common-python-lsp shared package.
+// Extension-specific settings: ISettings type extension, serverEnabled toggle,
+// and legacy settings logging. All shared settings resolution is handled by
+// @vscode/common-python-lsp directly.
 
-import { ConfigurationChangeEvent, WorkspaceFolder } from 'vscode';
+import { WorkspaceFolder } from 'vscode';
 import {
     IBaseSettings,
-    checkIfConfigurationChanged as _checkIfConfigurationChanged,
-    getGlobalSettings as _getGlobalSettings,
-    getWorkspaceSettings as _getWorkspaceSettings,
     expandTilde,
+    getConfiguration,
+    getWorkspaceFolders,
+    getWorkspaceSettings as _getWorkspaceSettings,
+    traceLog,
 } from '@vscode/common-python-lsp';
 import { ISORT_TOOL_CONFIG } from './constants';
-import { traceLog } from './logging';
-import { getInterpreterDetails } from './python';
-import { getConfiguration, getWorkspaceFolders } from './vscodeapi';
 
 export interface ISettings extends IBaseSettings {
     check: boolean;
@@ -22,8 +22,9 @@ export interface ISettings extends IBaseSettings {
     extraPaths: string[];
 }
 
-export function getExtensionSettings(namespace: string, includeInterpreter?: boolean): Promise<ISettings[]> {
-    return Promise.all(getWorkspaceFolders().map((w) => getWorkspaceSettings(namespace, w, includeInterpreter)));
+export function getServerEnabled(namespace: string): boolean {
+    const config = getConfiguration(namespace);
+    return config.get<boolean>('serverEnabled', true);
 }
 
 function getLegacyArgs(namespace: string, workspace: WorkspaceFolder): string[] | undefined {
@@ -58,18 +59,12 @@ function getLegacyPath(namespace: string, workspace: WorkspaceFolder): string[] 
     return undefined;
 }
 
-export async function getWorkspaceSettings(
-    namespace: string,
-    workspace: WorkspaceFolder,
-    includeInterpreter?: boolean,
-): Promise<ISettings> {
-    const resolveInterpreter = includeInterpreter ? getInterpreterDetails : undefined;
-    const settings = (await _getWorkspaceSettings(
-        namespace,
-        workspace,
-        ISORT_TOOL_CONFIG,
-        resolveInterpreter,
-    )) as ISettings;
+/**
+ * Get workspace settings with isort-specific legacy fallbacks.
+ * Used by runner.ts for local sort-import mode (when server is disabled).
+ */
+export async function getWorkspaceSettings(namespace: string, workspace: WorkspaceFolder): Promise<ISettings> {
+    const settings = (await _getWorkspaceSettings(namespace, workspace, ISORT_TOOL_CONFIG)) as ISettings;
 
     // Legacy fallbacks for python.sortImports.args / python.sortImports.path
     const legacyArgs = getLegacyArgs(namespace, workspace);
@@ -90,19 +85,26 @@ export async function getWorkspaceSettings(
     return settings;
 }
 
-export async function getGlobalSettings(namespace: string, includeInterpreter?: boolean): Promise<ISettings> {
-    const resolveInterpreter = includeInterpreter ? async () => getInterpreterDetails() : undefined;
-    return (await _getGlobalSettings(namespace, ISORT_TOOL_CONFIG, resolveInterpreter)) as ISettings;
-}
+export function logLegacySettings(): void {
+    getWorkspaceFolders().forEach((workspace) => {
+        try {
+            const legacyConfig = getConfiguration('python', workspace.uri);
 
-export function checkIfConfigurationChanged(e: ConfigurationChangeEvent, namespace: string): boolean {
-    return (
-        _checkIfConfigurationChanged(e, namespace, ISORT_TOOL_CONFIG.trackedSettings) ||
-        e.affectsConfiguration('python.analysis.extraPaths')
-    );
-}
+            const legacyArgs = legacyConfig.get<string[]>('sortImports.args', []);
+            if (legacyArgs.length > 0) {
+                traceLog(`"python.sortImports.args" is deprecated. Use "isort.args" instead.`);
+                traceLog(`"python.sortImports.args" value for workspace ${workspace.uri.fsPath}:`);
+                traceLog(`\n${JSON.stringify(legacyArgs, null, 4)}`);
+            }
 
-export function getServerEnabled(namespace: string): boolean {
-    const config = getConfiguration(namespace);
-    return config.get<boolean>('serverEnabled', true);
+            const legacyPath = legacyConfig.get<string>('sortImports.path', '');
+            if (legacyPath.length > 0 && legacyPath !== 'isort') {
+                traceLog(`"python.sortImports.path" is deprecated. Use "isort.path" instead.`);
+                traceLog(`"python.sortImports.path" value for workspace ${workspace.uri.fsPath}:`);
+                traceLog(`\n${JSON.stringify(legacyPath, null, 4)}`);
+            }
+        } catch (err) {
+            traceLog(`Error while logging legacy settings: ${err}`);
+        }
+    });
 }
