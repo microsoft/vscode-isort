@@ -2,8 +2,8 @@
     "name": "isort",
     "displayName": "isort",
     "description": "%extension.description%",
-    "version": "2026.5.0-dev",
-    "preview": true,
+    "version": "2026.6.0",
+    "preview": false,
     "serverInfo": {
         "name": "isort",
         "module": "isort"
