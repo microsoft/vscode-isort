@@ -19,6 +19,7 @@ env:
 jobs:
   build-vsix:
     name: Create VSIX
+    if: github.repository_owner == 'microsoft'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -32,6 +33,7 @@ jobs:
 
   lint:
     name: Lint
+    if: github.repository_owner == 'microsoft'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -45,6 +47,7 @@ jobs:
 
   tests:
     name: Tests
+    if: github.repository_owner == 'microsoft'
     runs-on: ${{ matrix.os }}
     defaults:
       run:

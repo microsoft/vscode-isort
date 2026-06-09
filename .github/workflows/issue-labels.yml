@@ -11,6 +11,7 @@ jobs:
   # From https://github.com/marketplace/actions/github-script#apply-a-label-to-an-issue.
   add-triage-label:
     name: "Add 'triage-needed'"
+    if: github.repository_owner == 'microsoft'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/github-script@v8

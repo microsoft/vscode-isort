@@ -11,6 +11,7 @@ on:
 jobs:
   add-pr-label:
     name: 'Ensure Required Labels'
+    if: github.repository_owner == 'microsoft'
     runs-on: ubuntu-latest
     steps:
       - name: 'PR impact specified'
