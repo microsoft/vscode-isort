@@ -23,6 +23,7 @@ on:
 jobs:
   analyze:
     name: Analyze
+    if: github.repository_owner == 'microsoft'
     runs-on: ubuntu-latest
     permissions:
       actions: read

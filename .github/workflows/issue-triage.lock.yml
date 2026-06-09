@@ -21,9 +21,9 @@
 #
 # For more information: https://github.github.com/gh-aw/introduction/overview/
 #
-# When a new issue is opened — or when a maintainer comments `/triage-issue` on an existing issue — analyze its root cause, check whether the same issue could affect other extensions built from the microsoft/vscode-python-tools-extension-template, and look for related open issues on the upstream isort repository (PyCQA/isort). If applicable, suggest an upstream fix and surface relevant isort issues to the reporter.
+# When a new issue is opened — or when a maintainer comments `/triage-issue` on an existing issue — analyze its root cause, check whether the same issue could affect other extensions built from the microsoft/vscode-python-tools-extension-template or originate from the microsoft/vscode-common-python-lsp shared package, and look for related open issues on the upstream isort repository (PyCQA/isort). If applicable, suggest an upstream fix and surface relevant isort issues to the reporter.
 #
-# gh-aw-metadata: {"schema_version":"v1","frontmatter_hash":"f680289511729be1aecaf9a83e6db73627f0fe911e3d2ae27a8f5ba9df01a0e6","compiler_version":"v0.51.6"}
+# gh-aw-metadata: {"schema_version":"v1","frontmatter_hash":"650222767e65829c143f4c6adf6afce9d620a58c216e8d1d8a80e48384050206","compiler_version":"v0.51.6"}
 
 name: 'Issue Triage'
 'on':
@@ -44,7 +44,7 @@ run-name: 'Issue Triage'
 jobs:
   activation:
     needs: pre_activation
-    if: needs.pre_activation.outputs.activated == 'true'
+    if: (needs.pre_activation.outputs.activated == 'true') && (github.repository_owner == 'microsoft')
     runs-on: ubuntu-slim
     permissions:
       contents: read
@@ -58,7 +58,7 @@ jobs:
       title: ${{ steps.sanitized.outputs.title }}
     steps:
       - name: Setup Scripts
-        uses: github/gh-aw/actions/setup@a898ed7b8f8238a30d9c9f560813547e695cfb0a # v0.62.4
+        uses: github/gh-aw/actions/setup@33cd6c7f1fee588654ef19def2e6a4174be66197 # v0.51.6
         with:
           destination: /opt/gh-aw/actions
       - name: Generate agentic run info
@@ -268,7 +268,7 @@ jobs:
       output_types: ${{ steps.collect_output.outputs.output_types }}
     steps:
       - name: Setup Scripts
-        uses: github/gh-aw/actions/setup@a898ed7b8f8238a30d9c9f560813547e695cfb0a # v0.62.4
+        uses: github/gh-aw/actions/setup@33cd6c7f1fee588654ef19def2e6a4174be66197 # v0.51.6
         with:
           destination: /opt/gh-aw/actions
       - name: Create gh-aw temp directory
@@ -283,6 +283,12 @@ jobs:
           path: template
           persist-credentials: false
           repository: microsoft/vscode-python-tools-extension-template
+      - name: Checkout shared package repo
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          path: shared-package
+          persist-credentials: false
+          repository: microsoft/vscode-common-python-lsp
 
       - name: Configure Git credentials
         env:
@@ -602,7 +608,7 @@ jobs:
           }
           GH_AW_MCP_CONFIG_EOF
       - name: Download activation artifact
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8
         with:
           name: activation
           path: /tmp/gh-aw
@@ -807,7 +813,7 @@ jobs:
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
           WORKFLOW_NAME: 'Issue Triage'
-          WORKFLOW_DESCRIPTION: 'When a new issue is opened — or when a maintainer comments `/triage-issue` on an existing issue — analyze its root cause, check whether the same issue could affect other extensions built from the microsoft/vscode-python-tools-extension-template, and look for related open issues on the upstream isort repository (PyCQA/isort). If applicable, suggest an upstream fix and surface relevant isort issues to the reporter.'
+          WORKFLOW_DESCRIPTION: 'When a new issue is opened — or when a maintainer comments `/triage-issue` on an existing issue — analyze its root cause, check whether the same issue could affect other extensions built from the microsoft/vscode-python-tools-extension-template or originate from the microsoft/vscode-common-python-lsp shared package, and look for related open issues on the upstream isort repository (PyCQA/isort). If applicable, suggest an upstream fix and surface relevant isort issues to the reporter.'
           HAS_PATCH: ${{ steps.collect_output.outputs.has_patch }}
         with:
           script: |
@@ -905,12 +911,12 @@ jobs:
       total_count: ${{ steps.missing_tool.outputs.total_count }}
     steps:
       - name: Setup Scripts
-        uses: github/gh-aw/actions/setup@a898ed7b8f8238a30d9c9f560813547e695cfb0a # v0.62.4
+        uses: github/gh-aw/actions/setup@33cd6c7f1fee588654ef19def2e6a4174be66197 # v0.51.6
         with:
           destination: /opt/gh-aw/actions
       - name: Download agent output artifact
         continue-on-error: true
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8
         with:
           name: agent-output
           path: /tmp/gh-aw/safeoutputs/
@@ -985,13 +991,14 @@ jobs:
             await main();
 
   pre_activation:
+    if: github.repository_owner == 'microsoft'
     runs-on: ubuntu-slim
     outputs:
       activated: ${{ steps.check_membership.outputs.is_team_member == 'true' }}
       matched_command: ''
     steps:
       - name: Setup Scripts
-        uses: github/gh-aw/actions/setup@a898ed7b8f8238a30d9c9f560813547e695cfb0a # v0.62.4
+        uses: github/gh-aw/actions/setup@33cd6c7f1fee588654ef19def2e6a4174be66197 # v0.51.6
         with:
           destination: /opt/gh-aw/actions
       - name: Check team membership for workflow
@@ -1034,12 +1041,12 @@ jobs:
       process_safe_outputs_temporary_id_map: ${{ steps.process_safe_outputs.outputs.temporary_id_map }}
     steps:
       - name: Setup Scripts
-        uses: github/gh-aw/actions/setup@a898ed7b8f8238a30d9c9f560813547e695cfb0a # v0.62.4
+        uses: github/gh-aw/actions/setup@33cd6c7f1fee588654ef19def2e6a4174be66197 # v0.51.6
         with:
           destination: /opt/gh-aw/actions
       - name: Download agent output artifact
         continue-on-error: true
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8
         with:
           name: agent-output
           path: /tmp/gh-aw/safeoutputs/
