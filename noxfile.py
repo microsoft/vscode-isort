@@ -11,6 +11,8 @@ import urllib.request as url_lib
 
 import nox
 
+MINIMUM_PYTHON_VERSION = "3.10"
+
 
 def _update_pip_packages(session: nox.Session) -> None:
     session.run(
@@ -19,7 +21,7 @@ def _update_pip_packages(session: nox.Session) -> None:
         "--resolver=backtracking",
         "--upgrade",
         "--python-version",
-        "3.10",
+        MINIMUM_PYTHON_VERSION,
         "./requirements.in",
     )
     session.run(
@@ -28,7 +30,7 @@ def _update_pip_packages(session: nox.Session) -> None:
         "--resolver=backtracking",
         "--upgrade",
         "--python-version",
-        "3.10",
+        MINIMUM_PYTHON_VERSION,
         "./src/test/python_tests/requirements.in",
     )
 
@@ -79,7 +81,7 @@ def _update_npm_packages(session: nox.Session) -> None:
     session.run("npm", "install", external=True)
 
 
-@nox.session(python="3.10")
+@nox.session(python=MINIMUM_PYTHON_VERSION)
 def install_bundled_libs(session):
     """Installs the libraries that will be bundled with the extension."""
     session.install("wheel")
