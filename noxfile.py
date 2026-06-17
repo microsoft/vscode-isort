@@ -96,14 +96,6 @@ def install_bundled_libs(session):
         "-r",
         "./requirements.txt",
     )
-    session.install(
-        "-t",
-        "./bundled/libs",
-        "--no-cache-dir",
-        "--no-deps",
-        "--upgrade",
-        "vscode-common-python-lsp==0.5.1",
-    )
 
 
 @nox.session()

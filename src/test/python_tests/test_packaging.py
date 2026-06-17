@@ -10,6 +10,7 @@ metadata was not accidentally excluded (see issue #649).
 """
 
 import importlib.metadata
+import importlib.util
 import pathlib
 import sys
 
@@ -42,3 +43,15 @@ def test_isort_metadata_version():
     # Basic sanity: version should look like a PEP 440 version
     parts = version.split(".")
     assert len(parts) >= 2, f"Unexpected version format: {version}"
+
+
+def test_common_lsp_package_is_bundled():
+    """The server imports this package before it can start.
+
+    If ``vscode_common_python_lsp`` is missing from ``bundled/libs`` the
+    server fails on standalone distributions (e.g. VSCodium) with
+    ``ModuleNotFoundError`` (see issue #679).
+    """
+    spec = importlib.util.find_spec("vscode_common_python_lsp")
+    assert spec is not None
+    assert pathlib.Path(spec.origin).is_relative_to(BUNDLED_LIBS)

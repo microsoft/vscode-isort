@@ -8,6 +8,7 @@
 pygls
 packaging
 isort>=7.0.0
+vscode-common-python-lsp==0.5.1
 colorama # required for windows machines
 # Backport of PEP 654 ExceptionGroup; required by cattrs (transitive via pygls) on Python < 3.11.
 # Pinned explicitly so it isn't dropped when the lockfile is regenerated on Python >= 3.11.
