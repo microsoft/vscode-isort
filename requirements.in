@@ -1,11 +1,14 @@
 # This file is used to generate requirements.txt.
-# To update requirements.txt, run the following commands.
-# Use `uv` with Python 3.9 when creating the environment.
+# To update requirements.txt, run the following command.
+# Use `uv` with Python 3.10 (the minimum supported version) when creating the environment.
 #
 # Run following command:
-# uv pip compile --generate-hashes --upgrade -o ./requirements.txt ./requirements.in
+# uv pip compile --generate-hashes --python-version 3.10 --upgrade -o ./requirements.txt ./requirements.in
 
 pygls
 packaging
 isort>=7.0.0
 colorama # required for windows machines
+# Backport of PEP 654 ExceptionGroup; required by cattrs (transitive via pygls) on Python < 3.11.
+# Pinned explicitly so it isn't dropped when the lockfile is regenerated on Python >= 3.11.
+exceptiongroup>=1.1.1; python_version < "3.11"
