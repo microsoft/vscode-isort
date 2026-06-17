@@ -18,6 +18,8 @@ def _update_pip_packages(session: nox.Session) -> None:
         "--generate-hashes",
         "--resolver=backtracking",
         "--upgrade",
+        "--python-version",
+        "3.10",
         "./requirements.in",
     )
     session.run(
@@ -25,6 +27,8 @@ def _update_pip_packages(session: nox.Session) -> None:
         "--generate-hashes",
         "--resolver=backtracking",
         "--upgrade",
+        "--python-version",
+        "3.10",
         "./src/test/python_tests/requirements.in",
     )
 
