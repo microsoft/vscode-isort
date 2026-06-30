@@ -208,7 +208,7 @@
         ]
     },
     "dependencies": {
-        "@vscode/common-python-lsp": "0.7.0",
+        "@vscode/common-python-lsp": "file:external/vscode-common-python-lsp/typescript",
         "@vscode/python-extension": "^1.0.5",
         "vscode-languageclient": "^8.1.0"
     },
