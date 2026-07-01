@@ -96,6 +96,16 @@ def install_bundled_libs(session):
         "-r",
         "./requirements.txt",
     )
+    # Source the shared Python library from the git submodule instead of the
+    # published package so the bundled copy matches the pinned submodule commit.
+    session.install(
+        "-t",
+        "./bundled/libs",
+        "--no-cache-dir",
+        "--no-deps",
+        "--upgrade",
+        "./external/vscode-common-python-lsp/python",
+    )
 
 
 @nox.session()
