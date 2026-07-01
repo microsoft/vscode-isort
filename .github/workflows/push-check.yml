@@ -66,8 +66,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6.0.2
         with:
-          submodules: recursive
           path: ${{ env.special-working-directory-relative }}
+
+      - name: Checkout submodules
+        run: git submodule update --init --recursive
+        shell: bash
 
       # Install bundled libs using env.PYTHON_VERSION even though you test it on other versions.
       - name: Use Python ${{ env.PYTHON_VERSION }}
