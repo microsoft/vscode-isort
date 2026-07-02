@@ -1,0 +1,157 @@
+name: Shared Package Submodule Sync
+
+on:
+  repository_dispatch:
+    types: [shared-package-release]
+
+permissions:
+  contents: write
+  issues: write
+
+env:
+  SUBMODULE_PATH: external/vscode-common-python-lsp
+
+jobs:
+  prepare:
+    name: Validate and normalize the release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.normalize.outputs.version }}
+      branch: ${{ steps.normalize.outputs.branch }}
+    steps:
+      - name: Normalize release tag
+        id: normalize
+        env:
+          RELEASE_TAG: ${{ github.event.client_payload.release_tag }}
+        run: |
+          set -euo pipefail
+          # Require a real dotted release so a branch/ref name can never be malformed.
+          if ! printf '%s' "${RELEASE_TAG}" | grep -Eq '^v?[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.]+)*$'; then
+            echo "::error::release_tag '${RELEASE_TAG:-<empty>}' is missing or not a valid semver release."
+            exit 1
+          fi
+          VERSION="${RELEASE_TAG#v}"
+          {
+            echo "version=${VERSION}"
+            echo "branch=shared-package-v${VERSION}"
+          } >>"$GITHUB_OUTPUT"
+
+  sync:
+    name: Update shared package submodule
+    needs: prepare
+    runs-on: ubuntu-latest
+    # Key on the normalized branch so `v1.2.3` and `1.2.3` share one group.
+    concurrency:
+      group: shared-package-submodule-${{ needs.prepare.outputs.branch }}
+      cancel-in-progress: false
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+      BRANCH: ${{ needs.prepare.outputs.branch }}
+      RELEASE_TAG: ${{ github.event.client_payload.release_tag }}
+      RELEASE_URL: ${{ github.event.client_payload.release_url }}
+      REPO: ${{ github.repository }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Update submodule and open tracking issue
+        run: |
+          set -euo pipefail
+
+          # Retry wrapper for flaky network operations (fetch/push).
+          retry() {
+            local attempt=1
+            until "$@"; do
+              if [ "${attempt}" -ge 3 ]; then
+                echo "::error::Command failed after ${attempt} attempts: $*"
+                return 1
+              fi
+              echo "Attempt ${attempt} failed: $* — retrying..." >&2
+              attempt=$((attempt + 1))
+              sleep $((attempt * 5))
+            done
+          }
+
+          # 1. Never clobber an existing release branch: once it exists a
+          #    maintainer may be editing it, so this workflow leaves it alone.
+          if git ls-remote --exit-code --heads origin "refs/heads/${BRANCH}" >/dev/null 2>&1; then
+            echo "Branch ${BRANCH} already exists; leaving it untouched."
+            exit 0
+          fi
+
+          # 2. Build the release branch from the latest main.
+          retry git fetch origin main
+          git checkout -B "${BRANCH}" FETCH_HEAD
+          git submodule update --init --recursive "${SUBMODULE_PATH}"
+
+          # 3. Move the submodule to the released commit (fail if the tag is unknown).
+          (
+            cd "${SUBMODULE_PATH}"
+            retry git fetch --tags --force origin
+            TARGET=''
+            for CANDIDATE in "refs/tags/${RELEASE_TAG}" "refs/tags/v${VERSION}"; do
+              if git rev-parse -q --verify "${CANDIDATE}^{commit}" >/dev/null; then
+                TARGET="${CANDIDATE}"
+                break
+              fi
+            done
+            if [ -z "${TARGET}" ]; then
+              echo "::error::Release tag '${RELEASE_TAG}' was not found in the shared package repository."
+              exit 1
+            fi
+            echo "Checking out submodule at ${TARGET}."
+            git checkout --detach "${TARGET}"
+          )
+
+          # 4. Stop early if the submodule pointer did not move.
+          if git diff --quiet -- "${SUBMODULE_PATH}"; then
+            echo "Submodule already at ${RELEASE_TAG}; nothing to do."
+            exit 0
+          fi
+
+          # 5. Refresh the lockfile so the branch stays `npm ci`-mergeable, then
+          #    commit both the submodule pointer and the regenerated lockfile.
+          npm install --package-lock-only --ignore-scripts
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add "${SUBMODULE_PATH}" package-lock.json
+          git commit -m "Update shared package submodule to ${RELEASE_TAG}"
+          # New branch only (guarded above), so a plain push cannot overwrite work.
+          retry git push --set-upstream origin "${BRANCH}"
+
+          # 6. Point a maintainer at the compare page via the job summary and a tracking issue.
+          COMPARE_URL="https://github.com/${REPO}/compare/main...${BRANCH}?expand=1"
+          TITLE="[Shared Package] Open PR to update submodule to ${RELEASE_TAG}"
+          BODY_FILE="$(mktemp)"
+          {
+            echo "### Shared package submodule update ready"
+            echo ''
+            echo "Branch \`${BRANCH}\` has been pushed, moving \`${SUBMODULE_PATH}\` to ${RELEASE_TAG}."
+            echo ''
+            echo 'Organization settings prevent this workflow from opening pull requests automatically. Please open it manually:'
+            echo ''
+            echo "[Open the pull request](${COMPARE_URL})"
+            echo ''
+            echo "Source release: ${RELEASE_URL:-n/a}"
+          } | tee -a "$GITHUB_STEP_SUMMARY" >"$BODY_FILE"
+
+          # Reuse an existing open tracking issue for this release if present.
+          EXISTING="$(gh issue list --repo "$REPO" --state open \
+            --search "in:title ${TITLE}" --json number,title \
+            --jq "map(select(.title == \"${TITLE}\")) | .[0].number // empty" 2>/dev/null || true)"
+          if [ -n "${EXISTING}" ]; then
+            echo "Reusing existing tracking issue #${EXISTING}."
+            gh issue comment "${EXISTING}" --repo "$REPO" --body-file "$BODY_FILE" \
+              || echo 'Could not comment on the tracking issue; the compare URL is in the job summary.'
+          else
+            gh issue create --repo "$REPO" --title "${TITLE}" --body-file "$BODY_FILE" \
+              || echo 'Could not create the tracking issue; the compare URL is in the job summary.'
+          fi
