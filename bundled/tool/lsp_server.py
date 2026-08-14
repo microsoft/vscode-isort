@@ -43,6 +43,7 @@ update_sys_path(os.fspath(pathlib.Path(__file__).parent.parent / "tool"), "useBu
 # **********************************************************
 # pylint: disable=wrong-import-position,import-error
 import isort
+import isort_comment_fix
 import lsp_notebook as notebook
 import lsp_utils as utils
 import lsprotocol.types as lsp
@@ -437,7 +438,16 @@ def is_interactive(file_path: str) -> bool:
 def _formatting_helper(document: TextDocument) -> list[lsp.TextEdit] | None:
     result = _run_tool_on_document(document, use_stdin=True)
     if result and result.stdout:
-        new_source = _match_line_endings(document, result.stdout)
+        # Work around an isort bug (microsoft/vscode-isort#712) where
+        # re-wrapping a parenthesized multi-import block whose names carry
+        # trailing inline comments (e.g. `# pyright: ignore[...]`) causes
+        # isort to misplace those comments. See isort_comment_fix.py for
+        # details. This only rewrites output that matches that exact
+        # buggy shape; anything else passes through unchanged.
+        repaired_stdout = isort_comment_fix.repair_comment_placement(
+            document.source, result.stdout
+        )
+        new_source = _match_line_endings(document, repaired_stdout)
 
         # Skip last line ending in a notebook cell
         if document.uri.startswith("vscode-notebook-cell"):
