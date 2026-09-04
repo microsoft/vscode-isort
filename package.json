@@ -214,7 +214,7 @@
         "vscode-languageclient": "^8.1.0"
     },
     "devDependencies": {
-        "@eslint/js": "^9.39.4",
+        "@eslint/js": "^9.39.5",
         "@types/chai": "^4.3.14",
         "@types/fs-extra": "^11.0.4",
         "@types/glob": "^8.1.0",
@@ -231,11 +231,11 @@
         "mocha": "^11.7.6",
         "prettier": "^3.8.4",
         "sinon": "^21.0.0",
-        "ts-loader": "^9.6.1",
+        "ts-loader": "^9.6.2",
         "typemoq": "^2.1.0",
         "typescript": "^5.9.2",
-        "typescript-eslint": "^8.61.1",
-        "webpack": "^5.107.2",
+        "typescript-eslint": "^8.69.0",
+        "webpack": "^5.110.2",
         "webpack-cli": "^6.0.1"
     }
 }
