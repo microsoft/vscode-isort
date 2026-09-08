@@ -222,7 +222,7 @@
         "@types/node": "22.x",
         "@types/sinon": "^17.0.3",
         "@types/vscode": "^1.74.0",
-        "@vscode/test-electron": "^2.3.9",
+        "@vscode/test-electron": "^2.5.2",
         "@vscode/vsce": "^3.9.2",
         "chai": "^4.3.10",
         "eslint": "^10.7.0",
