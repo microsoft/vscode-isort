@@ -17,6 +17,54 @@ FORMATTER = utils.get_server_info_defaults()
 TIMEOUT = 10  # 10 seconds
 
 
+@pytest.mark.parametrize("line_ending", ["\n", "\r\n"])
+def test_organize_import_keeps_opening_comment_on_wrapped_alias(line_ending):
+    """Test the wrapped alias comment placement fixed by isort #2491."""
+    contents = (
+        "from a_long_name_to_enforce.splitting_across.two_lines import ("
+        "  # type: ignore[attr-defined]\n"
+        "    a_random_attribute as renamed_random_attribute,\n"
+        ")\n"
+    ).replace("\n", line_ending)
+    init_params = copy.deepcopy(defaults.VSCODE_DEFAULT_INITIALIZE)
+    init_params["initializationOptions"]["settings"][0]["args"] = ["--profile", "black"]
+
+    with utils.python_file(contents, constants.TEST_DATA / "sample1") as pf:
+        uri = utils.as_uri(str(pf))
+        with session.LspSession() as ls_session:
+            ls_session.initialize(init_params)
+            ls_session.notify_did_open(
+                {
+                    "textDocument": {
+                        "uri": uri,
+                        "languageId": "python",
+                        "version": 1,
+                        "text": contents,
+                    }
+                }
+            )
+            actions = ls_session.text_document_code_action(
+                {
+                    "textDocument": {"uri": uri},
+                    "range": {
+                        "start": {"line": 0, "character": 0},
+                        "end": {"line": 0, "character": 0},
+                    },
+                    "context": {"diagnostics": []},
+                }
+            )
+            resolved = ls_session.code_action_resolve(
+                next(
+                    action
+                    for action in actions
+                    if action["kind"] == "source.organizeImports"
+                )
+            )
+
+    new_text = resolved["edit"]["documentChanges"][0]["edits"][0]["newText"]
+    assert_that(new_text, is_(contents))
+
+
 @pytest.mark.parametrize(
     "action_type",
     [

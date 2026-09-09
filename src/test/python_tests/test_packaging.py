@@ -3,7 +3,7 @@
 """Tests that bundled package metadata is intact.
 
 The extension ships bundled Python packages in ``bundled/libs/``.
-Some packages (e.g. isort 8.x) use ``importlib.metadata`` at runtime
+Some packages (e.g. isort) use ``importlib.metadata`` at runtime
 to resolve their version string, which requires the corresponding
 ``.dist-info`` directory to be present.  These tests verify the
 metadata was not accidentally excluded (see issue #649).
@@ -39,10 +39,7 @@ def test_isort_metadata_version():
     ``.vscodeignore``), this raises ``PackageNotFoundError``.
     """
     version = importlib.metadata.version("isort")
-    assert version, "isort version string should not be empty"
-    # Basic sanity: version should look like a PEP 440 version
-    parts = version.split(".")
-    assert len(parts) >= 2, f"Unexpected version format: {version}"
+    assert version == "9.0.1"
 
 
 def test_common_lsp_package_is_bundled():
