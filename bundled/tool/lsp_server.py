@@ -28,14 +28,14 @@ def update_sys_path(path_to_add: str, strategy: str) -> None:
             sys.path.append(path_to_add)
 
 
-# Ensure that we can import LSP libraries, and other bundled libraries.
-update_sys_path(
-    os.fspath(pathlib.Path(__file__).parent.parent / "libs"),
-    os.getenv("LS_IMPORT_STRATEGY", "useBundled"),
-)
+def configure_bundled_sys_path(bundle_dir: pathlib.Path) -> None:
+    """Ensure the server's runtime dependencies always come from the bundle."""
+    update_sys_path(os.fspath(bundle_dir / "tool"), "useBundled")
+    update_sys_path(os.fspath(bundle_dir / "libs"), "useBundled")
 
-# https://github.com/microsoft/vscode-isort/issues/316#issuecomment-2103588949
-update_sys_path(os.fspath(pathlib.Path(__file__).parent.parent / "tool"), "useBundled")
+
+# Ensure that we can import LSP libraries, and other bundled libraries.
+configure_bundled_sys_path(pathlib.Path(__file__).parent.parent)
 
 
 # **********************************************************
