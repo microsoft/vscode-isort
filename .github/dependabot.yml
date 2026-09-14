@@ -1,11 +1,18 @@
 version: 2
 
+registries:
+  pylance-public-packages:
+    type: npm-registry
+    url: https://devdiv.pkgs.visualstudio.com/DevDiv/_packaging/Pylance_PublicPackages/npm/registry/
+    tenant-id: 72f988bf-86f1-41af-91ab-2d7cd011db47
+    client-id: 92c669e8-02ad-4ce6-ad73-f222fc7177e2
+    replaces-base: true
+
 multi-ecosystem-groups:
   dependencies:
     schedule:
       interval: 'weekly'
-    exclude-patterns:
-      - 'isort'
+    open-pull-requests-limit: 10
     labels:
       - 'dependencies'
       - 'debt'
@@ -14,6 +21,8 @@ multi-ecosystem-groups:
 updates:
   # NPM, Python, and GitHub Actions dependencies are updated together.
   - package-ecosystem: 'npm'
+    registries:
+      - 'pylance-public-packages'
     labels:
       - 'dependencies'
       - 'debt'
@@ -24,11 +33,9 @@ updates:
     multi-ecosystem-group: 'dependencies'
     cooldown:
       default-days: 7
-    open-pull-requests-limit: 10
     ignore:
       - dependency-name: '@types/vscode'
       - dependency-name: '@types/node'
-      - dependency-name: 'vscode-languageclient'
 
   - package-ecosystem: 'pip'
     labels:
@@ -37,12 +44,29 @@ updates:
     directories:
       - '/'
       - '/src/test/python_tests'
+    # Multi-ecosystem groups only support positive patterns. Keep isort
+    # unmatched so its updates remain standalone.
     patterns:
-      - '*'
+      - 'attrs'
+      - 'cattrs'
+      - 'colorama'
+      - 'exceptiongroup'
+      - 'iniconfig'
+      - 'lsprotocol'
+      - 'mypy-extensions'
+      - 'packaging'
+      - 'pluggy'
+      - 'pygls'
+      - 'pygments'
+      - 'pyhamcrest'
+      - 'pytest'
+      - 'python-lsp-jsonrpc'
+      - 'tomli'
+      - 'typing-extensions'
+      - 'ujson'
     multi-ecosystem-group: 'dependencies'
     cooldown:
       default-days: 7
-    open-pull-requests-limit: 10
 
   # The shared package submodule is updated daily in a standalone PR.
   - package-ecosystem: 'gitsubmodule'
@@ -66,4 +90,3 @@ updates:
     patterns:
       - '*'
     multi-ecosystem-group: 'dependencies'
-    open-pull-requests-limit: 10

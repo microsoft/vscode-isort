@@ -52,7 +52,7 @@ npm run vsce-package-pre      # Build .vsix for pre-release
 - **Settings resolution:** `src/common/settings.ts` resolves VS Code variables (`${workspaceFolder}`, `${fileDirname}`, `${interpreter}`, `${env:*}`) in user-provided settings arrays. It also handles legacy `python.sortImports.*` settings with deprecation logging.
 - **Server info from package.json:** The `serverInfo` field in `package.json` (`{ name, module }`) drives the server ID and module name throughout both the client and server code. Changes there propagate automatically.
 - **Copyright header:** All source files start with `// Copyright (c) Microsoft Corporation. All rights reserved.` (TS) or `# Copyright (c) Microsoft Corporation. All rights reserved.` (Python), followed by the MIT license line.
-- **Dependency management:** `nox -s update_packages` updates both pip and npm dependencies. Some npm packages are pinned (`vscode-languageclient`, `@types/vscode`, `@types/node`).
+- **Dependency management:** `nox -s update_packages` updates both pip and npm dependencies. Some npm packages are pinned (`@types/vscode`, `@types/node`).
 
 ## Development Guidelines
 
