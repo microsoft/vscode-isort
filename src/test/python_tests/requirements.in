@@ -10,4 +10,4 @@ PyHamcrest
 python-lsp-jsonrpc
 colorama # required for windows machines
 ujson==5.11.0; python_version < "3.10"
-ujson==5.13.0; python_version >= "3.10"
+ujson==6.0.0; python_version >= "3.10"
