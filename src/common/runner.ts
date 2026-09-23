@@ -238,8 +238,8 @@ export async function textEditRunner(
     const content = textDocument.getText();
     const lines = content.split(/\r?\n|\r|\n/g);
     if (settings) {
-        let parts: string[] = [];
-        let args: string[] = [];
+        let parts: string[];
+        let args: string[];
 
         if (textDocument.isDirty || textDocument.isUntitled) {
             parts = getExecutablePathWithArgs(settings, ['-']);
