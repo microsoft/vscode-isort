@@ -235,5 +235,10 @@
         "typescript-eslint": "^8.69.0",
         "webpack": "^5.110.3",
         "webpack-cli": "^7.2.3"
+    },
+    "overrides": {
+        "mocha": {
+            "serialize-javascript": "7.1.1"
+        }
     }
 }
