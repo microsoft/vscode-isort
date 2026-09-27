@@ -5,7 +5,7 @@ Mock LSP dependencies and sys.path setup are provided by conftest.py.
 
 import copy
 import pathlib
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from hamcrest import assert_that, is_
 from lsp_server import _get_document_path
@@ -126,8 +126,10 @@ def test_interpreter():
     assert_that(actual, is_(False))
 
 
-def test_notebook_document_path():
+@patch("lsp_server.LSP_SERVER.workspace", create=True)
+def test_notebook_document_path(workspace):
     """Test resolving notebook cell paths."""
+    workspace.get_notebook_document.return_value = None
     document = MagicMock()
     document.uri = "vscode-notebook-cell:/path/to/notebook.ipynb#C00001"
     document.path = "/fallback/path.py"
