@@ -6,7 +6,9 @@ Tests for notebook document LSP handlers.
 
 import copy
 from threading import Event
+from urllib.parse import urlparse, urlunparse
 
+import pytest
 from hamcrest import assert_that, is_
 
 from .lsp_test_client import constants, defaults, session, utils
@@ -41,7 +43,8 @@ def _collect_diagnostics(ls_session, count=1, timeout=TIMEOUT):
     return results, done
 
 
-def test_notebook_did_open():
+@pytest.mark.parametrize("authority", ["", "wsl+alma9", "ssh-remote+dev"])
+def test_notebook_did_open(authority):
     """Opening a notebook should publish diagnostics for each cell."""
     init_params = copy.deepcopy(defaults.VSCODE_DEFAULT_INITIALIZE)
     init_params["initializationOptions"]["settings"][0]["check"] = True
@@ -52,6 +55,8 @@ def test_notebook_did_open():
     with utils.python_file("", UNFORMATTED.parent, ".ipynb") as pf:
         notebook_uri = _make_notebook_uri(pf)
         cell_uri = _make_cell_uri(pf, "C00001")
+        parsed = urlparse(cell_uri)
+        cell_uri = urlunparse(parsed._replace(netloc=authority))
 
         with session.LspSession() as ls_session:
             ls_session.initialize(init_params)

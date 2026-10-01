@@ -102,6 +102,16 @@ def _get_document_path(document: TextDocument) -> str:
         vscode-notebook-cell:/path/to/notebook.ipynb#C00001 -> /path/to/notebook.ipynb
     """
 
+    if document.uri.startswith("vscode-notebook-cell:"):
+        # The cell URI can retain a remote authority even when its notebook URI
+        # has been translated to a local file URI by the language client.
+        notebook_document = LSP_SERVER.workspace.get_notebook_document(
+            cell_uri=document.uri
+        )
+        if notebook_document is not None:
+            if result := uris.to_fs_path(notebook_document.uri):
+                return result
+
     if not document.uri.startswith("file:"):
         parsed = urlparse(document.uri)
         file_uri = urlunparse(("file", *parsed[1:-1], ""))
