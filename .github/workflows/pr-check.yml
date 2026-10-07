@@ -115,7 +115,7 @@ jobs:
         shell: bash
 
       - name: Run TS tests
-        uses: GabrielBB/xvfb-action@v1.7
+        uses: GabrielBB/xvfb-action@b706e4e27b14669b486812790492dc50ca16b465 # v1.7
         with:
           run: npm run tests
           working-directory: ${{ env.special-working-directory }}
