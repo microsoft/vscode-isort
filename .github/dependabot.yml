@@ -6,7 +6,6 @@ registries:
     url: 'https://devdiv.pkgs.visualstudio.com/DevDiv/_packaging/Pylance_PublicPackages/npm/registry/'
     tenant-id: '72f988bf-86f1-41af-91ab-2d7cd011db47'
     client-id: '92c669e8-02ad-4ce6-ad73-f222fc7177e2'
-    replaces-base: true
   pylance-public-packages-pypi:
     type: 'python-index'
     url: 'https://devdiv.pkgs.visualstudio.com/DevDiv/_packaging/Pylance_PublicPackages/pypi/simple/'
