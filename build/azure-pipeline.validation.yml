@@ -75,3 +75,4 @@ extends:
               standardizedVersioning: true
               customNPMRegistry: $(AZURE_ARTIFACTS_FEED)
               pythonArtifactFeed: 'DevDiv/Pylance_PublicPackages'
+              pythonVersion: '3.10'
