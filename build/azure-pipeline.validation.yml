@@ -19,7 +19,7 @@ resources:
     - repository: templates
       type: git
       name: DevDiv/Pylance-Eng
-      ref: refs/heads/main
+      ref: refs/heads/users/bschnurr/parameterize-pylance-package-feeds
 variables:
   - name: TeamName
     value: VSCode-isort
@@ -74,3 +74,4 @@ extends:
               isPreRelease: false
               standardizedVersioning: true
               customNPMRegistry: $(AZURE_ARTIFACTS_FEED)
+              pythonArtifactFeed: 'DevDiv/Pylance_PublicPackages'
