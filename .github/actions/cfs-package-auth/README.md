@@ -58,18 +58,9 @@ Do not commit a token-bearing `.npmrc`, `pip.conf`, or URL. The action writes cr
 
 Dependabot does not run this action. `.github/dependabot.yml` declares separate `npm-registry` and `python-index` entries with the same tenant and client IDs.
 
-Dependabot uses the Microsoft GitHub issuer. If an update job reports `AADSTS700213`, copy the exact unmatched subject from its log and create a separate credential:
-
-```powershell
-$dependabotSubject = Read-Host 'Dependabot subject claim'
-az identity federated-credential create `
-  --resource-group managed_identities `
-  --identity-name PyrxCfsAccessForGitHub `
-  --name VscodeIsortCfsAccessForDependabot `
-  --issuer https://token.actions.msft.ghe.com `
-  --subject $dependabotSubject `
-  --audiences api://AzureADTokenExchange
-```
+Dependabot runs through GitHub Actions and uses the same `https://token.actions.githubusercontent.com` issuer and
+immutable repository subject as other workflows. The existing `VscodeIsortCfsAccessForAllWorkflows_mm` credential
+covers Dependabot because its subject omits event context.
 
 Dependabot reads configuration from the default branch, so verify its npm and pip jobs after the change is merged.
 
@@ -85,6 +76,6 @@ For each sibling repository:
 6. Regenerate npm lockfiles and hashed Python requirements through the internal feed.
 7. Add the npm and Python registries to every applicable Dependabot update block.
 8. Test push and pull-request workflows in the upstream repository.
-9. After merge, run Dependabot and add its issuer credential from the exact logged subject if required.
+9. After merge, run Dependabot and verify the existing repository-wide credential authorizes its OIDC request.
 
 For vscode-isort, manually dispatch `Push Validation` against the upstream feature branch and open a draft pull request to exercise both build paths before merge.
