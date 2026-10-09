@@ -1,0 +1,86 @@
+name: CFS package authentication
+description: Configure or remove temporary npm and pip credentials for Pylance_PublicPackages.
+
+inputs:
+  operation:
+    description: Whether to set up or clean up package authentication.
+    required: false
+    default: setup
+
+runs:
+  using: composite
+  steps:
+    - name: Validate operation
+      if: ${{ inputs.operation != 'setup' && inputs.operation != 'cleanup' }}
+      shell: bash
+      run: |
+        echo "Unsupported operation: ${{ inputs.operation }}" >&2
+        exit 1
+
+    - name: Azure OIDC login
+      if: ${{ inputs.operation == 'setup' }}
+      uses: azure/login@v3
+      with:
+        client-id: 92c669e8-02ad-4ce6-ad73-f222fc7177e2
+        tenant-id: 72f988bf-86f1-41af-91ab-2d7cd011db47
+        allow-no-subscriptions: true
+
+    - name: Get Azure DevOps access token
+      if: ${{ inputs.operation == 'setup' }}
+      id: package-auth
+      shell: bash
+      run: |
+        token="$(az account get-access-token --resource 499b84ac-1321-427f-aa17-267ca6975798 --query accessToken --output tsv)"
+        echo "::add-mask::$token"
+        echo "token=$token" >> "$GITHUB_OUTPUT"
+
+    - name: Create temporary package configuration
+      if: ${{ inputs.operation == 'setup' }}
+      shell: bash
+      env:
+        CFS_TOKEN: ${{ steps.package-auth.outputs.token }}
+      run: |
+        auth_dir="${{ runner.temp }}/cfs-package-auth"
+        npmrc="$auth_dir/.npmrc"
+        pip_config="$auth_dir/pip.conf"
+        npm_feed="//devdiv.pkgs.visualstudio.com/DevDiv/_packaging/Pylance_PublicPackages"
+        pip_feed="https://github-actions:$CFS_TOKEN@devdiv.pkgs.visualstudio.com/DevDiv/_packaging/Pylance_PublicPackages/pypi/simple/"
+
+        rm -rf "$auth_dir"
+        mkdir -p "$auth_dir"
+
+        {
+          echo "registry=https:$npm_feed/npm/registry/"
+          echo
+          echo "$npm_feed/npm/registry/:username=github-actions"
+          echo "$npm_feed/npm/registry/:_authToken=$CFS_TOKEN"
+          echo "$npm_feed/npm/registry/:email=actions@github.com"
+          echo "$npm_feed/npm:username=github-actions"
+          echo "$npm_feed/npm:_authToken=$CFS_TOKEN"
+          echo "$npm_feed/npm:email=actions@github.com"
+        } > "$npmrc"
+
+        {
+          echo "[global]"
+          echo "index-url = $pip_feed"
+          echo "disable-pip-version-check = true"
+        } > "$pip_config"
+
+        {
+          echo "NPM_CONFIG_USERCONFIG=$npmrc"
+          echo "PIP_CONFIG_FILE=$pip_config"
+          echo "UV_DEFAULT_INDEX=$pip_feed"
+          echo "UV_INDEX_URL=$pip_feed"
+        } >> "$GITHUB_ENV"
+
+    - name: Remove temporary package configuration
+      if: ${{ inputs.operation == 'cleanup' }}
+      shell: bash
+      run: |
+        rm -rf "${{ runner.temp }}/cfs-package-auth"
+        {
+          echo "NPM_CONFIG_USERCONFIG="
+          echo "PIP_CONFIG_FILE="
+          echo "UV_DEFAULT_INDEX="
+          echo "UV_INDEX_URL="
+        } >> "$GITHUB_ENV"

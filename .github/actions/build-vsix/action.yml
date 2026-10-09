@@ -18,6 +18,9 @@ runs:
         node-version: ${{ inputs.node_version }}
         cache: 'npm'
 
+    - name: Configure package authentication
+      uses: ./.github/actions/cfs-package-auth
+
     # Minimum supported version is Python 3.10
     - name: Use Python ${{ inputs.python_version }}
       uses: actions/setup-python@v6
@@ -72,3 +75,9 @@ runs:
           **/*.vsix
         if-no-files-found: error
         retention-days: 7
+
+    - name: Remove package authentication
+      if: always()
+      uses: ./.github/actions/cfs-package-auth
+      with:
+        operation: cleanup

@@ -18,6 +18,9 @@ runs:
         node-version: ${{ inputs.node_version }}
         cache: 'npm'
 
+    - name: Configure package authentication
+      uses: ./.github/actions/cfs-package-auth
+
     - name: Install Node dependencies
       run: npm ci
       shell: bash
@@ -59,3 +62,9 @@ runs:
     - name: Check linting and formatting
       run: python -m nox --session lint
       shell: bash
+
+    - name: Remove package authentication
+      if: always()
+      uses: ./.github/actions/cfs-package-auth
+      with:
+        operation: cleanup

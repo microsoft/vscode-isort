@@ -1,6 +1,7 @@
 name: Push Validation
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - 'main'
@@ -21,6 +22,9 @@ jobs:
     name: Create VSIX
     if: github.repository_owner == 'microsoft'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -37,6 +41,9 @@ jobs:
     name: Lint
     if: github.repository_owner == 'microsoft'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -53,6 +60,9 @@ jobs:
     name: Tests
     if: github.repository_owner == 'microsoft'
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      id-token: write
     defaults:
       run:
         working-directory: ${{ env.special-working-directory }}
@@ -71,6 +81,9 @@ jobs:
       - name: Checkout submodules
         run: git submodule update --init --recursive
         shell: bash
+
+      - name: Configure package authentication
+        uses: './testingDir/.github/actions/cfs-package-auth'
 
       # Install bundled libs using env.PYTHON_VERSION even though you test it on other versions.
       - name: Use Python ${{ env.PYTHON_VERSION }}
@@ -106,3 +119,9 @@ jobs:
       - name: Validate README.md
         run: python -m nox --session validate_readme
         shell: bash
+
+      - name: Remove package authentication
+        if: always()
+        uses: './testingDir/.github/actions/cfs-package-auth'
+        with:
+          operation: cleanup
