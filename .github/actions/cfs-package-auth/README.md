@@ -1,6 +1,9 @@
 # CFS package authentication
 
-This action authenticates npm and pip to the `Pylance_PublicPackages` Azure Artifacts feed through GitHub Actions OIDC. It creates temporary package-manager configuration containing a short-lived Azure DevOps access token and removes it at the end of the job.
+This action authenticates npm and pip to the internal `Pylance_PublicPackages` Azure Artifacts feed through GitHub
+Actions OIDC. Despite its name, the feed requires Microsoft access and is not public to community contributors. The
+action creates temporary package-manager configuration containing a short-lived Azure DevOps access token and removes
+it at the end of the job.
 
 Workflows that call the setup operation must grant `id-token: write`. They must also call the cleanup operation from an `always()` step.
 

@@ -89,3 +89,13 @@ Then install dependencies:
 ```bash
 npm install
 ```
+
+`Pylance_PublicPackages` is an authenticated Microsoft Azure Artifacts feed. Despite its name, it is not publicly
+accessible to community contributors.
+
+Microsoft contributors with feed access should authenticate to Azure Artifacts before installing dependencies.
+Community contributors can install the same public npm packages without changing the committed lockfile:
+
+```bash
+npm ci --registry=https://registry.npmjs.org/ --replace-registry-host=always
+```
