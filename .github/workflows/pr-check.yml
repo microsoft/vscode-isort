@@ -64,7 +64,15 @@ jobs:
         python: ['3.10', '3.11', '3.12', '3.13', '3.14']
 
     steps:
-      - name: Checkout
+      - name: Checkout package authentication action
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/actions/cfs-package-auth
+
+      - name: Configure package authentication
+        uses: ./.github/actions/cfs-package-auth
+
+      - name: Checkout source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: ${{ env.special-working-directory-relative }}
@@ -72,9 +80,6 @@ jobs:
       - name: Checkout submodules
         run: git submodule update --init --recursive
         shell: bash
-
-      - name: Configure package authentication
-        uses: './🐍 🐛/.github/actions/cfs-package-auth'
 
       # Install bundled libs using env.PYTHON_VERSION even though you test it on other versions.
       - name: Use Python ${{ env.PYTHON_VERSION }}
@@ -134,6 +139,6 @@ jobs:
 
       - name: Remove package authentication
         if: always()
-        uses: './🐍 🐛/.github/actions/cfs-package-auth'
+        uses: ./.github/actions/cfs-package-auth
         with:
           operation: cleanup
