@@ -17,8 +17,8 @@ registries:
 multi-ecosystem-groups:
   dependencies:
     schedule:
-      interval: 'weekly'
-    open-pull-requests-limit: 10
+      interval: 'daily'
+    open-pull-requests-limit: 1
     labels:
       - 'dependencies'
       - 'debt'
@@ -39,7 +39,7 @@ updates:
     multi-ecosystem-group: 'dependencies'
     cooldown:
       # Delay updates beyond the highest-risk window after a release.
-      default-days: 14
+      default-days: 7
     ignore:
       - dependency-name: '@types/vscode'
       - dependency-name: '@types/node'
@@ -74,9 +74,10 @@ updates:
       - 'typing-extensions'
       - 'ujson'
     multi-ecosystem-group: 'dependencies'
+    open-pull-requests-limit: 1
     cooldown:
       # Delay updates beyond the highest-risk window after a release.
-      default-days: 14
+      default-days: 7
 
   # The shared package submodule is updated daily in a standalone PR.
   - package-ecosystem: 'gitsubmodule'
@@ -89,7 +90,7 @@ updates:
       - dependency-name: 'external/vscode-common-python-lsp'
     schedule:
       interval: 'daily'
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 1
 
   - package-ecosystem: 'github-actions'
     labels:
@@ -102,4 +103,4 @@ updates:
     multi-ecosystem-group: 'dependencies'
     cooldown:
       # Delay updates beyond the highest-risk window after a release.
-      default-days: 14
+      default-days: 7
