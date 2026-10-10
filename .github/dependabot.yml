@@ -11,6 +11,7 @@ updates:
       interval: 'weekly'
     groups:
       npm-minor-patch:
+        replaces-base: true
         patterns:
           - '*'
         update-types:
@@ -34,6 +35,7 @@ updates:
     open-pull-requests-limit: 10
     groups:
       pip-minor-patch:
+        replaces-base: true
         patterns:
           - '*'
         update-types:
@@ -52,6 +54,7 @@ updates:
     open-pull-requests-limit: 10
     groups:
       pip-test-minor-patch:
+        replaces-base: true
         patterns:
           - '*'
         update-types:
@@ -70,6 +73,7 @@ updates:
     open-pull-requests-limit: 10
     groups:
       github-actions-minor-patch:
+        replaces-base: true
         patterns:
           - '*'
         update-types:
