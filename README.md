@@ -84,6 +84,8 @@ If you already cloned without `--recurse-submodules`, initialize (or update) the
 git submodule update --init --recursive
 ```
 
+The repository's `.npmrc` routes npm packages through the `Pylance_PublicPackages` Azure Artifacts feed. Microsoft contributors should authenticate locally using the feed's **Connect to feed > npm** instructions before installing dependencies. Store credentials in your user-level `.npmrc`, not in the repository; never commit tokens. GitHub Actions OIDC authentication does not authenticate your local development environment.
+
 Then install dependencies:
 
 ```bash
