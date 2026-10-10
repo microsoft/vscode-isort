@@ -15,6 +15,9 @@ jobs:
   build-vsix:
     name: Create VSIX
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -30,6 +33,9 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -45,6 +51,9 @@ jobs:
   tests:
     name: Tests
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      id-token: write
     defaults:
       run:
         working-directory: ${{ env.special-working-directory }}
@@ -55,7 +64,15 @@ jobs:
         python: ['3.10', '3.11', '3.12', '3.13', '3.14']
 
     steps:
-      - name: Checkout
+      - name: Checkout package authentication action
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/actions/cfs-package-auth
+
+      - name: Configure package authentication
+        uses: ./.github/actions/cfs-package-auth
+
+      - name: Checkout source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: ${{ env.special-working-directory-relative }}
@@ -119,3 +136,9 @@ jobs:
         with:
           run: npm run tests
           working-directory: ${{ env.special-working-directory }}
+
+      - name: Remove package authentication
+        if: always()
+        uses: ./.github/actions/cfs-package-auth
+        with:
+          operation: cleanup
