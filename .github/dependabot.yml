@@ -39,7 +39,7 @@ updates:
     multi-ecosystem-group: 'dependencies'
     cooldown:
       # Delay updates beyond the highest-risk window after a release.
-      default-days: 14
+      default-days: 6
     ignore:
       - dependency-name: '@types/vscode'
       - dependency-name: '@types/node'
@@ -76,7 +76,7 @@ updates:
     multi-ecosystem-group: 'dependencies'
     cooldown:
       # Delay updates beyond the highest-risk window after a release.
-      default-days: 14
+      default-days: 6
 
   # The shared package submodule is updated daily in a standalone PR.
   - package-ecosystem: 'gitsubmodule'
@@ -102,4 +102,4 @@ updates:
     multi-ecosystem-group: 'dependencies'
     cooldown:
       # Delay updates beyond the highest-risk window after a release.
-      default-days: 14
+      default-days: 6
