@@ -7,6 +7,23 @@ it at the end of the job.
 
 Workflows that call the setup operation must grant `id-token: write`. They must also call the cleanup operation from an `always()` step.
 
+## PR approval boundary
+
+PR validation authenticates because its dependency installs use `Pylance_PublicPackages`. The repository requires
+workflow approval for **all external contributors**, not just first-time contributors. Keep this policy enabled:
+
+```powershell
+gh api repos/microsoft/vscode-isort/actions/permissions/fork-pr-contributor-approval
+```
+
+The response must contain `"approval_policy": "all_external_contributors"`. Repository collaborators with write
+access are trusted to run workflows; external contributors require maintainer approval before their workflows run.
+
+Before approving an external contributor's workflow, review the complete code that the job will execute, including
+local actions, package lifecycle scripts, and tests. Approval authorizes that code to run with the managed identity's
+feed access. Log masking and temporary-file cleanup do not prevent code in the job from reading or exporting the token.
+Do not approve an untrusted revision merely to obtain test results.
+
 ## Repository identity
 
 The repository uses an immutable GitHub OIDC subject:
