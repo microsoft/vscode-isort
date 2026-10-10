@@ -1,0 +1,79 @@
+name: Normalize package-lock registry URLs
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'package-lock.json'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: normalize-package-lock-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  normalize:
+    # The repository token cannot push to forks.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout trusted base code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Normalize and commit lockfile URLs
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          script: |
+            const { normalizePackageLock } = require('./build/normalize-package-lock');
+            const repo = { owner: context.repo.owner, repo: context.repo.repo };
+            const { data: pr } = await github.rest.pulls.get({
+              ...repo,
+              pull_number: context.payload.pull_request.number,
+            });
+            if (pr.state !== 'open' || pr.head.sha !== context.payload.pull_request.head.sha) {
+              core.notice('Skipping a closed PR or superseded lockfile update.');
+              return;
+            }
+            if (pr.head.repo.full_name !== context.payload.pull_request.head.repo.full_name) {
+              throw new Error('PR head repository changed.');
+            }
+            const { data: file } = await github.rest.repos.getContent({
+              ...repo,
+              path: 'package-lock.json',
+              ref: pr.head.sha,
+            });
+            if (file.type !== 'file' || file.encoding !== 'base64') {
+              throw new Error('Expected a base64-encoded package-lock.json file.');
+            }
+            const source = Buffer.from(file.content, 'base64').toString('utf8');
+            const normalized = await normalizePackageLock(source);
+            if (normalized === source) {
+              core.notice('Lockfile registry URLs are already normalized.');
+              return;
+            }
+            const { data: parent } = await github.rest.git.getCommit({ ...repo, commit_sha: pr.head.sha });
+            const { data: tree } = await github.rest.git.createTree({
+              ...repo,
+              base_tree: parent.tree.sha,
+              tree: [{ path: 'package-lock.json', mode: '100644', type: 'blob', content: normalized }],
+            });
+            const { data: commit } = await github.rest.git.createCommit({
+              ...repo,
+              message: 'Normalize package-lock.json URLs to the public npm registry',
+              tree: tree.sha,
+              parents: [pr.head.sha],
+            });
+            await github.rest.git.updateRef({
+              ...repo,
+              ref: `heads/${pr.head.ref}`,
+              sha: commit.sha,
+              force: false,
+            });
+            core.notice(`Committed normalized lockfile URLs: ${commit.sha}. CI may require workflow approval.`);
