@@ -17,7 +17,7 @@ registries:
 multi-ecosystem-groups:
   dependencies:
     schedule:
-      interval: 'weekly'
+      interval: 'daily'
     open-pull-requests-limit: 1
     labels:
       - 'dependencies'
@@ -79,7 +79,7 @@ updates:
       # Delay updates beyond the highest-risk window after a release.
       default-days: 7
 
-  # The shared package submodule is updated weekly in a standalone PR.
+  # The shared package submodule is updated daily in a standalone PR.
   - package-ecosystem: 'gitsubmodule'
     labels:
       - 'dependencies'
@@ -89,7 +89,7 @@ updates:
     allow:
       - dependency-name: 'external/vscode-common-python-lsp'
     schedule:
-      interval: 'weekly'
+      interval: 'daily'
     open-pull-requests-limit: 1
 
   - package-ecosystem: 'github-actions'
