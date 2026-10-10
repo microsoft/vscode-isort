@@ -90,10 +90,13 @@ Then install dependencies:
 npm install
 ```
 
-`Pylance_PublicPackages` is an authenticated Microsoft Azure Artifacts feed. Despite its name, it is not publicly
-accessible to community contributors.
+The repository's `.npmrc` defaults local npm installs to `Pylance_PublicPackages`, an authenticated Microsoft Azure
+Artifacts feed. Despite its name, it is not publicly accessible to community contributors.
 
-Microsoft contributors with feed access should authenticate to Azure Artifacts before installing dependencies.
+Microsoft contributors with feed access should authenticate using the feed's **Connect to feed > npm** instructions
+before installing dependencies. Store credentials in your user-level `.npmrc`, not in the repository; never commit tokens.
+GitHub Actions OIDC authentication does not authenticate your local development environment.
+
 Community contributors can install the same public npm packages without changing the committed lockfile:
 
 ```bash
