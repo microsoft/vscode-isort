@@ -89,3 +89,9 @@ Then install dependencies:
 ```bash
 npm install
 ```
+
+### GitHub Actions package feeds
+
+The PR, push, and CodeQL workflows set `NPM_CONFIG_REGISTRY` to `https://packagefeedproxy.microsoft.io/npm/` and `PIP_INDEX_URL` to `https://packagefeedproxy.microsoft.io/pypi/simple/`. These workflow-level settings also apply to the shared build/lint actions, nested npm commands, and pip installs in nox sessions. The npm endpoint follows the [TypeScript CI package-feed-proxy job](https://github.com/microsoft/TypeScript/blob/main/.github/workflows/ci.yml).
+
+This routing is CI-only: local registry configuration, public URLs in `package-lock.json`, and Dependabot configuration remain independent. Existing dependency caches are retained; uncached package requests use the configured proxy.
