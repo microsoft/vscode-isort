@@ -31,6 +31,9 @@ function load({ platform = 'win32', existingVenv = false, failAt, failure, args 
         if (name === 'node:fs') {
             return { existsSync: () => existingVenv };
         }
+        if (name === './package-feeds.json') {
+            return JSON.parse(readFileSync(path.join(__dirname, 'package-feeds.json'), 'utf8'));
+        }
         assert.equal(name, 'node:child_process');
         return {
             spawnSync(command, args, options) {
@@ -106,6 +109,25 @@ test('setup reuses an existing project virtual environment', () => {
         context.calls.some((call) => call.args.includes('venv')),
         false,
     );
+});
+
+test('Microsoft setup rewrites lockfiles after submodule checkout and before npm installs', () => {
+    const context = load();
+    context.setup({ microsoft: true });
+    assert.deepEqual(context.calls[0].args, ['submodule', 'update', '--init', '--recursive']);
+    assert.equal(context.calls[1].command, context.process.execPath);
+    assert.deepEqual(context.calls[1].args, [context.paths.join(context.root, 'build', 'setup-npm-registry.js')]);
+    const installs = context.calls.filter((call) => call.args.includes('ci'));
+    assert.equal(installs.length, 2);
+    assert.ok(installs.every((call) => context.calls.indexOf(call) > 1));
+});
+
+test('Microsoft setup stops before installing if rewriting lockfiles fails', () => {
+    const context = load({ failAt: 2, failure: { status: 1 } });
+    context.runCli({ microsoft: true });
+    assert.equal(context.calls.length, 2);
+    assert.equal(context.process.exitCode, 1);
+    assert.match(context.errors[0], /Setup failed/);
 });
 
 for (const failure of [{ status: 7 }, { status: null, signal: 'SIGTERM' }, { error: new Error('not found') }]) {

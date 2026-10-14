@@ -4,6 +4,7 @@
 const { spawnSync } = require('node:child_process');
 const { existsSync } = require('node:fs');
 const path = require('node:path');
+const feeds = require('./package-feeds.json');
 
 function setup({ microsoft = false } = {}) {
     const npmCli = process.env.npm_execpath;
@@ -18,8 +19,9 @@ function setup({ microsoft = false } = {}) {
             delete env[key];
         }
     }
-    env.npm_config_registry = microsoft ? 'https://packagefeedproxy.microsoft.io/npm/' : 'https://registry.npmjs.org/';
-    env.PIP_INDEX_URL = microsoft ? 'https://packagefeedproxy.microsoft.io/pypi/simple/' : 'https://pypi.org/simple/';
+    const feed = microsoft ? feeds.microsoft : feeds.public;
+    env.npm_config_registry = feed.npm;
+    env.PIP_INDEX_URL = feed.pip;
 
     function run(command, args, cwd = root) {
         console.log(`[setup] ${command} ${args.join(' ')}`);
@@ -33,6 +35,9 @@ function setup({ microsoft = false } = {}) {
     }
 
     run('git', ['submodule', 'update', '--init', '--recursive']);
+    if (microsoft) {
+        run(process.execPath, [path.join(root, 'build', 'setup-npm-registry.js')]);
+    }
 
     const python = path.join(root, '.venv', process.platform === 'win32' ? 'Scripts\\python.exe' : 'bin/python');
     if (!existsSync(python)) {
