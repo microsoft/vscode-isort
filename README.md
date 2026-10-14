@@ -84,15 +84,25 @@ If you already cloned without `--recurse-submodules`, initialize (or update) the
 git submodule update --init --recursive
 ```
 
-Then install dependencies:
-
-```bash
-npm install
-```
-
 ### Local package feeds
 
-The checked-in `.npmrc` selects public npm by default; pip uses its normal configuration. To use Microsoft's package-feed proxy locally, initialize the submodule as described above, then run these commands in PowerShell:
+Choose the appropriate setup below before installing dependencies. Both paths use the same checked-in lockfile; do not rewrite its package URLs.
+
+#### Public contributors (non-Microsoft employees)
+
+Use the default public registries. The checked-in `.npmrc` selects `https://registry.npmjs.org/`, and pip defaults to `https://pypi.org/simple/` unless your environment overrides it. No Microsoft account or internal-feed credentials are needed.
+
+After initializing the submodule as described above, install dependencies:
+
+```bash
+python -m pip install -U pip wheel nox
+npm ci
+python -m nox --session install_bundled_libs
+```
+
+#### Microsoft employees
+
+For development using Microsoft's package-feed proxy, initialize the submodule as described above, then set both registry overrides before installing dependencies. In PowerShell:
 
 ```powershell
 $env:NPM_CONFIG_REGISTRY = 'https://packagefeedproxy.microsoft.io/npm/'
@@ -102,7 +112,7 @@ npm ci
 python -m nox --session install_bundled_libs
 ```
 
-The environment variables apply only to this PowerShell session and are inherited by nested npm commands and pip installs in nox sessions. They do not edit `.npmrc`, and the existing `registry.npmjs.org` URLs in `package-lock.json` do not need rewriting.
+The environment variables apply only to this PowerShell session and are inherited by nested npm commands and pip installs in nox sessions. This setup does not add registry credentials or edit `.npmrc`, and the existing `registry.npmjs.org` URLs in `package-lock.json` do not need rewriting. Close the session to discard these overrides.
 
 ### GitHub Actions package feeds
 
