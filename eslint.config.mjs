@@ -20,6 +20,20 @@ export default tseslint.config(
     },
   },
   {
+    files: ['build/setup*.js'],
+    languageOptions: {
+      sourceType: 'commonjs',
+      globals: {
+        __dirname: 'readonly',
+        console: 'readonly',
+        process: 'readonly',
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
+  {
     ignores: [
       'out/**',
       'dist/**',

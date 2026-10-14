@@ -26,6 +26,10 @@ runs:
       run: npm run lint
       shell: bash
 
+    - name: Test local setup scripts
+      run: npm run test:setup
+      shell: bash
+
     - name: Check TypeScript format
       run: npm run format-check
       shell: bash

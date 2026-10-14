@@ -54,6 +54,9 @@
     "main": "./dist/extension.js",
     "l10n": "./l10n",
     "scripts": {
+        "setup": "node ./build/setup.js",
+        "setup:msft": "node ./build/setup-msft.js",
+        "test:setup": "node --test ./build/setup.test.js",
         "postinstall": "node ./build/postinstall.js",
         "vscode:prepublish": "npm run package",
         "compile": "webpack",
@@ -62,9 +65,9 @@
         "compile-tests": "tsc -p . --outDir out",
         "watch-tests": "tsc -p . -w --outDir out",
         "pretest": "npm run compile-tests && npm run compile",
-        "lint": "eslint src",
-        "format-check": "prettier --check 'src/**/*.ts' 'build/**/*.yml' '.github/**/*.yml'",
-        "fix-format": "prettier --write src/**/*.ts build/**/*.yml .github/**/*.yml",
+        "lint": "eslint src \"build/setup*.js\"",
+        "format-check": "prettier --check \"src/**/*.ts\" \"build/**/*.yml\" \".github/**/*.yml\" build/setup.js build/setup-msft.js build/setup.test.js",
+        "fix-format": "prettier --write \"src/**/*.ts\" \"build/**/*.yml\" \".github/**/*.yml\" build/setup.js build/setup-msft.js build/setup.test.js",
         "tests": "node ./out/test/ts_tests/runTest.js",
         "vsce-package": "vsce package -o isort.vsix",
         "vsce-package-pre": "vsce package -o isort.vsix --pre-release"

@@ -70,15 +70,18 @@ To open the logs, click on the language status icon (`{}`) on the bottom right o
 
 ## Development
 
-This extension bundles the shared [`vscode-common-python-lsp`](https://github.com/microsoft/vscode-common-python-lsp) library as a git submodule at `external/vscode-common-python-lsp`. The submodule must be initialized before installing dependencies, because `npm install` builds the shared library from it.
+This extension uses the shared [`vscode-common-python-lsp`](https://github.com/microsoft/vscode-common-python-lsp) TypeScript and Python libraries from the git submodule at `external/vscode-common-python-lsp`. The setup commands below initialize that submodule before npm resolves the local dependency, install and build the shared Node package, install extension dependencies, and bundle the Python libraries.
 
-When cloning the repository, pull the submodule at the same time:
+Prerequisites: Git, Node.js (see `.nvmrc`), and Python 3.10 or later (`python` on Windows or `python3` on macOS/Linux). Setup creates or reuses a project-local `.venv` for Python tools rather than installing into your global Python environment. The nox bundling session uses Python 3.10 and may download that interpreter if it is not already installed.
+
+Clone the repository and enter its directory:
 
 ```bash
-git clone --recurse-submodules https://github.com/microsoft/vscode-isort.git
+git clone https://github.com/microsoft/vscode-isort.git
+cd vscode-isort
 ```
 
-If you already cloned without `--recurse-submodules`, initialize (or update) the submodule from the repository root:
+Setup initializes submodules automatically. If installing manually instead, initialize (or update) the submodule before installing dependencies:
 
 ```bash
 git submodule update --init --recursive
@@ -90,29 +93,25 @@ Choose the appropriate setup below before installing dependencies. Both paths us
 
 #### Public contributors (non-Microsoft employees)
 
-Use the default public registries. The checked-in `.npmrc` selects `https://registry.npmjs.org/`, and pip defaults to `https://pypi.org/simple/` unless your environment overrides it. No Microsoft account or internal-feed credentials are needed.
+Use the public setup, which selects `https://registry.npmjs.org/` and `https://pypi.org/simple/` for its child processes. No Microsoft account or internal-feed credentials are needed, and this command works before `node_modules` exists:
 
-After initializing the submodule as described above, install dependencies:
+From the repository root:
 
 ```bash
-python -m pip install -U pip wheel nox
-npm ci
-python -m nox --session install_bundled_libs
+npm run setup
 ```
 
 #### Microsoft employees
 
-For development using Microsoft's package-feed proxy, initialize the submodule as described above, then set both registry overrides before installing dependencies. In PowerShell:
+Use the Microsoft setup, which selects `https://packagefeedproxy.microsoft.io/npm/` and `https://packagefeedproxy.microsoft.io/pypi/simple/` for its child processes:
 
-```powershell
-$env:NPM_CONFIG_REGISTRY = 'https://packagefeedproxy.microsoft.io/npm/'
-$env:PIP_INDEX_URL = 'https://packagefeedproxy.microsoft.io/pypi/simple/'
-python -m pip install -U pip wheel nox
-npm ci
-python -m nox --session install_bundled_libs
+```bash
+npm run setup:msft
 ```
 
-The environment variables apply only to this PowerShell session and are inherited by nested npm commands and pip installs in nox sessions. This setup does not add registry credentials or edit `.npmrc`, and the existing `registry.npmjs.org` URLs in `package-lock.json` do not need rewriting. Close the session to discard these overrides.
+Both commands use the same setup implementation, stop on errors, and keep registry overrides scoped to setup's child processes; they do not change your shell environment or add credentials. Neither command edits `.npmrc` or rewrites the checked-in lockfiles. Existing `registry.npmjs.org` lockfile URLs do not need rewriting for proxy installs.
+
+After setup, run `npm run compile` to build the extension. For subsequent Python commands, use `.venv\Scripts\python.exe` on Windows or `.venv/bin/python` on macOS/Linux (or activate that virtual environment). Registry overrides are not retained after setup.
 
 ### GitHub Actions package feeds
 
