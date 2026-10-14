@@ -109,7 +109,7 @@ jobs:
           cache-dependency-path: ${{ env.special-working-directory-relative }}/package-lock.json
 
       - name: Install Node dependencies
-        run: npm ci
+        run: npm run ci:msft
         shell: bash
 
       - name: Compile TS tests
