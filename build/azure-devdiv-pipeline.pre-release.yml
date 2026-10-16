@@ -27,7 +27,7 @@ resources:
       type: github
       name: microsoft/vscode-extensions-loc
       ref: refs/heads/main
-      endpoint: GitHub-VSCodeExtensions
+      endpoint: Github-Pylance
 variables:
   - name: TeamName
     value: VSCode-isort
@@ -88,6 +88,9 @@ extends:
   parameters:
     sdl:
       sourceAnalysisPool: VSEngSS-MicroBuild2022-1ES
+      sourceRepositoriesToScan:
+        exclude:
+          - repository: translations
       codeSignValidation:
         enabled: true
       sbom:
