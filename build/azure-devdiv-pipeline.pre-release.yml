@@ -20,7 +20,14 @@ resources:
     - repository: templates
       type: git
       name: DevDiv/Pylance-Eng
+      # Test the localization templates before merging the Pylance-Eng PR.
+      ref: refs/heads/users/bschnurr/localization-pipeline
+
+    - repository: translations
+      type: github
+      name: microsoft/vscode-extensions-loc
       ref: refs/heads/main
+      endpoint: GitHub-VSCodeExtensions
 variables:
   - name: TeamName
     value: VSCode-isort
@@ -35,7 +42,12 @@ parameters:
   - name: publishExtension
     displayName: 🚀 Publish Extension
     type: boolean
-    default: true
+    default: false
+
+  - name: l10nShouldOnlyPush
+    displayName: 'Only submit English strings (skip translation import)'
+    type: boolean
+    default: false
 
   - name: buildSteps
     type: stepList
@@ -96,10 +108,14 @@ extends:
               isPreRelease: true
               standardizedVersioning: true
               customNPMRegistry: $(NPM_CONFIG_REGISTRY)
+              l10nShouldProcess: true
+              l10nSourcePaths: ./src
+              l10nShouldOnlyPush: ${{ parameters.l10nShouldOnlyPush }}
 
       - stage: Publish
         displayName: Publish Extension
         dependsOn: Build
+        condition: and(succeeded(), ${{ eq(parameters.publishExtension, true) }})
         jobs:
           - template: azure-pipelines/extension/templates/jobs/publish-extension.yml@templates
             parameters:
