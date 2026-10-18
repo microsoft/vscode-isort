@@ -69,3 +69,6 @@ extends:
     teamName: $(TeamName)
     validationNotifyUsers: 'plseng@microsoft.com'
     customNPMRegistry: $(NPM_CONFIG_REGISTRY)
+    l10nSourcePaths:
+      - ./src
+      - ./external/vscode-common-python-lsp/typescript/src

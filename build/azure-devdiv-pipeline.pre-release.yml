@@ -79,4 +79,7 @@ extends:
     publishExtension: ${{ parameters.publishExtension }}
     teamName: $(TeamName)
     customNPMRegistry: $(NPM_CONFIG_REGISTRY)
+    l10nSourcePaths:
+      - ./src
+      - ./external/vscode-common-python-lsp/typescript/src
     l10nShouldOnlyPush: ${{ parameters.l10nShouldOnlyPush }}
