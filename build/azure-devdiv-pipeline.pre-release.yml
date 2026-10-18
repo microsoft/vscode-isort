@@ -73,24 +73,10 @@ parameters:
         displayName: Build extension
 
 extends:
-  template: azure-pipelines/extension/localized.yml@templates
+  template: azure-pipelines/extension/pre-release.yml@templates
   parameters:
     buildSteps: ${{ parameters.buildSteps }}
-    isPreRelease: true
+    publishExtension: ${{ parameters.publishExtension }}
+    teamName: $(TeamName)
     customNPMRegistry: $(NPM_CONFIG_REGISTRY)
     l10nShouldOnlyPush: ${{ parameters.l10nShouldOnlyPush }}
-    afterBuildStages:
-      - stage: Publish
-        displayName: Publish Extension
-        dependsOn: Build
-        condition: and(succeeded(), ${{ eq(parameters.publishExtension, true) }})
-        jobs:
-          - template: /azure-pipelines/extension/templates/jobs/publish-extension.yml@templates
-            parameters:
-              publishExtension: ${{ parameters.publishExtension }}
-              preRelease: true
-              teamName: $(TeamName)
-              ghCreateTag: true
-              ghCreateRelease: true
-              ghReleaseAddChangeLog: true
-              customNPMRegistry: $(NPM_CONFIG_REGISTRY)
