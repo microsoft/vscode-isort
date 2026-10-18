@@ -12,22 +12,11 @@ schedules:
 
 resources:
   repositories:
-    - repository: MicroBuildTemplate
-      type: git
-      name: 1ESPipelineTemplates/MicroBuildTemplate
-      ref: refs/tags/release
-
     - repository: templates
       type: git
       name: DevDiv/Pylance-Eng
       # Test the localization templates before merging the Pylance-Eng PR.
-      ref: refs/heads/users/bschnurr/localization-pipeline
-
-    - repository: translations
-      type: github
-      name: microsoft/vscode-extensions-loc
-      ref: refs/heads/main
-      endpoint: Github-Pylance
+      ref: refs/heads/users/bschnurr/localization-wrapper
 variables:
   - name: TeamName
     value: VSCode-isort
@@ -84,43 +73,19 @@ parameters:
         displayName: Build extension
 
 extends:
-  template: azure-pipelines/MicroBuild.1ES.Official.yml@MicroBuildTemplate
+  template: azure-pipelines/extension/localized.yml@templates
   parameters:
-    sdl:
-      sourceAnalysisPool: VSEngSS-MicroBuild2022-1ES
-      sourceRepositoriesToScan:
-        exclude:
-          - repository: translations
-      codeSignValidation:
-        enabled: true
-      sbom:
-        enabled: false # Disable global SBOM generation; we'll enable selectively per artifact output
-    pool:
-      name: AzurePipelines-EO
-      os: windows
-
-    customBuildTags:
-      - ES365AIMigrationTooling
-    stages:
-      - stage: Build
-        displayName: Build & Package Extension
-        jobs:
-          - template: azure-pipelines/extension/templates/jobs/package.yml@templates
-            parameters:
-              buildSteps: ${{ parameters.buildSteps }}
-              isPreRelease: true
-              standardizedVersioning: true
-              customNPMRegistry: $(NPM_CONFIG_REGISTRY)
-              l10nShouldProcess: true
-              l10nSourcePaths: ./src
-              l10nShouldOnlyPush: ${{ parameters.l10nShouldOnlyPush }}
-
+    buildSteps: ${{ parameters.buildSteps }}
+    isPreRelease: true
+    customNPMRegistry: $(NPM_CONFIG_REGISTRY)
+    l10nShouldOnlyPush: ${{ parameters.l10nShouldOnlyPush }}
+    afterBuildStages:
       - stage: Publish
         displayName: Publish Extension
         dependsOn: Build
         condition: and(succeeded(), ${{ eq(parameters.publishExtension, true) }})
         jobs:
-          - template: azure-pipelines/extension/templates/jobs/publish-extension.yml@templates
+          - template: /azure-pipelines/extension/templates/jobs/publish-extension.yml@templates
             parameters:
               publishExtension: ${{ parameters.publishExtension }}
               preRelease: true
