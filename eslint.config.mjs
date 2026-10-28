@@ -20,7 +20,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['build/setup*.js', 'build/normalize-package-lock*.js'],
+    files: ['build/setup*.js', 'build/normalize-package-lock*.js', 'build/localization*.js'],
     languageOptions: {
       sourceType: 'commonjs',
       globals: {

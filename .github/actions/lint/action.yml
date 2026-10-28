@@ -22,6 +22,10 @@ runs:
       run: npm run test:setup
       shell: bash
 
+    - name: Test localization scripts (no npm dependencies required)
+      run: npm run test:localization
+      shell: bash
+
     - name: Install Node dependencies
       run: npm run ci:msft
       shell: bash

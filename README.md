@@ -162,3 +162,23 @@ The shared lint and VSIX build actions and the PR TypeScript test job use `npm r
 The DevDiv Azure stable/prerelease pipelines pass the npm proxy to their build/publish templates using `customNPMRegistry`. After initializing submodules, their dependency install steps use `npm run ci:msft` to rewrite both npm lockfiles and install through the proxy.
 
 Each Python bootstrap and bundled-library install step explicitly sets `PIP_INDEX_URL` from `PIP_PROXY_INDEX_URL`, selecting the pip proxy even when a template's authentication setup changes the job-level index. Release triggers, approval gates, signing, and publishing behavior are unchanged.
+
+### Localization
+
+The **Localization** GitHub Actions workflow owns English-string submission and translation imports, independently of release builds. It uses `microsoft/vscode-python-extensions-loc` with the existing `src/en/ms-python.isort` and `out/ms-python.isort` layout. The translation backend must be configured to process this repository.
+
+Configure the `PYTHON_LOCALIZATION_APP_ID` Actions variable and the `PYTHON_LOCALIZATION_PRIVATE_KEY` Actions secret in this repository, or expose them through organization variables/secrets. They identify the `python-localization` GitHub App, which must be installed on the localization repository with **Contents: Read and write** permission. The workflow generates a short-lived installation token scoped to that repository; no Azure service connection or personal token is used for localization.
+
+Pushes to `main` that change English manifest strings, TypeScript sources, the shared Python LSP submodule pointer, or localization tooling run the workflow automatically. Extraction includes both `src` and `external/vscode-common-python-lsp/typescript/src`. Translated JSON updates do not trigger another localization run.
+
+Use **Actions → Localization → Run workflow** to select:
+
+- **sync**: submit changed English XLF, then import currently available translations.
+- **push**: submit English only, including initial onboarding before translated output exists.
+- **pull**: import translations without submitting English.
+
+Translation is asynchronous. A commit in the separate localization repository does not trigger this workflow; run **pull** manually after a new handback arrives. Imports require nonempty manifest and runtime tables for all 14 supported locales and fail before replacing tracked files if output is incomplete.
+
+Imports open or update an `automation/localization/<branch>` PR against the selected branch, labeled `debt`, with squash auto-merge enabled subject to required checks and review. Enable **Allow GitHub Actions to create and approve pull requests** in repository Actions settings. The PR uses this repository's `GITHUB_TOKEN`, not the localization app token. GitHub does not automatically trigger PR workflows for changes made with `GITHUB_TOKEN`; a maintainer must close and reopen the PR through GitHub to trigger required PR checks after an update.
+
+Merge translation PRs before releasing. Root `package.nls.<locale>.json` and `l10n/bundle.l10n.<locale>.json` are checked in and included in VSIX packages; DevDiv stable and pre-release builds do not submit or retrieve localization data. The last committed translations provide the initial baseline. If the new repository has only manifest translations, run **push**, wait for the backend to return runtime translations as well, then run **pull**; incomplete handbacks leave the baseline unchanged.

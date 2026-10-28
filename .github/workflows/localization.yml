@@ -1,0 +1,138 @@
+name: Localization
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Submit English strings, import translations, or both
+        type: choice
+        options:
+          - sync
+          - push
+          - pull
+        default: sync
+  push:
+    branches:
+      - main
+      # Temporary branch trigger for testing before this workflow reaches main.
+      - users/bschnurr/test-localization-pipeline
+    paths:
+      - package.json
+      - package.nls.json
+      - src/**/*.ts
+      - external/vscode-common-python-lsp
+      - .gitmodules
+      - build/localization.ps1
+      - .github/workflows/localization.yml
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: localization-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  NPM_CONFIG_REGISTRY: https://packagefeedproxy.microsoft.io/npm/
+
+jobs:
+  localization:
+    if: github.repository == 'microsoft/vscode-isort'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout extension
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .nvmrc
+
+      - name: Authenticate as python-localization
+        id: app-token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
+        with:
+          app-id: ${{ vars.PYTHON_LOCALIZATION_APP_ID }}
+          private-key: ${{ secrets.PYTHON_LOCALIZATION_PRIVATE_KEY }}
+          owner: microsoft
+          repositories: vscode-python-extensions-loc
+          permission-contents: ${{ (inputs.operation == 'pull' && 'read') || 'write' }}
+
+      - name: Checkout localization repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: microsoft/vscode-python-extensions-loc
+          ref: main
+          token: ${{ steps.app-token.outputs.token }}
+          path: localization-translations
+          fetch-depth: 0
+
+      - name: Extract English strings
+        if: inputs.operation != 'pull'
+        shell: pwsh
+        run: ./build/localization.ps1 -Operation export -OutputDirectory "$env:RUNNER_TEMP/localization-english"
+
+      - name: Submit changed English XLF
+        if: inputs.operation != 'pull'
+        shell: pwsh
+        working-directory: localization-translations
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git config core.autocrlf input
+          $destination = 'src/en/ms-python.isort'
+          New-Item -ItemType Directory -Path $destination -Force | Out-Null
+          Copy-Item -LiteralPath "$env:RUNNER_TEMP/localization-english/ms-python.isort-new.xlf" -Destination $destination
+          git add -- $destination
+          $changes = @(git diff --cached --name-only -- $destination)
+          if ($changes.Count -eq 0) {
+            Write-Host 'English localization strings are already up to date.'
+            exit 0
+          }
+          git commit -m 'Update English strings for ms-python.isort'
+          git pull --rebase origin main
+          git push origin HEAD:refs/heads/main
+
+      - name: Import available translations
+        if: inputs.operation != 'push'
+        shell: pwsh
+        run: |
+          ./build/localization.ps1 -Operation import `
+            -TranslationsPath 'localization-translations/out/ms-python.isort' `
+            -OutputDirectory "$env:RUNNER_TEMP/localization-import"
+
+      - name: Open or update translation PR
+        if: inputs.operation != 'push'
+        id: translation-pr
+        uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676 # v7
+        with:
+          token: ${{ github.token }}
+          branch: automation/localization/${{ github.ref_name }}
+          base: ${{ github.ref_name }}
+          add-paths: |
+            package.nls.*.json
+            l10n/bundle.l10n.*.json
+          commit-message: Update isort translations
+          title: Update isort translations
+          body: |
+            Import translations from microsoft/vscode-python-extensions-loc.
+
+            Translation is asynchronous; these files reflect the available handback,
+            not necessarily the English strings submitted by this run.
+
+            Release pipelines package these checked-in files without contacting the localization service.
+          labels: debt
+
+      - name: Enable squash auto-merge after required checks and approval
+        if: steps.translation-pr.outputs.pull-request-number != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ steps.translation-pr.outputs.pull-request-number }}
+        run: gh pr merge "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --squash --auto
