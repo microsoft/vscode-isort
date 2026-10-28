@@ -62,6 +62,7 @@ jobs:
           owner: microsoft
           repositories: vscode-python-extensions-loc
           permission-contents: ${{ (inputs.operation == 'pull' && 'read') || 'write' }}
+          permission-pull-requests: ${{ (inputs.operation != 'pull' && 'write') || '' }}
 
       - name: Checkout localization repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -77,28 +78,33 @@ jobs:
         shell: pwsh
         run: ./build/localization.ps1 -Operation export -OutputDirectory "$env:RUNNER_TEMP/localization-english"
 
-      - name: Submit changed English XLF
+      - name: Prepare English submission
         if: inputs.operation != 'pull'
         shell: pwsh
         working-directory: localization-translations
         run: |
           $ErrorActionPreference = 'Stop'
-          $PSNativeCommandUseErrorActionPreference = $true
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git config core.autocrlf input
           $destination = 'src/en/ms-python.isort'
           New-Item -ItemType Directory -Path $destination -Force | Out-Null
           Copy-Item -LiteralPath "$env:RUNNER_TEMP/localization-english/ms-python.isort-new.xlf" -Destination $destination
-          git add -- $destination
-          $changes = @(git diff --cached --name-only -- $destination)
-          if ($changes.Count -eq 0) {
-            Write-Host 'English localization strings are already up to date.'
-            exit 0
-          }
-          git commit -m 'Update English strings for ms-python.isort'
-          git pull --rebase origin main
-          git push origin HEAD:refs/heads/main
+
+      - name: Open or update English submission PR
+        if: inputs.operation != 'pull'
+        id: english-pr
+        uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676 # v7
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          path: localization-translations
+          branch: automation/ms-python.isort
+          base: main
+          add-paths: src/en/ms-python.isort/ms-python.isort-new.xlf
+          commit-message: Update English strings for ms-python.isort
+          title: Update English strings for ms-python.isort
+          body: |
+            Submit English manifest and runtime strings extracted from microsoft/vscode-isort.
+
+            Merge this PR through the repository's normal review process before
+            the localization backend can process these strings.
 
       - name: Import available translations
         if: inputs.operation != 'push'
@@ -125,7 +131,7 @@ jobs:
             Import translations from microsoft/vscode-python-extensions-loc.
 
             Translation is asynchronous; these files reflect the available handback,
-            not necessarily the English strings submitted by this run.
+            not necessarily the English strings proposed by this run.
 
             Release pipelines package these checked-in files without contacting the localization service.
           labels: debt
