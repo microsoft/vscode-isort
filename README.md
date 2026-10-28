@@ -167,17 +167,17 @@ Each Python bootstrap and bundled-library install step explicitly sets `PIP_INDE
 
 The **Localization** GitHub Actions workflow owns English-string submission and translation imports, independently of release builds. It uses `microsoft/vscode-python-extensions-loc` with the existing `src/en/ms-python.isort` and `out/ms-python.isort` layout. The translation backend must be configured to process this repository.
 
-Configure the `PYTHON_LOCALIZATION_APP_ID` Actions variable and the `PYTHON_LOCALIZATION_PRIVATE_KEY` Actions secret in this repository, or expose them through organization variables/secrets. They identify the `python-localization` GitHub App, which must be installed on the localization repository with **Contents: Read and write** and **Pull requests: Read and write** permissions. Approve updated installation permissions when GitHub requests it. The workflow generates a short-lived installation token scoped to that repository; no Azure service connection or personal token is used for localization.
+Configure the `PYTHON_LOCALIZATION_APP_ID` Actions variable and the `PYTHON_LOCALIZATION_PRIVATE_KEY` Actions secret in this repository, or expose them through organization variables/secrets. They identify the `python-localization` GitHub App, which must be installed on the localization repository with **Contents: Read and write** permission. The workflow generates a short-lived installation token scoped to that repository; no Azure service connection or personal token is used for localization. The app does not need Pull requests permission.
 
 Pushes to `main` that change English manifest strings, TypeScript sources, the shared Python LSP submodule pointer, or localization tooling run the workflow automatically. Extraction includes both `src` and `external/vscode-common-python-lsp/typescript/src`. Translated JSON updates do not trigger another localization run.
 
 Use **Actions → Localization → Run workflow** to select:
 
-- **sync**: open or update an English XLF submission PR, then import currently available translations.
-- **push**: open or update the English submission PR only, including initial onboarding before translated output exists.
+- **sync**: push changed English XLF to the localization repository's `main` branch, then import currently available translations.
+- **push**: submit English only, including initial onboarding before translated output exists.
 - **pull**: import translations without submitting English.
 
-English submission uses the `automation/ms-python.isort` PR branch in the localization repository; it never pushes directly to protected `main`. Review and merge that PR before the backend can process new English strings. Translation is asynchronous. A commit in the separate localization repository does not trigger this workflow; run **pull** manually after a new handback arrives. Imports require nonempty manifest and runtime tables for all 14 supported locales and fail before replacing tracked files if output is incomplete.
+English submission pushes directly to `main` in the localization repository. Its repository administrators must explicitly allow the app to make these updates under the repository's branch protection and rulesets; the workflow fails if a rule requires a PR. Translation is asynchronous. A commit in the separate localization repository does not trigger this workflow; run **pull** manually after a new handback arrives. Imports require nonempty manifest and runtime tables for all 14 supported locales and fail before replacing tracked files if output is incomplete.
 
 Imports open or update an `automation/localization/<branch>` PR against the selected branch, labeled `debt`, with squash auto-merge enabled subject to required checks and review. Enable **Allow GitHub Actions to create and approve pull requests** in repository Actions settings. The PR uses this repository's `GITHUB_TOKEN`, not the localization app token. GitHub does not automatically trigger PR workflows for changes made with `GITHUB_TOKEN`; a maintainer must close and reopen the PR through GitHub to trigger required PR checks after an update.
 
