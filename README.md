@@ -165,7 +165,7 @@ Each Python bootstrap and bundled-library install step explicitly sets `PIP_INDE
 
 ### Localization
 
-The **Localization** GitHub Actions workflow owns English-string submission and translation imports, independently of release builds. It uses `microsoft/vscode-python-extensions-loc` with the existing `src/en/ms-python.isort` and `out/ms-python.isort` layout. The translation backend must be configured to process this repository.
+The **Localization** GitHub Actions workflow owns English-string submission and translation imports, independently of release builds. It uses branch **`dev`** in `microsoft/vscode-python-extensions-loc`, with the existing `src/en/ms-python.isort` and `out/ms-python.isort` layout. The translation backend must be configured to read English strings from this branch and write translated output back to the same branch.
 
 Configure the `PYTHON_LOCALIZATION_APP_ID` Actions variable and the `PYTHON_LOCALIZATION_PRIVATE_KEY` Actions secret in this repository, or expose them through organization variables/secrets. They identify the `python-localization` GitHub App, which must be installed on the localization repository with **Contents: Read and write** permission. The workflow generates a short-lived installation token scoped to that repository; no Azure service connection or personal token is used for localization. The app does not need Pull requests permission.
 
@@ -173,11 +173,13 @@ Pushes to `main` that change English manifest strings, TypeScript sources, the s
 
 Use **Actions → Localization → Run workflow** to select:
 
-- **sync**: push changed English XLF to the localization repository's `main` branch, then import currently available translations.
+- **sync**: push changed English XLF to `dev`, then import currently available translations from that branch.
 - **push**: submit English only, including initial onboarding before translated output exists.
 - **pull**: import translations without submitting English.
 
-English submission pushes directly to `main` in the localization repository. Its repository administrators must explicitly allow the app to make these updates under the repository's branch protection and rulesets; the workflow fails if a rule requires a PR. Translation is asynchronous. A commit in the separate localization repository does not trigger this workflow; run **pull** manually after a new handback arrives. Imports require nonempty manifest and runtime tables for all 14 supported locales and fail before replacing tracked files if output is incomplete.
+Both submission and import use `dev`, configured by `LOCALIZATION_BRANCH` in the workflow. The first **push** or **sync** creates this branch from `main`, even if English strings are unchanged. Subsequent runs fetch the existing branch; **pull** fails explicitly if the branch does not exist. The workflow never pushes to `main` or force-pushes, and repository rules still apply to the new branch.
+
+Translation is asynchronous. A commit in the separate localization repository does not trigger this workflow; run **pull** manually after a new handback arrives. Imports require nonempty manifest and runtime tables for all 14 supported locales and fail before replacing tracked files if output is incomplete.
 
 Imports open or update an `automation/localization/<branch>` PR against the selected branch, labeled `debt`, with squash auto-merge enabled subject to required checks and review. Enable **Allow GitHub Actions to create and approve pull requests** in repository Actions settings. The PR uses this repository's `GITHUB_TOKEN`, not the localization app token. GitHub does not automatically trigger PR workflows for changes made with `GITHUB_TOKEN`; a maintainer must close and reopen the PR through GitHub to trigger required PR checks after an update.
 

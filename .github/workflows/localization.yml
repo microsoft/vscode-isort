@@ -35,6 +35,7 @@ concurrency:
 
 env:
   NPM_CONFIG_REGISTRY: https://packagefeedproxy.microsoft.io/npm/
+  LOCALIZATION_BRANCH: dev
 
 jobs:
   localization:
@@ -72,6 +73,25 @@ jobs:
           path: localization-translations
           fetch-depth: 0
 
+      - name: Select localization branch
+        shell: pwsh
+        working-directory: localization-translations
+        env:
+          LOCALIZATION_OPERATION: ${{ inputs.operation || 'sync' }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          $branch = $env:LOCALIZATION_BRANCH
+          $heads = @(git ls-remote --heads origin "refs/heads/$branch")
+          if ($heads.Count -gt 0) {
+            git fetch origin "refs/heads/$branch"
+            git switch --create $branch FETCH_HEAD
+          } elseif ($env:LOCALIZATION_OPERATION -eq 'pull') {
+            throw "Localization branch $branch does not exist. Run operation=push first."
+          } else {
+            git switch --create $branch
+          }
+
       - name: Extract English strings
         if: inputs.operation != 'pull'
         shell: pwsh
@@ -94,11 +114,14 @@ jobs:
           $changes = @(git diff --cached --name-only -- $destination)
           if ($changes.Count -eq 0) {
             Write-Host 'English localization strings are already up to date.'
-            exit 0
+          } else {
+            git commit -m 'Update English strings for ms-python.isort'
           }
-          git commit -m 'Update English strings for ms-python.isort'
-          git pull --rebase origin main
-          git push origin HEAD:refs/heads/main
+          $heads = @(git ls-remote --heads origin "refs/heads/$env:LOCALIZATION_BRANCH")
+          if ($heads.Count -gt 0) {
+            git pull --rebase origin $env:LOCALIZATION_BRANCH
+          }
+          git push origin "HEAD:refs/heads/$env:LOCALIZATION_BRANCH"
 
       - name: Import available translations
         if: inputs.operation != 'push'
@@ -122,7 +145,8 @@ jobs:
           commit-message: Update isort translations
           title: Update isort translations
           body: |
-            Import translations from microsoft/vscode-python-extensions-loc.
+            Import translations from branch dev
+            in microsoft/vscode-python-extensions-loc.
 
             Translation is asynchronous; these files reflect the available handback,
             not necessarily the English strings submitted by this run.
