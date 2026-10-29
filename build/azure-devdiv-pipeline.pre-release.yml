@@ -17,6 +17,11 @@ resources:
       name: DevDiv/Pylance-Eng
       # Test the localization templates before merging the Pylance-Eng PR.
       ref: refs/heads/users/bschnurr/localization-wrapper
+    - repository: translations
+      type: github
+      name: microsoft/vscode-python-extensions-loc
+      ref: refs/heads/dev
+      endpoint: Github-Pylance
 variables:
   - name: TeamName
     value: VSCode-isort
@@ -36,10 +41,22 @@ parameters:
   - name: buildSteps
     type: stepList
     default:
+      - checkout: translations
+        displayName: Checkout latest localization drop
+        path: localization-translations
+        fetchDepth: 1
+        persistCredentials: false
+
       - script: git submodule update --init --recursive
         displayName: Checkout submodules
       - script: npm run ci:msft
         displayName: Install NPM dependencies
+
+      - pwsh: |
+          ./build/localization.ps1 -Operation import `
+            -TranslationsPath '$(Pipeline.Workspace)/localization-translations/out/ms-python.isort' `
+            -OutputDirectory '$(Agent.TempDirectory)/release-localization-$(System.JobId)-$(System.JobAttempt)'
+        displayName: Import latest isort translations
 
       - script: python -m pip install -U pip
         displayName: Upgrade pip
@@ -74,3 +91,5 @@ extends:
     publishExtension: ${{ parameters.publishExtension }}
     teamName: $(TeamName)
     customNPMRegistry: $(NPM_CONFIG_REGISTRY)
+    sourceRepositoriesToExclude:
+      - repository: translations

@@ -151,7 +151,8 @@ jobs:
             Translation is asynchronous; these files reflect the available handback,
             not necessarily the English strings submitted by this run.
 
-            Release pipelines package these checked-in files without contacting the localization service.
+            These snapshots support local builds. Release pipelines independently
+            import the latest available translations from the localization drop.
           labels: debt
 
       - name: Enable squash auto-merge after required checks and approval

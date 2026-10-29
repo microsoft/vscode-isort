@@ -19,7 +19,7 @@ The isort extension provides a series of import sorting features to help with re
 
 - **Customizable isort Arguments**: You can customize the arguments passed to isort by modifying the `isort.args` setting.
 
-- **Import Sorting on Save**: You can enable import sorting on save for Python files by changing the `editor.codeActionsOnSave` setting. It also works alongside the [VS Code Black formatter extension](https://marketplace.visualstudio.com/items?itemName=ms-python.black-formatter) if you set the following settings: 
+- **Import Sorting on Save**: You can enable import sorting on save for Python files by changing the `editor.codeActionsOnSave` setting. It also works alongside the [VS Code Black formatter extension](https://marketplace.visualstudio.com/items?itemName=ms-python.black-formatter) if you set the following settings:
     
   ```json
     "[python]": {
@@ -165,9 +165,9 @@ Each Python bootstrap and bundled-library install step explicitly sets `PIP_INDE
 
 ### Localization
 
-The **Localization** GitHub Actions workflow owns English-string submission and translation imports, independently of release builds. It uses branch **`dev`** in `microsoft/vscode-python-extensions-loc`, with the existing `src/en/ms-python.isort` and `out/ms-python.isort` layout. The translation backend must be configured to read English strings from this branch and write translated output back to the same branch.
+The **Localization** GitHub Actions workflow owns English-string submission and optional translation snapshot PRs. Release builds independently pull the latest available translations before packaging. Both use branch **`dev`** in `microsoft/vscode-python-extensions-loc`, with the existing `src/en/ms-python.isort` and `out/ms-python.isort` layout. The translation backend must be configured to read English strings from this branch and write translated output back to the same branch.
 
-Configure the `PYTHON_LOCALIZATION_APP_ID` Actions variable and the `PYTHON_LOCALIZATION_PRIVATE_KEY` Actions secret in this repository, or expose them through organization variables/secrets. They identify the `python-localization` GitHub App, which must be installed on the localization repository with **Contents: Read and write** permission. The workflow generates a short-lived installation token scoped to that repository; no Azure service connection or personal token is used for localization. The app does not need Pull requests permission.
+Configure the `PYTHON_LOCALIZATION_APP_ID` Actions variable and the `PYTHON_LOCALIZATION_PRIVATE_KEY` Actions secret in this repository, or expose them through organization variables/secrets. They identify the `python-localization` GitHub App, which must be installed on the localization repository with **Contents: Read and write** permission. The GitHub workflow generates a short-lived installation token scoped to that repository and does not use an Azure service connection or personal token. The app does not need Pull requests permission.
 
 Pushes to `main` that change English manifest strings, TypeScript sources, the shared Python LSP submodule pointer, or localization tooling run the workflow automatically. Extraction includes both `src` and `external/vscode-common-python-lsp/typescript/src`. Translated JSON updates do not trigger another localization run.
 
@@ -183,4 +183,6 @@ Translation is asynchronous. A commit in the separate localization repository do
 
 Imports open or update an `automation/localization/<branch>` PR against the selected branch, labeled `debt`, with squash auto-merge enabled subject to required checks and review. Enable **Allow GitHub Actions to create and approve pull requests** in repository Actions settings. The PR uses this repository's `GITHUB_TOKEN`, not the localization app token. GitHub does not automatically trigger PR workflows for changes made with `GITHUB_TOKEN`; a maintainer must close and reopen the PR through GitHub to trigger required PR checks after an update.
 
-Merge translation PRs before releasing. Root `package.nls.<locale>.json` and `l10n/bundle.l10n.<locale>.json` are checked in and included in VSIX packages; DevDiv stable and pre-release builds do not submit or retrieve localization data. The last committed translations provide the initial baseline. If the new repository has only manifest translations, run **push**, wait for the backend to return runtime translations as well, then run **pull**; incomplete handbacks leave the baseline unchanged.
+Root `package.nls.<locale>.json` and `l10n/bundle.l10n.<locale>.json` remain checked in for local builds. DevDiv stable and pre-release builds overwrite those snapshots with the latest available `out/ms-python.isort` handback from `dev` before compiling and packaging the VSIX. Releases only retrieve translations; they do not extract or submit English strings, update the localization drop, or open translation PRs.
+
+The Azure pipelines use the **`Github-Pylance`** service connection for read access to the private localization repository. Authorize that connection for the repository and both release pipelines. Checkout credentials are not persisted for the translation drop. Its checkout is outside the extension source directory and excluded from 1ES source scanning. Each run imports one resolved `dev` revision and fails on missing or incomplete handbacks rather than silently packaging stale checked-in translations.
