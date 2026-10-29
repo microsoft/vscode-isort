@@ -1,1 +1,6 @@
-{"Open logs":"Abrir logs","Please select a Python interpreter.":"Selecione um interpretador do Python.","Server failed to start.":"Falha ao iniciar o servidor."}
+{
+  "Open logs": "Open logs",
+  "Please select a Python interpreter.": "Please select a Python interpreter.",
+  "Server failed to start.": "Server failed to start.",
+  "Unable to start {0}: no Python interpreter executable is configured.": "Unable to start {0}: no Python interpreter executable is configured."
+}

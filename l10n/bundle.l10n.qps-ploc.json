@@ -1,1 +1,6 @@
-{"Open logs":"Øpëñ løgs","Please select a Python interpreter.":"Plëæsë sëlëçt æ Pÿthøñ ïñtërprëtër.","Server failed to start.":"§ërvër fæïlëð tø stært."}
+{
+  "Open logs": "Øpëñ løgs",
+  "Please select a Python interpreter.": "Plëæsë sëlëçt æ Pÿthøñ ïñtërprëtër.",
+  "Server failed to start.": "§ërvër fæïlëð tø stært.",
+  "Unable to start {0}: no Python interpreter executable is configured.": "Üñæþlë tø stært {0}: ñø Pÿthøñ ïñtërprëtër ëxëçµtæþlë ïs çøñfïgµrëð."
+}

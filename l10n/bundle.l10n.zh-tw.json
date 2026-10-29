@@ -1,1 +1,6 @@
-{"Open logs":"開啟記錄","Please select a Python interpreter.":"請選取 Python 解譯器。","Server failed to start.":"伺服器無法啟動。"}
+{
+  "Open logs": "Open logs",
+  "Please select a Python interpreter.": "Please select a Python interpreter.",
+  "Server failed to start.": "Server failed to start.",
+  "Unable to start {0}: no Python interpreter executable is configured.": "Unable to start {0}: no Python interpreter executable is configured."
+}

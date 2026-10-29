@@ -1,1 +1,6 @@
-{"Open logs":"Günlükleri aç","Please select a Python interpreter.":"Lütfen bir Python yorumlayıcısı seçin.","Server failed to start.":"Sunucu başlatılamadı."}
+{
+  "Open logs": "Open logs",
+  "Please select a Python interpreter.": "Please select a Python interpreter.",
+  "Server failed to start.": "Server failed to start.",
+  "Unable to start {0}: no Python interpreter executable is configured.": "Unable to start {0}: no Python interpreter executable is configured."
+}
