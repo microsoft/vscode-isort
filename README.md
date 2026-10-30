@@ -173,7 +173,7 @@ Configure the `PYTHON_LOCALIZATION_APP_ID` Actions variable and the `PYTHON_LOCA
 
 Pushes to `main` that change English manifest strings, TypeScript sources, the shared Python LSP submodule pointer, or localization tooling run the workflow automatically. Extraction includes both `src` and `external/vscode-common-python-lsp/typescript/src`. To submit English strings manually, use **Actions → Localization → Run workflow**.
 
-The workflow uses `LOCALIZATION_BRANCH` to select `dev`, creating it from `main` if it does not exist, even if English strings are unchanged. It never pushes to `main` or force-pushes. Its repository token only needs read access; the app token submits English to the localization drop. It does not import translations or open translation PRs.
+The workflow checks out `LOCALIZATION_BRANCH` (`dev`) directly; that branch must already exist in the localization repository. It never checks out or pushes to the drop's `main` branch or force-pushes. Its repository token only needs read access; the app token submits English to the localization drop. It does not import translations or open translation PRs.
 
 Only the English `package.nls.json` is checked in. All root `package.nls.<locale>.json` files and the `l10n/` directory are generated, git-ignored build outputs. DevDiv stable and pre-release builds create them from the `dev` handback before compiling and packaging the VSIX. `.vscodeignore` deliberately allows these generated translations into the VSIX, and `package.json` retains `"l10n": "./l10n"` so VS Code can load runtime translations. Local builds are English-only unless translations are imported explicitly.
 

@@ -63,28 +63,10 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: microsoft/vscode-python-extensions-loc
-          ref: main
+          ref: ${{ env.LOCALIZATION_BRANCH }}
           token: ${{ steps.app-token.outputs.token }}
           path: localization-translations
           fetch-depth: 0
-
-      - name: Select localization branch
-        shell: python
-        working-directory: localization-translations
-        run: |
-          import os
-          import subprocess
-
-          branch = os.environ["LOCALIZATION_BRANCH"]
-          heads = subprocess.run(
-              ["git", "ls-remote", "--heads", "origin", f"refs/heads/{branch}"],
-              check=True, capture_output=True, text=True,
-          ).stdout.strip()
-          if heads:
-              subprocess.run(["git", "fetch", "origin", f"refs/heads/{branch}"], check=True)
-              subprocess.run(["git", "switch", "--create", branch, "FETCH_HEAD"], check=True)
-          else:
-              subprocess.run(["git", "switch", "--create", branch], check=True)
 
       - name: Extract English strings
         run: python ./build/localization.py --operation export --output-directory "$RUNNER_TEMP/localization-english"
@@ -120,10 +102,5 @@ jobs:
           else:
               print("English localization strings are already up to date.")
           branch = os.environ["LOCALIZATION_BRANCH"]
-          heads = subprocess.run(
-              ["git", "ls-remote", "--heads", "origin", f"refs/heads/{branch}"],
-              check=True, capture_output=True, text=True,
-          ).stdout.strip()
-          if heads:
-              subprocess.run(["git", "pull", "--rebase", "origin", branch], check=True)
+          subprocess.run(["git", "pull", "--rebase", "origin", branch], check=True)
           subprocess.run(["git", "push", "origin", f"HEAD:refs/heads/{branch}"], check=True)
