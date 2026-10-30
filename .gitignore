@@ -9,3 +9,5 @@ bundled/libs/
 **/__pycache__
 **/.pytest_cache
 **/.vs
+/package.nls.*.json
+/l10n/

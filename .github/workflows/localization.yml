@@ -2,15 +2,6 @@ name: Localization
 
 on:
   workflow_dispatch:
-    inputs:
-      operation:
-        description: Submit English strings, import translations, or both
-        type: choice
-        options:
-          - sync
-          - push
-          - pull
-        default: sync
   push:
     branches:
       - main
@@ -26,8 +17,7 @@ on:
       - .github/workflows/localization.yml
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 concurrency:
   group: localization-${{ github.ref }}
@@ -62,7 +52,7 @@ jobs:
           private-key: ${{ secrets.PYTHON_LOCALIZATION_PRIVATE_KEY }}
           owner: microsoft
           repositories: vscode-python-extensions-loc
-          permission-contents: ${{ (inputs.operation == 'pull' && 'read') || 'write' }}
+          permission-contents: write
 
       - name: Checkout localization repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -76,8 +66,6 @@ jobs:
       - name: Select localization branch
         shell: pwsh
         working-directory: localization-translations
-        env:
-          LOCALIZATION_OPERATION: ${{ inputs.operation || 'sync' }}
         run: |
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
@@ -86,19 +74,15 @@ jobs:
           if ($heads.Count -gt 0) {
             git fetch origin "refs/heads/$branch"
             git switch --create $branch FETCH_HEAD
-          } elseif ($env:LOCALIZATION_OPERATION -eq 'pull') {
-            throw "Localization branch $branch does not exist. Run operation=push first."
           } else {
             git switch --create $branch
           }
 
       - name: Extract English strings
-        if: inputs.operation != 'pull'
         shell: pwsh
         run: ./build/localization.ps1 -Operation export -OutputDirectory "$env:RUNNER_TEMP/localization-english"
 
       - name: Submit changed English XLF
-        if: inputs.operation != 'pull'
         shell: pwsh
         working-directory: localization-translations
         run: |
@@ -122,42 +106,3 @@ jobs:
             git pull --rebase origin $env:LOCALIZATION_BRANCH
           }
           git push origin "HEAD:refs/heads/$env:LOCALIZATION_BRANCH"
-
-      - name: Import available translations
-        if: inputs.operation != 'push'
-        shell: pwsh
-        run: |
-          ./build/localization.ps1 -Operation import `
-            -TranslationsPath 'localization-translations/out/ms-python.isort' `
-            -OutputDirectory "$env:RUNNER_TEMP/localization-import"
-
-      - name: Open or update translation PR
-        if: inputs.operation != 'push'
-        id: translation-pr
-        uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676 # v7
-        with:
-          token: ${{ github.token }}
-          branch: automation/localization/${{ github.ref_name }}
-          base: ${{ github.ref_name }}
-          add-paths: |
-            package.nls.*.json
-            l10n/bundle.l10n.*.json
-          commit-message: Update isort translations
-          title: Update isort translations
-          body: |
-            Import translations from branch dev
-            in microsoft/vscode-python-extensions-loc.
-
-            Translation is asynchronous; these files reflect the available handback,
-            not necessarily the English strings submitted by this run.
-
-            These snapshots support local builds. Release pipelines independently
-            import the latest available translations from the localization drop.
-          labels: debt
-
-      - name: Enable squash auto-merge after required checks and approval
-        if: steps.translation-pr.outputs.pull-request-number != ''
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ steps.translation-pr.outputs.pull-request-number }}
-        run: gh pr merge "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --squash --auto

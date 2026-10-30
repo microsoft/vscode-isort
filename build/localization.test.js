@@ -119,8 +119,26 @@ test('imports all 28 tables, overwrites generated translations, and preserves En
     assert.equal(readdirSync(path.join(context.root, 'l10n')).length, 14);
 });
 
+test('imports into a clean checkout without making generated translations eligible for source control', (t) => {
+    const context = fixture(t);
+    writeFileSync(path.join(context.root, '.gitignore'), readFileSync(path.join(__dirname, '..', '.gitignore')));
+    const init = spawnSync('git', ['init', '--quiet'], { cwd: context.root, encoding: 'utf8' });
+    assert.equal(init.status, 0, init.stderr);
+    const result = context.run('import');
+    assert.equal(result.status, 0, result.stderr);
+    const generated = locales.flatMap((locale) => [`package.nls.${locale}.json`, `l10n/bundle.l10n.${locale}.json`]);
+    assert.ok(generated.every((file) => existsSync(path.join(context.root, file))));
+    const ignored = spawnSync('git', ['check-ignore', '--stdin'], {
+        cwd: context.root,
+        encoding: 'utf8',
+        input: [...generated, 'package.nls.json'].join('\n') + '\n',
+    });
+    assert.equal(ignored.status, 0, ignored.stderr);
+    assert.deepEqual(new Set(ignored.stdout.trim().split(/\r?\n/)), new Set(generated));
+});
+
 for (const invalid of ['missing-runtime', 'missing-locale', 'empty-table', 'invalid-json']) {
-    test(`rejects ${invalid} before changing tracked translations`, (t) => {
+    test(`rejects ${invalid} before changing existing translations`, (t) => {
         const context = fixture(t);
         const file = path.join(context.handback, 'bundle.l10n.zh-tw.json');
         if (invalid === 'missing-runtime') {

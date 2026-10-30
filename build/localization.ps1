@@ -43,16 +43,16 @@ if ($Operation -eq 'export') {
 }
 
 if (!$TranslationsPath -or !(Test-Path -LiteralPath $TranslationsPath -PathType Container)) {
-    throw 'Translated output is unavailable. Submit English strings with operation=push and wait for the localization backend.'
+    throw 'Translated output is unavailable. Run the Localization workflow to submit English strings and wait for the localization backend.'
 }
 $files = @(Get-ChildItem -LiteralPath $TranslationsPath -Recurse -Filter '*-new.xlf' -File |
     Select-Object -ExpandProperty FullName)
 if ($files.Count -eq 0) {
-    throw 'No translated XLF files are available. Wait for the localization backend and run operation=pull.'
+    throw 'No translated XLF files are available. Wait for the localization backend before importing translations.'
 }
 npx --yes @vscode/l10n-dev@0.0.35 import-xlf -o $OutputDirectory @files
 
-# Validate the complete handback before replacing any checked-in translations.
+# Validate the complete handback before copying translations into the extension.
 $locales = @('cs', 'de', 'es', 'fr', 'it', 'ja', 'ko', 'pl', 'pt-br', 'qps-ploc', 'ru', 'tr', 'zh-cn', 'zh-tw')
 $names = foreach ($locale in $locales) {
     "package.nls.$locale.json"
