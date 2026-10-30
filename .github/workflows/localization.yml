@@ -13,7 +13,7 @@ on:
       - src/**/*.ts
       - external/vscode-common-python-lsp
       - .gitmodules
-      - build/localization.ps1
+      - build/localization.py
       - .github/workflows/localization.yml
 
 permissions:
@@ -44,6 +44,11 @@ jobs:
         with:
           node-version-file: .nvmrc
 
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.10'
+
       - name: Authenticate as python-localization
         id: app-token
         uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
@@ -64,45 +69,61 @@ jobs:
           fetch-depth: 0
 
       - name: Select localization branch
-        shell: pwsh
+        shell: python
         working-directory: localization-translations
         run: |
-          $ErrorActionPreference = 'Stop'
-          $PSNativeCommandUseErrorActionPreference = $true
-          $branch = $env:LOCALIZATION_BRANCH
-          $heads = @(git ls-remote --heads origin "refs/heads/$branch")
-          if ($heads.Count -gt 0) {
-            git fetch origin "refs/heads/$branch"
-            git switch --create $branch FETCH_HEAD
-          } else {
-            git switch --create $branch
-          }
+          import os
+          import subprocess
+
+          branch = os.environ["LOCALIZATION_BRANCH"]
+          heads = subprocess.run(
+              ["git", "ls-remote", "--heads", "origin", f"refs/heads/{branch}"],
+              check=True, capture_output=True, text=True,
+          ).stdout.strip()
+          if heads:
+              subprocess.run(["git", "fetch", "origin", f"refs/heads/{branch}"], check=True)
+              subprocess.run(["git", "switch", "--create", branch, "FETCH_HEAD"], check=True)
+          else:
+              subprocess.run(["git", "switch", "--create", branch], check=True)
 
       - name: Extract English strings
-        shell: pwsh
-        run: ./build/localization.ps1 -Operation export -OutputDirectory "$env:RUNNER_TEMP/localization-english"
+        run: python ./build/localization.py --operation export --output-directory "$RUNNER_TEMP/localization-english"
 
       - name: Submit changed English XLF
-        shell: pwsh
+        shell: python
         working-directory: localization-translations
         run: |
-          $ErrorActionPreference = 'Stop'
-          $PSNativeCommandUseErrorActionPreference = $true
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git config core.autocrlf input
-          $destination = 'src/en/ms-python.isort'
-          New-Item -ItemType Directory -Path $destination -Force | Out-Null
-          Copy-Item -LiteralPath "$env:RUNNER_TEMP/localization-english/ms-python.isort-new.xlf" -Destination $destination
-          git add -- $destination
-          $changes = @(git diff --cached --name-only -- $destination)
-          if ($changes.Count -eq 0) {
-            Write-Host 'English localization strings are already up to date.'
-          } else {
-            git commit -m 'Update English strings for ms-python.isort'
-          }
-          $heads = @(git ls-remote --heads origin "refs/heads/$env:LOCALIZATION_BRANCH")
-          if ($heads.Count -gt 0) {
-            git pull --rebase origin $env:LOCALIZATION_BRANCH
-          }
-          git push origin "HEAD:refs/heads/$env:LOCALIZATION_BRANCH"
+          import os
+          from pathlib import Path
+          import shutil
+          import subprocess
+
+          subprocess.run(["git", "config", "user.name", "github-actions[bot]"], check=True)
+          subprocess.run(
+              ["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"],
+              check=True,
+          )
+          subprocess.run(["git", "config", "core.autocrlf", "input"], check=True)
+          destination = Path("src") / "en" / "ms-python.isort"
+          destination.mkdir(parents=True, exist_ok=True)
+          shutil.copyfile(
+              Path(os.environ["RUNNER_TEMP"]) / "localization-english" / "ms-python.isort-new.xlf",
+              destination / "ms-python.isort-new.xlf",
+          )
+          subprocess.run(["git", "add", "--", str(destination)], check=True)
+          changes = subprocess.run(
+              ["git", "diff", "--cached", "--name-only", "--", str(destination)],
+              check=True, capture_output=True, text=True,
+          ).stdout.strip()
+          if changes:
+              subprocess.run(["git", "commit", "-m", "Update English strings for ms-python.isort"], check=True)
+          else:
+              print("English localization strings are already up to date.")
+          branch = os.environ["LOCALIZATION_BRANCH"]
+          heads = subprocess.run(
+              ["git", "ls-remote", "--heads", "origin", f"refs/heads/{branch}"],
+              check=True, capture_output=True, text=True,
+          ).stdout.strip()
+          if heads:
+              subprocess.run(["git", "pull", "--rebase", "origin", branch], check=True)
+          subprocess.run(["git", "push", "origin", f"HEAD:refs/heads/{branch}"], check=True)

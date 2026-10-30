@@ -22,10 +22,6 @@ runs:
       run: npm run test:setup
       shell: bash
 
-    - name: Test localization scripts (no npm dependencies required)
-      run: npm run test:localization
-      shell: bash
-
     - name: Install Node dependencies
       run: npm run ci:msft
       shell: bash
@@ -42,6 +38,10 @@ runs:
       uses: actions/setup-python@v6
       with:
         python-version: ${{ inputs.python_version }}
+
+    - name: Test localization scripts (standard library only)
+      run: npm run test:localization
+      shell: bash
 
     - name: Pip cache
       uses: actions/cache@v5

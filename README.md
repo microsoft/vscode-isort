@@ -167,6 +167,8 @@ Each Python bootstrap and bundled-library install step explicitly sets `PIP_INDE
 
 The **Localization** GitHub Actions workflow only extracts and submits English strings. DevDiv stable and pre-release builds independently pull translations before packaging. Both use branch **`dev`** in `microsoft/vscode-python-extensions-loc`: English XLF lives under `src/en/ms-python.isort`, and translated handbacks live under `out/ms-python.isort`.
 
+Localization scripting uses Python 3.10 or later and the standard library. `build/localization.py` exports English inputs or imports translated handbacks using the pinned `@vscode/l10n-dev@0.0.35` CLI through the configured npm feed. Run `npm run test:localization` for dependency-free Python regression tests.
+
 Configure the `PYTHON_LOCALIZATION_APP_ID` Actions variable and the `PYTHON_LOCALIZATION_PRIVATE_KEY` Actions secret in this repository, or expose them through organization variables/secrets. They identify the `python-localization` GitHub App, which must be installed on the localization repository with **Contents: Read and write** permission. The GitHub workflow generates a short-lived installation token scoped to that repository and does not use an Azure service connection or personal token. The app does not need Pull requests permission.
 
 Pushes to `main` that change English manifest strings, TypeScript sources, the shared Python LSP submodule pointer, or localization tooling run the workflow automatically. Extraction includes both `src` and `external/vscode-common-python-lsp/typescript/src`. To submit English strings manually, use **Actions → Localization → Run workflow**.

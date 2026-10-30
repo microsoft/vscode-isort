@@ -46,10 +46,10 @@ parameters:
       - script: npm run ci:msft
         displayName: Install NPM dependencies
 
-      - pwsh: |
-          ./build/localization.ps1 -Operation import `
-            -TranslationsPath '$(Pipeline.Workspace)/localization-translations/out/ms-python.isort' `
-            -OutputDirectory '$(Agent.TempDirectory)/release-localization-$(System.JobId)-$(System.JobAttempt)'
+      - script: >-
+          python ./build/localization.py --operation import
+          --translations-path "$(Pipeline.Workspace)/localization-translations/out/ms-python.isort"
+          --output-directory "$(Agent.TempDirectory)/release-localization-$(System.JobId)-$(System.JobAttempt)"
         displayName: Import latest isort translations
 
       - script: python -m pip install -U pip

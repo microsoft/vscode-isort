@@ -138,18 +138,31 @@ def lint(session):
         "./src/test/python_tests",
     )
     session.run("flake8", "noxfile.py")
+    session.run("flake8", "build/localization.py", "build/localization_test.py")
 
     # check formatting using black
     session.install("black")
     session.run("black", "--check", "./bundled/tool")
     session.run("black", "--check", "./src/test/python_tests")
-    session.run("black", "--check", "noxfile.py")
+    session.run(
+        "black",
+        "--check",
+        "noxfile.py",
+        "build/localization.py",
+        "build/localization_test.py",
+    )
 
     # check import sorting using isort
     session.install("isort")
     session.run("isort", "--check", "./bundled/tool")
     session.run("isort", "--check", "./src/test/python_tests")
-    session.run("isort", "--check", "noxfile.py")
+    session.run(
+        "isort",
+        "--check",
+        "noxfile.py",
+        "build/localization.py",
+        "build/localization_test.py",
+    )
 
 
 @nox.session()
