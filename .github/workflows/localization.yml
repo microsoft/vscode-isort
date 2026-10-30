@@ -5,15 +5,13 @@ on:
   push:
     branches:
       - main
-      # Temporary branch trigger for testing before this workflow reaches main.
-      - users/bschnurr/test-localization-pipeline
     paths:
       - package.json
       - package.nls.json
       - src/**/*.ts
       - external/vscode-common-python-lsp
       - .gitmodules
-      - build/localization.py
+      - .nvmrc
       - .github/workflows/localization.yml
 
 permissions:
@@ -23,84 +21,16 @@ concurrency:
   group: localization-${{ github.ref }}
   cancel-in-progress: false
 
-env:
-  NPM_CONFIG_REGISTRY: https://packagefeedproxy.microsoft.io/npm/
-  LOCALIZATION_BRANCH: dev
-
 jobs:
   localization:
     if: github.repository == 'microsoft/vscode-isort'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - name: Checkout extension
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          submodules: recursive
-          persist-credentials: false
-
-      - name: Set up Node
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-        with:
-          node-version-file: .nvmrc
-
-      - name: Set up Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
-        with:
-          python-version: '3.10'
-
-      - name: Authenticate as python-localization
-        id: app-token
-        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
+      - uses: microsoft/vscode-common-python-lsp/.github/actions/localization@d1877b84bb10ff7caa6bd12ab4e75498ba760790
         with:
           app-id: ${{ vars.PYTHON_LOCALIZATION_APP_ID }}
           private-key: ${{ secrets.PYTHON_LOCALIZATION_PRIVATE_KEY }}
-          owner: microsoft
-          repositories: vscode-python-extensions-loc
-          permission-contents: write
-
-      - name: Checkout localization repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: microsoft/vscode-python-extensions-loc
-          ref: ${{ env.LOCALIZATION_BRANCH }}
-          token: ${{ steps.app-token.outputs.token }}
-          path: localization-translations
-          fetch-depth: 0
-
-      - name: Extract English strings
-        run: python ./build/localization.py --operation export --output-directory "$RUNNER_TEMP/localization-english"
-
-      - name: Submit changed English XLF
-        shell: python
-        working-directory: localization-translations
-        run: |
-          import os
-          from pathlib import Path
-          import shutil
-          import subprocess
-
-          subprocess.run(["git", "config", "user.name", "github-actions[bot]"], check=True)
-          subprocess.run(
-              ["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"],
-              check=True,
-          )
-          subprocess.run(["git", "config", "core.autocrlf", "input"], check=True)
-          destination = Path("src") / "en" / "ms-python.isort"
-          destination.mkdir(parents=True, exist_ok=True)
-          shutil.copyfile(
-              Path(os.environ["RUNNER_TEMP"]) / "localization-english" / "ms-python.isort-new.xlf",
-              destination / "ms-python.isort-new.xlf",
-          )
-          subprocess.run(["git", "add", "--", str(destination)], check=True)
-          changes = subprocess.run(
-              ["git", "diff", "--cached", "--name-only", "--", str(destination)],
-              check=True, capture_output=True, text=True,
-          ).stdout.strip()
-          if changes:
-              subprocess.run(["git", "commit", "-m", "Update English strings for ms-python.isort"], check=True)
-          else:
-              print("English localization strings are already up to date.")
-          branch = os.environ["LOCALIZATION_BRANCH"]
-          subprocess.run(["git", "pull", "--rebase", "origin", branch], check=True)
-          subprocess.run(["git", "push", "origin", f"HEAD:refs/heads/{branch}"], check=True)
+          submodules: recursive
+          source-paths: '["src", "external/vscode-common-python-lsp/typescript/src"]'
+          node-version: '24.17.0'

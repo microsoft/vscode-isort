@@ -16,6 +16,11 @@ resources:
       name: microsoft/vscode-python-extensions-loc
       ref: refs/heads/dev
       endpoint: Github-Pylance
+    - repository: localizationTools
+      type: github
+      name: microsoft/vscode-common-python-lsp
+      ref: d1877b84bb10ff7caa6bd12ab4e75498ba760790
+      endpoint: Github-Pylance
 variables:
   - name: TeamName
     value: VSCode-isort
@@ -35,22 +40,10 @@ parameters:
   - name: buildSteps
     type: stepList
     default:
-      - checkout: translations
-        displayName: Checkout latest localization drop
-        path: localization-translations
-        fetchDepth: 1
-        persistCredentials: false
-
       - script: git submodule update --init --recursive
         displayName: Checkout submodules
       - script: npm run ci:msft
         displayName: Install NPM dependencies
-
-      - script: >-
-          python ./build/localization.py --operation import
-          --translations-path "$(Pipeline.Workspace)/localization-translations/out/ms-python.isort"
-          --output-directory "$(Agent.TempDirectory)/release-localization-$(System.JobId)-$(System.JobAttempt)"
-        displayName: Import latest isort translations
 
       - script: python -m pip install -U pip
         displayName: Upgrade pip
@@ -86,5 +79,4 @@ extends:
     teamName: $(TeamName)
     validationNotifyUsers: 'plseng@microsoft.com'
     customNPMRegistry: $(NPM_CONFIG_REGISTRY)
-    sourceRepositoriesToExclude:
-      - repository: translations
+    pullLocalization: true

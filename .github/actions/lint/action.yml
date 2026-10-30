@@ -39,10 +39,6 @@ runs:
       with:
         python-version: ${{ inputs.python_version }}
 
-    - name: Test localization scripts (standard library only)
-      run: npm run test:localization
-      shell: bash
-
     - name: Pip cache
       uses: actions/cache@v5
       with:
