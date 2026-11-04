@@ -15,8 +15,7 @@ resources:
     - repository: templates
       type: git
       name: DevDiv/Pylance-Eng
-      # Test the localization templates before merging the Pylance-Eng PR.
-      ref: refs/heads/users/bschnurr/localization-wrapper
+      ref: refs/heads/main
     - repository: translations
       type: github
       name: microsoft/vscode-python-extensions-loc
