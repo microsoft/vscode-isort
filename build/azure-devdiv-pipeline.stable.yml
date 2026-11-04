@@ -79,4 +79,5 @@ extends:
     teamName: $(TeamName)
     validationNotifyUsers: 'plseng@microsoft.com'
     customNPMRegistry: $(NPM_CONFIG_REGISTRY)
+    sourceAnalysisPool: VSEng-MicroBuildVSStable
     pullLocalization: true

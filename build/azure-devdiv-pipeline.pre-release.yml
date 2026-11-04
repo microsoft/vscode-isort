@@ -84,4 +84,5 @@ extends:
     publishExtension: ${{ parameters.publishExtension }}
     teamName: $(TeamName)
     customNPMRegistry: $(NPM_CONFIG_REGISTRY)
+    sourceAnalysisPool: VSEng-MicroBuildVSStable
     pullLocalization: true
