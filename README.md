@@ -19,7 +19,7 @@ The isort extension provides a series of import sorting features to help with re
 
 - **Customizable isort Arguments**: You can customize the arguments passed to isort by modifying the `isort.args` setting.
 
-- **Import Sorting on Save**: You can enable import sorting on save for Python files by changing the `editor.codeActionsOnSave` setting. It also works alongside the [VS Code Black formatter extension](https://marketplace.visualstudio.com/items?itemName=ms-python.black-formatter) if you set the following settings: 
+- **Import Sorting on Save**: You can enable import sorting on save for Python files by changing the `editor.codeActionsOnSave` setting. It also works alongside the [VS Code Black formatter extension](https://marketplace.visualstudio.com/items?itemName=ms-python.black-formatter) if you set the following settings:
     
   ```json
     "[python]": {
@@ -162,3 +162,21 @@ The shared lint and VSIX build actions and the PR TypeScript test job use `npm r
 The DevDiv Azure stable/prerelease pipelines pass the npm proxy to their build/publish templates using `customNPMRegistry`. After initializing submodules, their dependency install steps use `npm run ci:msft` to rewrite both npm lockfiles and install through the proxy.
 
 Each Python bootstrap and bundled-library install step explicitly sets `PIP_INDEX_URL` from `PIP_PROXY_INDEX_URL`, selecting the pip proxy even when a template's authentication setup changes the job-level index. Release triggers, approval gates, signing, and publishing behavior are unchanged.
+
+### Localization
+
+The **Localization** GitHub Actions workflow only extracts and submits English strings. DevDiv stable and pre-release builds independently pull translations before packaging. Both use branch **`dev`** in `microsoft/vscode-python-extensions-loc`: English XLF lives under `src/en/ms-python.isort`, and translated handbacks live under `out/ms-python.isort`.
+
+Localization scripting uses Python 3.10 or later and the standard library. The [shared localization action and Python CLI](https://github.com/microsoft/vscode-common-python-lsp#shared-localization-automation) own extraction, submission, import, and readiness validation. This repository keeps only a thin workflow and release configuration, with the action and Azure tooling pinned to the same reviewed revision. Shared regression tests live with the tooling rather than being copied into every extension.
+
+Configure the `PYTHON_LOCALIZATION_APP_ID` Actions variable and the `PYTHON_LOCALIZATION_PRIVATE_KEY` Actions secret in this repository, or expose them through organization variables/secrets. They identify the `python-localization` GitHub App, which must be installed on the localization repository with **Contents: Read and write** permission. The GitHub workflow generates a short-lived installation token scoped to that repository and does not use an Azure service connection or personal token. The app does not need Pull requests permission.
+
+Pushes to `main` that change English manifest strings, TypeScript sources, the shared Python LSP submodule pointer, or localization tooling run the workflow automatically. Extraction includes both `src` and `external/vscode-common-python-lsp/typescript/src`. To submit English strings manually, use **Actions → Localization → Run workflow**.
+
+The shared action checks out its configured localization branch (`dev`) directly; that branch must already exist in the localization repository. It never checks out or pushes to the drop's `main` branch or force-pushes. Its repository token only needs read access; the app token submits English to the localization drop. It does not import translations or open translation PRs.
+
+Only the English `package.nls.json` is checked in. All root `package.nls.<locale>.json` files and the `l10n/` directory are generated, git-ignored build outputs. DevDiv stable and pre-release builds create them from the `dev` handback after caller build steps and before final VSIX packaging. `.vscodeignore` deliberately allows these generated translations into the VSIX, and `package.json` retains `"l10n": "./l10n"` so VS Code can load runtime translations. Local builds are English-only unless translations are imported explicitly.
+
+Translation is asynchronous. The localization backend must read English strings from `dev` and write translated output back to that branch. Release imports require nonempty manifest and runtime tables for all 14 supported locales. Each required real-language table must contain translation evidence; individual untranslated strings are allowed. Wholly English placeholders with target state `new` fail explicitly. Releases only retrieve translations; they do not extract or submit English strings, update the localization drop, or open translation PRs.
+
+The Azure pipelines use the **`Github-Pylance`** service connection for the translation and shared-tooling repository resources. Authorize that connection for both release pipelines. Pylance-Eng's `pullLocalization: true` owns checkout and import orchestration. Both checkouts are outside extension source; only translation data is excluded from 1ES source scanning. Each run imports one resolved `dev` revision and fails on missing, incomplete, or not-ready handbacks.
