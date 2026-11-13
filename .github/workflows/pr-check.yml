@@ -74,8 +74,18 @@ jobs:
         run: git submodule update --init --recursive
         shell: bash
 
+      - name: Checkout feed authentication action
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: ci-actions
+          sparse-checkout: |
+            /.github/actions/authenticate-feeds/
+            /build/setup-github-feeds.js
+            /build/package-feeds.json
+          sparse-checkout-cone-mode: false
+
       - name: Authenticate package feeds
-        uses: ./🐍 🐛/.github/actions/authenticate-feeds
+        uses: ./ci-actions/.github/actions/authenticate-feeds
 
       # Install bundled libs using env.PYTHON_VERSION even though you test it on other versions.
       - name: Use Python ${{ env.PYTHON_VERSION }}
