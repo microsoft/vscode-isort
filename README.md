@@ -153,9 +153,9 @@ To normalize manually, run `npm run normalize-lockfile`, review the changes, and
 
 ### GitHub Actions package feeds
 
-The PR, push, and CodeQL workflows set `NPM_CONFIG_REGISTRY` to `https://packagefeedproxy.microsoft.io/npm/` and `PIP_INDEX_URL` to `https://packagefeedproxy.microsoft.io/pypi/simple/`. These workflow-level settings also apply to the shared build/lint actions, nested npm commands, and pip installs in nox sessions. The npm endpoint follows the [TypeScript CI package-feed-proxy job](https://github.com/microsoft/TypeScript/blob/main/.github/workflows/ci.yml).
+PR validation and CodeQL PR scans use public npm (`https://registry.npmjs.org/`) and PyPI (`https://pypi.org/simple/`) without feed authentication, including for fork PRs. PR build, lint, and TypeScript test jobs use `npm ci`, leaving the public lockfile URLs unchanged.
 
-The shared lint and VSIX build actions and the PR TypeScript test job use `npm run ci:msft`, rewriting working-copy lockfile URLs before installation and explicitly selecting the proxy for npm requests. Workflows do not commit these rewrites or change local registry configuration or Dependabot configuration. Existing dependency caches are retained; the VSIX build also retains its offline-cache preference. CodeQL retains workflow-level feed settings for its autobuild step.
+Push validation and non-PR CodeQL runs retain OIDC authentication to `Pylance_PublicPackages`. The shared lint and VSIX build actions default to authenticated feeds and use `npm run ci:msft` for those runs; PR validation opts into public feeds. Workflows do not commit lockfile rewrites or change local registry configuration or Dependabot configuration. Existing dependency caches and the shared Python bundle are retained.
 
 ### Azure release package feeds
 
