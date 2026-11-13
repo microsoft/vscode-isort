@@ -5,7 +5,6 @@ on:
 
 env:
   NPM_CONFIG_REGISTRY: https://devdiv.pkgs.visualstudio.com/DevDiv/_packaging/Pylance_PublicPackages/npm/registry/
-  PIP_INDEX_URL: https://pkgs.dev.azure.com/devdiv/DevDiv/_packaging/debugpy/pypi/simple/
   NODE_VERSION: 24.17.0
   PYTHON_VERSION: '3.10'
   TEST_RESULTS_DIRECTORY: .
@@ -17,6 +16,9 @@ jobs:
   build-vsix:
     name: Create VSIX
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -32,6 +34,9 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -47,6 +52,9 @@ jobs:
   tests:
     name: Tests
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      id-token: write
     defaults:
       run:
         working-directory: ${{ env.special-working-directory }}
@@ -65,6 +73,9 @@ jobs:
       - name: Checkout submodules
         run: git submodule update --init --recursive
         shell: bash
+
+      - name: Authenticate package feeds
+        uses: ./🐍 🐛/.github/actions/authenticate-feeds
 
       # Install bundled libs using env.PYTHON_VERSION even though you test it on other versions.
       - name: Use Python ${{ env.PYTHON_VERSION }}

@@ -93,7 +93,7 @@ for (const microsoft of [false, true]) {
             assert.equal(
                 call.env.PIP_INDEX_URL,
                 microsoft
-                    ? 'https://pkgs.dev.azure.com/devdiv/DevDiv/_packaging/debugpy/pypi/simple/'
+                    ? 'https://pkgs.dev.azure.com/devdiv/DevDiv/_packaging/Pylance_PublicPackages/pypi/simple/'
                     : 'https://pypi.org/simple/',
             );
             assert.equal(call.env.NPM_CONFIG_REGISTRY, undefined);
