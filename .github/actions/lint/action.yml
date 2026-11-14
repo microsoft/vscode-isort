@@ -8,15 +8,15 @@ inputs:
   python_version:
     description: 'Version of Python to install'
     required: true
-  use_public_feeds:
-    description: 'Use public package feeds without authentication'
+  use_public_pypi:
+    description: 'Use public PyPI without authentication'
     default: 'false'
 
 runs:
   using: 'composite'
   steps:
-    - name: Authenticate package feeds
-      if: inputs.use_public_feeds != 'true'
+    - name: Authenticate Python package feed
+      if: inputs.use_public_pypi != 'true'
       uses: ./.github/actions/authenticate-feeds
 
     - name: Install Node
@@ -30,7 +30,7 @@ runs:
       shell: bash
 
     - name: Install Node dependencies
-      run: ${{ inputs.use_public_feeds == 'true' && 'npm ci' || 'npm run ci:msft' }}
+      run: npm ci
       shell: bash
 
     - name: Lint TypeScript code

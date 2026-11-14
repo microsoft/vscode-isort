@@ -222,25 +222,19 @@ function configureGitHubFeeds(t, token) {
     writeFileSync(environmentFile, 'EXISTING=value\n');
     const result = spawnSync(process.execPath, [path.join(__dirname, 'setup-github-feeds.js')], {
         encoding: 'utf8',
-        env: { ...process.env, RUNNER_TEMP: root, GITHUB_ENV: environmentFile, NODE_AUTH_TOKEN: token },
+        env: { ...process.env, RUNNER_TEMP: root, GITHUB_ENV: environmentFile, AZURE_DEVOPS_TOKEN: token },
     });
     return { root, environmentFile, result };
 }
 
-test('GitHub feed authentication configures both feeds without storing npm credentials in npmrc', (t) => {
+test('GitHub feed authentication configures pip without changing npm configuration', (t) => {
     const token = 'test-token.+/=';
     const { root, environmentFile, result } = configureGitHubFeeds(t, token);
     assert.equal(result.status, 0, result.stderr);
-    const npmrc = path.join(root, 'isort-feeds.npmrc');
-    const config = readFileSync(npmrc, 'utf8');
-    assert.ok(config.includes(`registry=${microsoftRegistry}\n`));
-    assert.ok(config.includes('/npm/registry/:_authToken=${NODE_AUTH_TOKEN}\n'));
-    assert.ok(config.includes('/npm/:_authToken=${NODE_AUTH_TOKEN}\n'));
-    assert.ok(!config.includes(token));
+    assert.throws(() => readFileSync(path.join(root, 'isort-feeds.npmrc')), /ENOENT/);
     const environment = readFileSync(environmentFile, 'utf8');
     assert.ok(environment.startsWith('EXISTING=value\n'));
-    assert.ok(environment.includes(`NPM_CONFIG_USERCONFIG=${npmrc}\n`));
-    assert.ok(environment.includes(`NODE_AUTH_TOKEN=${token}\n`));
+    assert.doesNotMatch(environment, /^(?:NPM_CONFIG_\w+|NODE_AUTH_TOKEN|AZURE_DEVOPS_TOKEN)=/im);
     assert.ok(environment.includes('PIP_NO_INPUT=1\n'));
     const index = new URL(
         environment

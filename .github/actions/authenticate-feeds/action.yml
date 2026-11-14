@@ -1,5 +1,5 @@
-name: 'Authenticate package feeds'
-description: 'Authenticate to Pylance_PublicPackages using GitHub OIDC'
+name: 'Authenticate Python package feed'
+description: 'Authenticate to Pylance_PublicPackages PyPI using GitHub OIDC'
 
 runs:
   using: 'composite'
@@ -11,8 +11,8 @@ runs:
         tenant-id: 72f988bf-86f1-41af-91ab-2d7cd011db47
         allow-no-subscriptions: true
 
-    - name: Configure authenticated npm and pip feeds
+    - name: Configure authenticated PyPI feed
       shell: bash
       run: |
         token="$(az account get-access-token --resource 499b84ac-1321-427f-aa17-267ca6975798 --query accessToken --output tsv | tr -d '\r')"
-        NODE_AUTH_TOKEN="$token" node "$GITHUB_ACTION_PATH/../../../build/setup-github-feeds.js"
+        AZURE_DEVOPS_TOKEN="$token" node "$GITHUB_ACTION_PATH/../../../build/setup-github-feeds.js"

@@ -9,7 +9,7 @@ on:
       - 'release-*'
 
 env:
-  NPM_CONFIG_REGISTRY: https://devdiv.pkgs.visualstudio.com/DevDiv/_packaging/Pylance_PublicPackages/npm/registry/
+  NPM_CONFIG_REGISTRY: https://registry.npmjs.org/
   NODE_VERSION: 24.17.0
   PYTHON_VERSION: '3.10'
   TEST_RESULTS_DIRECTORY: .
@@ -91,7 +91,7 @@ jobs:
         run: git submodule update --init --recursive
         shell: bash
 
-      - name: Authenticate package feeds
+      - name: Authenticate Python package feed
         uses: ./testingDir/.github/actions/authenticate-feeds
 
       - name: Download bundled Python libraries
