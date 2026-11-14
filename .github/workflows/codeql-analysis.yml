@@ -20,11 +20,6 @@ on:
   schedule:
     - cron: '15 16 * * 2'
 
-env:
-  NPM_CONFIG_REGISTRY: https://registry.npmjs.org/
-  PIP_INDEX_URL: https://pypi.org/simple/
-  PIP_NO_INPUT: '1'
-
 jobs:
   analyze:
     name: Analyze
@@ -34,7 +29,6 @@ jobs:
       actions: read
       contents: read
       security-events: write
-      id-token: write
 
     strategy:
       fail-fast: false
@@ -46,10 +40,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Authenticate Python package feed
-        if: github.event_name != 'pull_request'
-        uses: ./.github/actions/authenticate-feeds
 
       # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL

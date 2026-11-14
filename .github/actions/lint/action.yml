@@ -8,17 +8,10 @@ inputs:
   python_version:
     description: 'Version of Python to install'
     required: true
-  use_public_pypi:
-    description: 'Use public PyPI without authentication'
-    default: 'false'
 
 runs:
   using: 'composite'
   steps:
-    - name: Authenticate Python package feed
-      if: inputs.use_public_pypi != 'true'
-      uses: ./.github/actions/authenticate-feeds
-
     - name: Install Node
       uses: actions/setup-node@v6
       with:

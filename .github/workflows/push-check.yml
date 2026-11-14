@@ -9,7 +9,6 @@ on:
       - 'release-*'
 
 env:
-  NPM_CONFIG_REGISTRY: https://registry.npmjs.org/
   NODE_VERSION: 24.17.0
   PYTHON_VERSION: '3.10'
   TEST_RESULTS_DIRECTORY: .
@@ -24,7 +23,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -51,7 +49,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -71,7 +68,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
-      id-token: write
     defaults:
       run:
         working-directory: ${{ env.special-working-directory }}
@@ -90,9 +86,6 @@ jobs:
       - name: Checkout submodules
         run: git submodule update --init --recursive
         shell: bash
-
-      - name: Authenticate Python package feed
-        uses: ./testingDir/.github/actions/authenticate-feeds
 
       - name: Download bundled Python libraries
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7

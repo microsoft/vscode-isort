@@ -153,9 +153,7 @@ To normalize manually, run `npm run normalize-lockfile`, review the changes, and
 
 ### GitHub Actions package feeds
 
-GitHub Actions use public npm (`https://registry.npmjs.org/`); build, lint, and TypeScript test jobs run `npm ci` without rewriting lockfiles. The existing `@vscode/python-environments` dependency is downloaded from the public `msft_consumption` feed.
-
-PR validation and CodeQL PR scans use public PyPI (`https://pypi.org/simple/`) without feed authentication, including for fork PRs. Push validation and non-PR CodeQL runs retain OIDC authentication to the `Pylance_PublicPackages` Python feed. Existing dependency caches and the shared Python bundle are retained.
+GitHub Actions use the default public registries (npm and PyPI) without feed authentication, including for fork PRs. Build, lint, and TypeScript test jobs run `npm ci` without rewriting lockfiles. The existing `@vscode/python-environments` dependency is downloaded from the public `msft_consumption` feed.
 
 ### Azure release package feeds
 

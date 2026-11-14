@@ -2,12 +2,10 @@
 // Licensed under the MIT License.
 
 const assert = require('node:assert/strict');
-const { spawnSync } = require('node:child_process');
 const { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } = require('node:fs');
 const { tmpdir } = require('node:os');
 const path = require('node:path');
 const { test } = require('node:test');
-const { URL } = require('node:url');
 const vm = require('node:vm');
 const { rewritePackageLock, rewritePackageLocks } = require('./setup-npm-registry');
 const { normalizePackageLock } = require('./normalize-package-lock');
@@ -213,50 +211,4 @@ test('standalone registry rewrite does not install dependencies or require npm',
     assert.equal(context.calls.length, 2);
     assert.ok(context.calls.every((call) => call.file));
     assert.equal(context.errors.length, 0);
-});
-
-function configureGitHubFeeds(t, token) {
-    const root = mkdtempSync(path.join(tmpdir(), 'isort feed auth-'));
-    t.after(() => rmSync(root, { recursive: true, force: true }));
-    const environmentFile = path.join(root, 'github-env');
-    writeFileSync(environmentFile, 'EXISTING=value\n');
-    const result = spawnSync(process.execPath, [path.join(__dirname, 'setup-github-feeds.js')], {
-        encoding: 'utf8',
-        env: { ...process.env, RUNNER_TEMP: root, GITHUB_ENV: environmentFile, AZURE_DEVOPS_TOKEN: token },
-    });
-    return { root, environmentFile, result };
-}
-
-test('GitHub feed authentication configures pip without changing npm configuration', (t) => {
-    const token = 'test-token.+/=';
-    const { root, environmentFile, result } = configureGitHubFeeds(t, token);
-    assert.equal(result.status, 0, result.stderr);
-    assert.throws(() => readFileSync(path.join(root, 'isort-feeds.npmrc')), /ENOENT/);
-    const environment = readFileSync(environmentFile, 'utf8');
-    assert.ok(environment.startsWith('EXISTING=value\n'));
-    assert.doesNotMatch(environment, /^(?:NPM_CONFIG_\w+|NODE_AUTH_TOKEN|AZURE_DEVOPS_TOKEN)=/im);
-    assert.ok(environment.includes('PIP_NO_INPUT=1\n'));
-    const index = new URL(
-        environment
-            .split('\n')
-            .find((line) => line.startsWith('PIP_INDEX_URL='))
-            .slice(14),
-    );
-    assert.equal(index.hostname, 'pkgs.dev.azure.com');
-    assert.equal(index.pathname, '/devdiv/DevDiv/_packaging/Pylance_PublicPackages/pypi/simple/');
-    assert.equal(index.username, 'build');
-    assert.equal(decodeURIComponent(index.password), token);
-    assert.ok(result.stdout.includes(`::add-mask::${token}\n`));
-    assert.ok(result.stdout.includes(`::add-mask::${index.href}\n`));
-});
-
-test('GitHub feed authentication rejects missing or multiline tokens without modifying configuration', (t) => {
-    for (const token of ['', 'null', 'token\nINJECTED=value']) {
-        const { root, environmentFile, result } = configureGitHubFeeds(t, token);
-        assert.equal(result.status, 1);
-        assert.match(result.stderr, /single-line Azure DevOps token is required/);
-        assert.equal(readFileSync(environmentFile, 'utf8'), 'EXISTING=value\n');
-        assert.throws(() => readFileSync(path.join(root, 'isort-feeds.npmrc')), /ENOENT/);
-        assert.ok(!result.stderr.includes('INJECTED'));
-    }
 });

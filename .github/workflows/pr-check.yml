@@ -4,9 +4,6 @@ on:
   pull_request:
 
 env:
-  NPM_CONFIG_REGISTRY: https://registry.npmjs.org/
-  PIP_INDEX_URL: https://pypi.org/simple/
-  PIP_NO_INPUT: '1'
   NODE_VERSION: 24.17.0
   PYTHON_VERSION: '3.10'
   TEST_RESULTS_DIRECTORY: .
@@ -31,7 +28,6 @@ jobs:
         with:
           node_version: ${{ env.NODE_VERSION}}
           python_version: ${{ env.PYTHON_VERSION }}
-          use_public_pypi: 'true'
 
       - name: Upload bundled Python libraries
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
@@ -57,7 +53,6 @@ jobs:
         with:
           node_version: ${{ env.NODE_VERSION }}
           python_version: ${{ env.PYTHON_VERSION }}
-          use_public_pypi: 'true'
 
   tests:
     name: Tests
