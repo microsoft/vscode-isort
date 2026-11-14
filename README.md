@@ -153,13 +153,11 @@ To normalize manually, run `npm run normalize-lockfile`, review the changes, and
 
 ### GitHub Actions package feeds
 
-GitHub Actions use the default public registries (npm and PyPI) without feed authentication, including for fork PRs. Build, lint, and TypeScript test jobs run `npm ci` without rewriting lockfiles. The existing `@vscode/python-environments` dependency is downloaded from the public `msft_consumption` feed.
+GitHub Actions use the default public registries (npm and PyPI) without feed authentication, including for fork PRs. Build, lint, and TypeScript test jobs run `npm ci` without rewriting lockfiles. Localization explicitly selects public npm because the shared action defaults to a proxy. The existing `@vscode/python-environments` dependency is downloaded from the public `msft_consumption` feed.
 
 ### Azure release package feeds
 
-The DevDiv Azure stable/prerelease pipelines pass the `Pylance_PublicPackages` npm registry to their build/publish templates using `customNPMRegistry`. After initializing submodules, their dependency install steps use `npm run ci:msft` to rewrite both npm lockfiles and install through the authenticated feed.
-
-Each Python bootstrap and bundled-library install step explicitly sets `PIP_INDEX_URL` from `PIP_PROXY_INDEX_URL`, preserving the authenticated index provided by the template. Release triggers, approval gates, signing, and publishing behavior are unchanged.
+The DevDiv Azure stable/prerelease pipelines pass the `Pylance_PublicPackages` npm registry to their build/publish templates using `customNPMRegistry`. The shared template authenticates npm and the `DevDiv/debugpy` Python feed before the build steps. Release triggers, approval gates, signing, and publishing behavior are unchanged.
 
 ### Localization
 
