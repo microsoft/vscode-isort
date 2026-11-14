@@ -33,7 +33,7 @@ variables:
     value: VSCode-isort
   - name: VsixName
     value: isort.vsix
-  - name: NPM_CONFIG_REGISTRY
+  - name: AZURE_ARTIFACTS_FEED
     value: 'https://devdiv.pkgs.visualstudio.com/DevDiv/_packaging/Pylance_PublicPackages/npm/registry/'
   - name: PIP_PROXY_INDEX_URL
     # PipAuthenticate supplies the internal index URL with credentials before buildSteps.
@@ -85,6 +85,6 @@ extends:
     buildSteps: ${{ parameters.buildSteps }}
     publishExtension: ${{ parameters.publishExtension }}
     teamName: $(TeamName)
-    customNPMRegistry: $(NPM_CONFIG_REGISTRY)
+    customNPMRegistry: $(AZURE_ARTIFACTS_FEED)
     sourceAnalysisPool: VSEng-MicroBuildVSStable
     pullLocalization: true
