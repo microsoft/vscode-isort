@@ -15,7 +15,13 @@ import {
     workspace,
     WorkspaceEdit,
 } from 'vscode';
-import { getEnvFileVars, getProjectRoot, getWorkspaceFolder, traceError, traceLog } from '@vscode/common-python-lsp';
+import {
+    getEnvFileVars,
+    getProjectRoot,
+    getWorkspaceFolder,
+    traceError,
+    traceLog,
+} from '../../external/vscode-common-python-lsp/typescript/dist';
 import { RUNNER_SCRIPT_PATH } from './constants';
 import { ISettings, getWorkspaceSettings } from './settings';
 

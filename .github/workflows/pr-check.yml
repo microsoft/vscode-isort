@@ -113,6 +113,10 @@ jobs:
         run: npm ci
         shell: bash
 
+      - name: Install shared Node dependencies
+        run: npm --prefix ./external/vscode-common-python-lsp/typescript ci
+        shell: bash
+
       - name: Compile TS tests
         run: npm run pretest
         shell: bash

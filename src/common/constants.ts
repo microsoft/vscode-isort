@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 import * as path from 'path';
-import type { ToolConfig } from '@vscode/common-python-lsp';
+import type { ToolConfig } from '../../external/vscode-common-python-lsp/typescript/dist';
 
 const folderName = path.basename(__dirname);
 export const EXTENSION_ROOT_DIR =

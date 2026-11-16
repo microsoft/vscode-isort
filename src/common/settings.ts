@@ -3,7 +3,7 @@
 
 // Extension-specific settings: ISettings type extension, serverEnabled toggle,
 // and legacy settings logging. All shared settings resolution is handled by
-// @vscode/common-python-lsp directly.
+// the pinned shared checkout's public entry point.
 
 import { WorkspaceFolder } from 'vscode';
 import {
@@ -13,7 +13,7 @@ import {
     getWorkspaceFolders,
     getWorkspaceSettings as _getWorkspaceSettings,
     traceLog,
-} from '@vscode/common-python-lsp';
+} from '../../external/vscode-common-python-lsp/typescript/dist';
 import { ISORT_TOOL_CONFIG } from './constants';
 
 export interface ISettings extends IBaseSettings {
