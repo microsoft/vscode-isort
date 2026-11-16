@@ -86,11 +86,15 @@ for (const microsoft of [false, true]) {
         for (const call of context.calls) {
             assert.equal(
                 call.env.npm_config_registry,
-                microsoft ? 'https://packagefeedproxy.microsoft.io/npm/' : 'https://registry.npmjs.org/',
+                microsoft
+                    ? 'https://devdiv.pkgs.visualstudio.com/DevDiv/_packaging/Pylance_PublicPackages/npm/registry/'
+                    : 'https://registry.npmjs.org/',
             );
             assert.equal(
                 call.env.PIP_INDEX_URL,
-                microsoft ? 'https://packagefeedproxy.microsoft.io/pypi/simple/' : 'https://pypi.org/simple/',
+                microsoft
+                    ? 'https://pkgs.dev.azure.com/devdiv/DevDiv/_packaging/Pylance_PublicPackages/pypi/simple/'
+                    : 'https://pypi.org/simple/',
             );
             assert.equal(call.env.NPM_CONFIG_REGISTRY, undefined);
             assert.equal(call.env.HTTPS_PROXY, context.originalEnv.HTTPS_PROXY);
