@@ -70,7 +70,11 @@ To open the logs, click on the language status icon (`{}`) on the bottom right o
 
 ## Development
 
-This extension uses the shared [`vscode-common-python-lsp`](https://github.com/microsoft/vscode-common-python-lsp) TypeScript and Python libraries from the git submodule at `external/vscode-common-python-lsp`. The setup commands below initialize that submodule before npm resolves the local dependency, install and build the shared Node package, install extension dependencies, and bundle the Python libraries.
+This extension uses the shared [`vscode-common-python-lsp`](https://github.com/microsoft/vscode-common-python-lsp) TypeScript and Python sources from the git submodule at `external/vscode-common-python-lsp`. Setup initializes that submodule, installs its locked Node dependencies, builds its public `typescript/dist` entry point, installs extension dependencies, and bundles Python using a local-path install from the same checkout. There is no shared-runtime npm dependency or registry install.
+
+The native compile, test-compilation, watch and package commands rebuild the shared TypeScript first, rather than reusing possibly stale output after a submodule update. When installing manually, run both `npm ci` and `npm --prefix ./external/vscode-common-python-lsp/typescript ci` before building. Keep shared imports source-relative to the public `typescript/dist` entry point, not `src` or a bare module name. Webpack includes the shared runtime and its dependencies in `dist/extension.js`; the submodule itself is excluded from the VSIX.
+
+isort intentionally retains manual `createToolContext` / `registerCommonSubscriptions` / `deactivateServer` composition. Its `runServer` override owns the `isort.serverEnabled` switch: disabled mode stops the language server and registers local sorting/code actions; server mode disposes those features before restarting the server, and deactivation cleans them up. The opt-in shared activation facade does not represent that mode policy.
 
 Prerequisites: Git, Node.js (see `.nvmrc`), and Python 3.10 or later (`python` on Windows or `python3` on macOS/Linux). Setup creates or reuses a project-local `.venv` for Python tools rather than installing into your global Python environment. The nox bundling session uses Python 3.10 and may download that interpreter if it is not already installed.
 

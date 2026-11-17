@@ -11,7 +11,7 @@ import {
     registerLogger,
     ToolExtensionContext,
     traceError,
-} from '@vscode/common-python-lsp';
+} from '../external/vscode-common-python-lsp/typescript/dist';
 import { EXTENSION_ROOT_DIR, ISORT_TOOL_CONFIG } from './common/constants';
 import { getServerEnabled, logLegacySettings } from './common/settings';
 import { registerSortImportFeatures, unRegisterSortImportFeatures } from './common/sortImports';

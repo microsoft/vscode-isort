@@ -51,6 +51,10 @@ runs:
         npm_config_prefer_offline: 'true'
       shell: bash
 
+    - name: Install shared Node dependencies
+      run: npm --prefix ./external/vscode-common-python-lsp/typescript ci
+      shell: bash
+
     - name: Install bundled python libraries
       run: python -m nox --session install_bundled_libs
       shell: bash

@@ -45,6 +45,9 @@ parameters:
       - script: npm ci
         displayName: Install NPM dependencies
 
+      - script: npm --prefix ./external/vscode-common-python-lsp/typescript ci
+        displayName: Install shared NPM dependencies
+
       - script: python -m pip install -U pip
         displayName: Upgrade pip
 
