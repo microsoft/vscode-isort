@@ -16,7 +16,7 @@ resources:
 
 variables:
   - name: NodeVersion
-    value: '20.18.3'
+    value: '24.22.2'
   - name: PythonVersion
     value: '3.10'
 
